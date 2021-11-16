@@ -2,6 +2,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:ui_challenge_7/bar_chart1.dart';
 
+import 'bar_chart2.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -35,7 +37,7 @@ class HomePage extends StatelessWidget {
           padding: EdgeInsets.all(40.0),
           child: AspectRatio(
             child: Card(
-              child: BarChartWidget1(),
+              child: BarChartWidget2(),
             ),
             aspectRatio: 1.7,
           ),
