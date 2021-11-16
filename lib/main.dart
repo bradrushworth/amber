@@ -29,21 +29,26 @@ class MyApp extends StatelessWidget {
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.blueGrey,
-      body: Center(
-        child: Padding(
-          padding: EdgeInsets.all(40.0),
-          child: AspectRatio(
-            child: Card(
-              child: LineChartWidget2(),
-            ),
-            aspectRatio: 1.7,
-          ),
-        ),
+    return Scaffold(
+      backgroundColor: const Color(0xFFE5E5E5),
+      body: LayoutBuilder(
+          builder: (context, constraints) {
+            return GridView.count(
+              crossAxisCount: constraints.maxWidth < 800 ? 1 : 2,
+              childAspectRatio: 1.7,
+              padding: const EdgeInsets.all(16),
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              children: const [
+                Card(child: BarChartWidget1()),
+                Card(child: BarChartWidget2()),
+                Card(child: LineChartWidget1()),
+                Card(child: LineChartWidget2()),
+              ],
+            );
+          }
       ),
     );
   }
