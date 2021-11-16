@@ -4,6 +4,7 @@ import 'package:ui_challenge_7/bar_chart1.dart';
 
 import 'bar_chart2.dart';
 import 'line_chart1.dart';
+import 'line_chart2.dart';
 
 void main() {
   runApp(const MyApp());
@@ -38,7 +39,7 @@ class HomePage extends StatelessWidget {
           padding: EdgeInsets.all(40.0),
           child: AspectRatio(
             child: Card(
-              child: LineChartWidget1(),
+              child: LineChartWidget2(),
             ),
             aspectRatio: 1.7,
           ),

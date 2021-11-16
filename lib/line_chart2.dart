@@ -1,8 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-class LineChartWidget1 extends StatelessWidget {
-  const LineChartWidget1({Key? key}) : super(key: key);
+class LineChartWidget2 extends StatelessWidget {
+  const LineChartWidget2({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -13,22 +13,22 @@ class LineChartWidget1 extends StatelessWidget {
           lineBarsData: [
             LineChartBarData(
               spots: const [
-                FlSpot(0, 24),
-                FlSpot(1, 24),
-                FlSpot(2, 40),
-                FlSpot(3, 84),
-                FlSpot(4, 100),
-                FlSpot(5, 80),
-                FlSpot(6, 64),
-                FlSpot(7, 86),
-                FlSpot(8, 108),
-                FlSpot(9, 105),
-                FlSpot(10, 105),
-                FlSpot(11, 124),
+                FlSpot(0, 40),
+                FlSpot(1, 50),
+                FlSpot(2, 60),
+                FlSpot(3, 48),
+                FlSpot(4, 36),
+                FlSpot(5, 58),
+                FlSpot(6, 80),
+                FlSpot(7, 40),
+                FlSpot(8, 31),
+                FlSpot(9, 22),
+                FlSpot(10, 71),
+                FlSpot(11, 120),
               ],
               dotData: FlDotData(show: false),
               colors: const [Color(0xFFFF26B5), Color(0xFFFF5B5B)],
-              isCurved: true,
+              isCurved: false,
               belowBarData: BarAreaData(
                 show: true,
                 colors: const [Color(0x10FF26B5), Color(0x00FF26B5)],
@@ -38,22 +38,22 @@ class LineChartWidget1 extends StatelessWidget {
             ),
             LineChartBarData(
               spots: const [
-                FlSpot(0, 40),
-                FlSpot(1, 28),
-                FlSpot(2, 20),
-                FlSpot(3, 18),
-                FlSpot(4, 40),
-                FlSpot(5, 92),
-                FlSpot(6, 88),
-                FlSpot(7, 70),
-                FlSpot(8, 85),
-                FlSpot(9, 102),
-                FlSpot(10, 80),
-                FlSpot(11, 80),
+                FlSpot(0, 20),
+                FlSpot(1, 36),
+                FlSpot(2, 60),
+                FlSpot(3, 40),
+                FlSpot(4, 80),
+                FlSpot(5, 90),
+                FlSpot(6, 50),
+                FlSpot(7, 42),
+                FlSpot(8, 64),
+                FlSpot(9, 68),
+                FlSpot(10, 100),
+                FlSpot(11, 95),
               ],
               dotData: FlDotData(show: false),
-              colors: const [Color(0xFF268AFF), Color(0xFF905BFF)],
-              isCurved: true,
+              colors: const [Color(0xFF905BFF), Color(0xFF268AFF)],
+              isCurved: false,
               belowBarData: BarAreaData(
                 show: true,
                 colors: const [Color(0x1f268AFF), Color(0x00268AFF)],
