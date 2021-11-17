@@ -63,7 +63,7 @@ class HomePage extends StatelessWidget {
                   child: Row(
                     children: [
                       Text(
-                        'Graphs For Dashboards',
+                        'Graphs For Dashboards | flutter4fun.com | fl_chart',
                         style: TextStyle(
                           color:
                               themeModel.isDark() ? Colors.white : Colors.black,
