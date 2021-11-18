@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class MyThemeModel extends ChangeNotifier {
-  bool _isDark = false;
+  bool _isDark = true;
 
   ThemeMode currentTheme() {
     return _isDark ? ThemeMode.dark : ThemeMode.light;
