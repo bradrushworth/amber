@@ -134,7 +134,8 @@ class HomePage extends StatelessWidget {
                             const MyDivider(),
                             TextButton(
                               onPressed: () {
-                                //
+                                Utils.launchURL(
+                                    'https://flutter4fun.github.io/UI-Challenge-7-Live/');
                               },
                               child: const Text('Live Demo'),
                             ),
