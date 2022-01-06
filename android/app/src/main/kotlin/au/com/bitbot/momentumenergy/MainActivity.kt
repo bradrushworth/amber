@@ -1,4 +1,4 @@
-package com.flutter4fun.ui_challenge_7
+package au.com.bitbot.momentumenergy
 
 import io.flutter.embedding.android.FlutterActivity
 

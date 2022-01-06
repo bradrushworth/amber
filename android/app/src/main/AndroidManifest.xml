@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.flutter4fun.ui_challenge_7">
+    package="au.com.bitbot.momentumenergy">
    <application
-        android:label="ui_challenge_7"
+        android:label="Momentum Energy Dashboard"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

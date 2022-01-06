@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:ui_challenge_7/main.dart';
-import 'package:ui_challenge_7/my_theme_model.dart';
+import 'package:momentum_energy/my_theme_model.dart';
 
 class TopSectionWidget extends StatelessWidget {
   final String title;
@@ -24,7 +23,7 @@ class TopSectionWidget extends StatelessWidget {
           margin: padding,
           child: Row(
             children: [
-              Text(title, style: TextStyle(color: themeModel.isDark() ? const Color(0xFF9595A4) : Color(0xFF040420), fontWeight: FontWeight.bold, fontSize: 12)),
+              Text(title, style: TextStyle(color: themeModel.isDark() ? const Color(0xFF9595A4) : const Color(0xFF040420), fontWeight: FontWeight.bold, fontSize: 12)),
               Expanded(child: Container(), flex: 5),
               ...legends
                   .map(

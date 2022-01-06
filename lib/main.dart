@@ -1,9 +1,9 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:ui_challenge_7/bar_chart1.dart';
-import 'package:ui_challenge_7/my_theme_model.dart';
-import 'package:ui_challenge_7/utils.dart';
+import 'package:momentum_energy/bar_chart1.dart';
+import 'package:momentum_energy/my_theme_model.dart';
+import 'package:momentum_energy/utils.dart';
 
 import 'bar_chart2.dart';
 import 'line_chart1.dart';
@@ -103,7 +103,7 @@ class HomePage extends StatelessWidget {
                     ),
                     Expanded(
                       child: GridView.count(
-                        crossAxisCount: constraints.maxWidth < 800 ? 1 : 2,
+                        crossAxisCount: constraints.maxWidth < 800 ? 1 : 1,
                         childAspectRatio: 1.7,
                         padding: const EdgeInsets.only(
                             left: 16, right: 16, bottom: 16, top: 4),
@@ -111,9 +111,9 @@ class HomePage extends StatelessWidget {
                         mainAxisSpacing: 16,
                         children: const [
                           MyCard(child: BarChartWidget1()),
-                          MyCard(child: BarChartWidget2()),
+                          //MyCard(child: BarChartWidget2()),
                           MyCard(child: LineChartWidget1()),
-                          MyCard(child: LineChartWidget2()),
+                          //MyCard(child: LineChartWidget2()),
                         ],
                       ),
                     ),
