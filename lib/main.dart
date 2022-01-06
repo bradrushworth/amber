@@ -103,16 +103,19 @@ class HomePage extends StatelessWidget {
                     ),
                     Expanded(
                       child: GridView.count(
-                        crossAxisCount: constraints.maxWidth < 800 ? 1 : 1,
+                        crossAxisCount: constraints.maxWidth < 800 ? 1 : 2,
                         childAspectRatio: 1.7,
                         padding: const EdgeInsets.only(
                             left: 16, right: 16, bottom: 16, top: 4),
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
-                        children: const [
-                          MyCard(child: BarChartWidget1()),
+                        children: [
+                          MyCard(child: BarChartWidget1(const Duration(days: 1))),
+                          MyCard(child: BarChartWidget1(const Duration(days: 3))),
+                          //MyCard(child: BarChartWidget1(const Duration(days: 7))),
+                          //MyCard(child: BarChartWidget1(const Duration(days: 21))),
                           //MyCard(child: BarChartWidget2()),
-                          MyCard(child: LineChartWidget1()),
+                          //const MyCard(child: LineChartWidget1()),
                           //MyCard(child: LineChartWidget2()),
                         ],
                       ),

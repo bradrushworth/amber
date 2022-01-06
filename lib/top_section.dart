@@ -35,8 +35,8 @@ class TopSectionWidget extends StatelessWidget {
                 ),
               )
                   .toList(),
-              Expanded(child: Container(), flex: 1),
-              const Text('2019', style: TextStyle(color: Color(0xFFA7A7B7))),
+              //Expanded(child: Container(), flex: 1),
+              //const Text('', style: TextStyle(color: Color(0xFFA7A7B7))),
             ],
           ),
         );
