@@ -58,7 +58,7 @@ class BarChartState extends State<BarChartWidget1> {
           children: [
             TopSectionWidget(
               title: _title,
-              legends: _prices
+              legends: true || _prices
                   ? [
                       Legend(title: 'Off Peak', color: colors[2]),
                       Legend(title: 'Shoulder', color: colors[3]),
@@ -225,7 +225,7 @@ class DataAggregator {
       //borderRadius: BorderRadius.circular(2),
       rodStackItems: stackedValues
           .map((e) => BarChartRodStackItem(rodCumulative, rodCumulative += e,
-              _prices ? _getCostColor(i++, graphPos) : colors[i++]))
+              true || _prices ? _getCostColor(i++, graphPos) : colors[i++]))
           .toList(),
       // backDrawRodData: BackgroundBarChartRodData(
       //   show: true,
