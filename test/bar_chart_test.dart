@@ -58,16 +58,17 @@ void main() {
       DataAggregator dataAggregator = DataAggregator(const Duration(days: 1), true);
       dataAggregator.aggregateData(data);
 
-      expect(dataAggregator.newData[0]!.barRods.first.y, closeTo(0.043, 0.001));
-      expect(dataAggregator.newData[1]!.barRods.first.y, closeTo(0.039, 0.001));
-      expect(dataAggregator.newData[11]!.barRods.first.y, closeTo(0.095, 0.001));
-      expect(dataAggregator.newData[46]!.barRods.first.y, closeTo(0.017, 0.001));
-      expect(dataAggregator.newData[47]!.barRods.first.y, closeTo(0.015, 0.001));
+      double dailySupplyChargePer30mins = 1.27787 / 24 / 2;
+      expect(dataAggregator.newData[0]!.barRods.first.y, closeTo(0.043 + dailySupplyChargePer30mins, 0.001));
+      expect(dataAggregator.newData[1]!.barRods.first.y, closeTo(0.039 + dailySupplyChargePer30mins, 0.001));
+      expect(dataAggregator.newData[11]!.barRods.first.y, closeTo(0.095 + dailySupplyChargePer30mins, 0.001));
+      expect(dataAggregator.newData[46]!.barRods.first.y, closeTo(0.017 + dailySupplyChargePer30mins, 0.001));
+      expect(dataAggregator.newData[47]!.barRods.first.y, closeTo(0.015 + dailySupplyChargePer30mins, 0.001));
 
       expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.001));
-      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.first.toY, closeTo(0.043, 0.001));
-      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.last.fromY, closeTo(0.043, 0.001));
-      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.last.toY, closeTo(0.095, 0.001));
+      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.first.toY, closeTo(dailySupplyChargePer30mins, 0.001));
+      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.last.fromY, closeTo(0.043 + dailySupplyChargePer30mins, 0.001));
+      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.last.toY, closeTo(0.095 + dailySupplyChargePer30mins, 0.001));
     });
 
     test('2 Days', () async {
