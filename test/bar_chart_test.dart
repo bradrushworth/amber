@@ -21,16 +21,28 @@ void main() {
       DataAggregator dataAggregator = DataAggregator(const Duration(days: 1));
       dataAggregator.aggregateData(data);
 
-      expect(dataAggregator.newTitles.length, 47);
+      expect(dataAggregator.newTitles.length, 48);
       expect(dataAggregator.newTitles[0], '00:00');
       expect(dataAggregator.newTitles[1], '00:30');
       expect(dataAggregator.newTitles[46], '23:00');
-      expect(dataAggregator.newTitles[47], null);
+      expect(dataAggregator.newTitles[47], '23:30');
 
-      expect(dataAggregator.newData.length, 47);
+      expect(dataAggregator.newData.length, 48);
       expect(dataAggregator.newData[0]!.x, 0);
+      expect(dataAggregator.newData[1]!.x, 1);
       expect(dataAggregator.newData[46]!.x, 46);
+      expect(dataAggregator.newData[47]!.x, 47);
 
+      expect(dataAggregator.newData[0]!.barRods.first.y, 0.274);
+      expect(dataAggregator.newData[1]!.barRods.first.y, 0.252);
+      expect(dataAggregator.newData[11]!.barRods.first.y, 0.734);
+      expect(dataAggregator.newData[46]!.barRods.first.y, closeTo(0.116, 0.001));
+      expect(dataAggregator.newData[47]!.barRods.first.y, 0.099);
+
+      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.001));
+      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.first.toY, closeTo(0.458, 0.001));
+      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.last.fromY, closeTo(0.458, 0.001));
+      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.last.toY, closeTo(0.734, 0.001));
     });
 
     test('2 Days', () async {
@@ -56,6 +68,16 @@ void main() {
       expect(dataAggregator.newData[0]!.x, 0);
       expect(dataAggregator.newData[47]!.x, 47);
 
+      expect(dataAggregator.newData[0]!.barRods.first.y, closeTo(0.431, 0.001));
+      expect(dataAggregator.newData[1]!.barRods.first.y, closeTo(0.381, 0.001));
+      expect(dataAggregator.newData[11]!.barRods.first.y, closeTo(0.847, 0.001));
+      expect(dataAggregator.newData[46]!.barRods.first.y, closeTo(0.408, 0.001));
+      expect(dataAggregator.newData[47]!.barRods.first.y, closeTo(0.380, 0.001));
+
+      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.001));
+      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.first.toY, closeTo(0.458, 0.001));
+      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.last.fromY, closeTo(0.458, 0.001));
+      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.last.toY, closeTo(0.847, 0.001));
     });
 
   });

@@ -12,17 +12,17 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'top_section.dart';
 
 class BarChartWidget1 extends StatefulWidget {
+  late String title;
   late final Duration duration;
 
-  BarChartWidget1(this.duration, {Key? key}) : super(key: key);
+  BarChartWidget1(this.title, this.duration, {Key? key}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => BarChartState();
 }
 
 class BarChartState extends State<BarChartWidget1> {
-  late List<List<dynamic>> _csvFileData;
-  late MyThemeModel _themeModel;
+  late final String _title;
   late final Duration _duration;
   List<BarChartGroupData> _barChartData = [];
   Map<int, String> _barChartTitles = {};
@@ -31,6 +31,7 @@ class BarChartState extends State<BarChartWidget1> {
 
   @override
   void initState() {
+    _title = widget.title;
     _duration = widget.duration;
     openFile('assets/Your_Usage_List.csv');
   }
@@ -39,11 +40,10 @@ class BarChartState extends State<BarChartWidget1> {
   Widget build(BuildContext context) {
     return Consumer<MyThemeModel>(
       builder: (context, themeModel, child) {
-        _themeModel = themeModel;
         return Column(
           children: [
             TopSectionWidget(
-              title: 'Electricity Use',
+              title: _title,
               legends: [
                 Legend(title: 'Regular', color: const Color(0xFF5974FF)),
                 Legend(title: 'Controlled', color: const Color(0xFFFF3E8D)),
@@ -65,12 +65,13 @@ class BarChartState extends State<BarChartWidget1> {
                       bottomTitles: SideTitles(
                         reservedSize: 40,
                         showTitles: true,
-                        interval: 1,
+                        interval: 2,
                         rotateAngle: -90,
                         getTitles: (xValue) {
                           //print('xValue=$xValue');
-                          if (_barChartTitles.containsKey(xValue.toInt()))
+                          if (_barChartTitles.containsKey(xValue.toInt())) {
                             return _barChartTitles[xValue.toInt()]!;
+                          }
                           return 'Unknown';
                         },
                       ),
@@ -80,7 +81,7 @@ class BarChartState extends State<BarChartWidget1> {
                         reservedSize: 32,
                       ),
                     ),
-                    //maxY: 140,
+                    //maxY: 10.0,
                     gridData: FlGridData(show: false),
                     borderData: FlBorderData(show: false),
                   ),
@@ -113,12 +114,14 @@ class BarChartState extends State<BarChartWidget1> {
 }
 
 class DataAggregator {
-  final SplayTreeMap<int, BarChartGroupData> newData = SplayTreeMap<int, BarChartGroupData>();
+  final SplayTreeMap<int, BarChartGroupData> newData =
+      SplayTreeMap<int, BarChartGroupData>();
   final SplayTreeMap<int, String> newTitles = SplayTreeMap<int, String>();
   late Duration _duration;
+
   //late MyThemeModel _themeModel;
   //late BarChartGroupData _lastData;
-  DateTime? _lastDate;
+  //DateTime? _lastDate;
 
   DataAggregator(this._duration);
 
@@ -137,62 +140,57 @@ class DataAggregator {
 
   aggregateData(List<List<dynamic>> data) {
     int numMeters = 0;
-    String date, previousDate = '';
-    for (List record in data) {
-      date = record[0];
-      numMeters++;
-      if (date == previousDate) {
-        break;
+    {
+      String date, previousDate = '';
+      for (List record in data) {
+        date = record[0];
+        numMeters++;
+        if (date == previousDate) {
+          break;
+        }
+        previousDate = date;
       }
-      previousDate = date;
+      print('numMeters=$numMeters');
     }
-    print('numMeters=$numMeters');
 
     //int i = 0;
-    double stackedValue = 0;
-    List<double> stackedValues = [];
-    var earlier = DateTime.parse(dateParse(data.last[0]).substring(0, 8)).add(const Duration(days: 1)).subtract(_duration);
+    var earlier = DateTime.parse(dateParse(data.last[0]).substring(0, 8))
+        .add(const Duration(days: 1))
+        .subtract(_duration);
     print('earlier=$earlier');
-    for (List<dynamic> record in data) {
+
+    Map<int, double> stackedValue = {};
+    Map<int, List<double>> stackedValues = {};
+
+    for (int n = 0; n < data.length; n += numMeters) {
+      List<dynamic> record = data[n];
+      //print("adding record[0]=${record[0]}");
       DateTime date = DateTime.parse(dateParse(record[0]));
       if (date.isBefore(earlier)) {
         // Skip data outside of range
         continue;
       }
-      _lastDate ??= date; // Assign if null
-      int i = _lastDate!.hour * 2 + _lastDate!.minute ~/ 30;
-      print("i=$i");
-      if (date == _lastDate) {
-        print("adding date=$date record[1]=${record[1]}");
-        stackedValue += record[1];
-        stackedValues.add(0.0 + record[1]);
-        continue;
-      } else if (newData.containsKey(i)) {
-        print("updating i=$i");
-        stackedValue += record[1];
-        stackedValues[i % numMeters] += (0.0 + record[1]);
-        newData[i] = BarChartGroupData(x: i, barRods: [
-          makeRodData(newData[i]!.barRods.first.y + stackedValue, stackedValues.reversed.toList())
-        ]);
 
-        _lastDate = date;
-        stackedValue = 0.0 + record[1];
-        stackedValues = [0.0 + record[1]];
-      } else {
-        print("saving  i=$i date=$date record[1]=${record[1]}");
-        newData[i] = BarChartGroupData(x: i, barRods: [
-          makeRodData(stackedValue, stackedValues.reversed.toList())
-        ]);
-        newTitles[i] = _lastDate.toString().substring(11, 16);
+      int graphPos = date.hour * 2 + date.minute ~/ 30;
+      newTitles[graphPos] = date.toString().substring(11, 16);
 
-        _lastDate = date;
-        stackedValue = 0.0 + record[1];
-        stackedValues = [0.0 + record[1]];
-        //i++;
-        //if (i >= 2 * 24) i = 0;
+      for (int meterNum = 0; meterNum < numMeters; meterNum++) {
+        record = data[n + meterNum];
+        //print("adding date=$date record[1]=${record[1]}");
+        stackedValue[graphPos] = (stackedValue[graphPos] ?? 0.0) + record[1];
+        stackedValues[graphPos] = (stackedValues[graphPos] ??
+            List<double>.generate(numMeters, (index) => 0.0));
+        stackedValues[graphPos]![meterNum] =
+            (stackedValues[graphPos]![meterNum]) + record[1];
       }
     }
-    //_newData.add(_lastData);
+
+    for (int i in stackedValue.keys) {
+      //print("saving i=$i record[1]=${stackedValue[i]}");
+      newData[i] = BarChartGroupData(x: i, barRods: [
+        makeRodData(stackedValue[i]!, stackedValues[i]!.reversed.toList())
+      ]);
+    }
   }
 
   BarChartRodData makeRodData(double value, List<double> stackedValues) {
@@ -212,7 +210,7 @@ class DataAggregator {
       //   const Color(0xFFFFAB5E),
       //   const Color(0xFFFFD336),
       // ],
-      width: 10 / _duration.inDays,
+      width: 10, // / _duration.inDays,
       //borderRadius: BorderRadius.circular(2),
       rodStackItems: stackedValues
           .map((e) => BarChartRodStackItem(
