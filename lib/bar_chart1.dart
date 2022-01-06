@@ -11,11 +11,23 @@ import 'package:flutter/services.dart' show rootBundle;
 
 import 'top_section.dart';
 
+final List<Color> colors = [
+  const Color(0xFF5974FF),
+  const Color(0xFFFF3E8D),
+  Colors.lightGreen,
+  Colors.orange,
+  Colors.red,
+  Colors.blueAccent,
+];
+
 class BarChartWidget1 extends StatefulWidget {
   late String title;
   late final Duration duration;
+  bool prices;
 
-  BarChartWidget1(this.title, this.duration, {Key? key}) : super(key: key);
+  BarChartWidget1(this.title, this.duration,
+      {Key? key, bool this.prices = false})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() => BarChartState();
@@ -24,6 +36,7 @@ class BarChartWidget1 extends StatefulWidget {
 class BarChartState extends State<BarChartWidget1> {
   late final String _title;
   late final Duration _duration;
+  late final bool _prices;
   List<BarChartGroupData> _barChartData = [];
   Map<int, String> _barChartTitles = {};
 
@@ -33,6 +46,7 @@ class BarChartState extends State<BarChartWidget1> {
   void initState() {
     _title = widget.title;
     _duration = widget.duration;
+    _prices = widget.prices;
     openFile('assets/Your_Usage_List.csv');
   }
 
@@ -44,10 +58,17 @@ class BarChartState extends State<BarChartWidget1> {
           children: [
             TopSectionWidget(
               title: _title,
-              legends: [
-                Legend(title: 'Regular', color: const Color(0xFF5974FF)),
-                Legend(title: 'Controlled', color: const Color(0xFFFF3E8D)),
-              ],
+              legends: _prices
+                  ? [
+                      Legend(title: 'Off Peak', color: colors[2]),
+                      Legend(title: 'Shoulder', color: colors[3]),
+                      Legend(title: 'Peak', color: colors[4]),
+                      Legend(title: 'Controlled', color: colors[1]),
+                    ]
+                  : [
+                      Legend(title: 'Regular', color: colors[0]),
+                      Legend(title: 'Controlled', color: colors[1]),
+                    ],
               padding:
                   const EdgeInsets.only(left: 8, right: 18, top: 8, bottom: 8),
             ),
@@ -56,7 +77,8 @@ class BarChartState extends State<BarChartWidget1> {
                 padding: const EdgeInsets.only(right: 18, top: 18, bottom: 18),
                 child: BarChart(
                   BarChartData(
-                    barGroups: _barChartData, //[BarChartGroupData(x: 0, barRods: [makeRodData(80)]),],
+                    barGroups: _barChartData,
+                    //[BarChartGroupData(x: 0, barRods: [makeRodData(80)]),],
                     titlesData: FlTitlesData(
                       rightTitles: SideTitles(showTitles: false),
                       topTitles: SideTitles(showTitles: false),
@@ -79,7 +101,8 @@ class BarChartState extends State<BarChartWidget1> {
                     gridData: FlGridData(show: false),
                     borderData: FlBorderData(show: false),
                   ),
-                  swapAnimationDuration: Duration.zero, // Duration(milliseconds: 1500)
+                  swapAnimationDuration:
+                      Duration.zero, // Duration(milliseconds: 1500)
                 ),
               ),
             ),
@@ -94,7 +117,7 @@ class BarChartState extends State<BarChartWidget1> {
     List<List<dynamic>> data =
         const CsvToListConverter().convert(myData, shouldParseNumbers: true);
     List<dynamic> fieldNames = data.removeAt(0);
-    DataAggregator dataAggregator = DataAggregator(_duration);
+    DataAggregator dataAggregator = DataAggregator(_duration, _prices);
     dataAggregator.aggregateData(data);
 
     setState(() {
@@ -108,9 +131,11 @@ class DataAggregator {
   final SplayTreeMap<int, BarChartGroupData> newData =
       SplayTreeMap<int, BarChartGroupData>();
   final SplayTreeMap<int, String> newTitles = SplayTreeMap<int, String>();
-  late final Duration _duration;
 
-  DataAggregator(this._duration);
+  late final Duration _duration;
+  late final bool _prices;
+
+  DataAggregator(this._duration, this._prices);
 
   String dateParse(String input) {
     // e.g. 13/12/21 02:30
@@ -137,13 +162,13 @@ class DataAggregator {
         }
         previousDate = date;
       }
-      print('numMeters=$numMeters');
+      //print('numMeters=$numMeters');
     }
 
     var earlier = DateTime.parse(dateParse(data.last[0]).substring(0, 8))
         .add(const Duration(days: 1))
         .subtract(_duration);
-    print('earlier=$earlier');
+    //print('earlier=$earlier');
 
     Map<int, double> stackedValue = {};
     Map<int, List<double>> stackedValues = {};
@@ -163,33 +188,33 @@ class DataAggregator {
       for (int meterNum = 0; meterNum < numMeters; meterNum++) {
         record = data[n + meterNum];
         //print("adding date=$date record[1]=${record[1]}");
-        stackedValue[graphPos] = (stackedValue[graphPos] ?? 0.0) + record[1];
+        stackedValue[graphPos] = (stackedValue[graphPos] ?? 0.0) +
+            (_prices
+                ? _getCost(meterNum, date.weekday, graphPos, 0.0 + record[1])
+                : record[1]);
         stackedValues[graphPos] = (stackedValues[graphPos] ??
             List<double>.generate(numMeters, (index) => 0.0));
         stackedValues[graphPos]![meterNum] =
-            (stackedValues[graphPos]![meterNum]) + record[1];
+            (stackedValues[graphPos]![meterNum]) +
+                (_prices
+                    ? _getCost(meterNum, date.weekday, graphPos, 0.0 + record[1])
+                    : record[1]);
+
       }
     }
 
-    for (int i in stackedValue.keys) {
-      //print("saving i=$i record[1]=${stackedValue[i]}");
-      newData[i] = BarChartGroupData(x: i, barRods: [
-        makeRodData(stackedValue[i]!, stackedValues[i]!.reversed.toList())
+    for (int graphPos in stackedValue.keys) {
+      //print("saving graphPos=$graphPos record[1]=${stackedValue[graphPos]}");
+      newData[graphPos] = BarChartGroupData(x: graphPos, barRods: [
+        makeRodData(graphPos, stackedValue[graphPos]!, stackedValues[graphPos]!.reversed.toList())
       ]);
     }
   }
 
-  BarChartRodData makeRodData(double value, List<double> stackedValues) {
+  BarChartRodData makeRodData(int graphPos, double value, List<double> stackedValues) {
     double rodCumulative = 0.0;
-    List<Color> colors = [
-      const Color(0xFF5974FF),
-      const Color(0xFFFF3E8D),
-      Colors.pink,
-      Colors.purple,
-      Colors.deepOrangeAccent,
-      Colors.blueAccent,
-    ];
     int i = 0;
+    //print("meterNum=$meterNum");
     return BarChartRodData(
       y: value,
       // colors: [
@@ -199,8 +224,8 @@ class DataAggregator {
       width: 10, // / _duration.inDays,
       //borderRadius: BorderRadius.circular(2),
       rodStackItems: stackedValues
-          .map((e) => BarChartRodStackItem(
-              rodCumulative, rodCumulative += e, colors[i++]))
+          .map((e) => BarChartRodStackItem(rodCumulative, rodCumulative += e,
+              _prices ? _getCostColor(i++, graphPos) : colors[i++]))
           .toList(),
       // backDrawRodData: BackgroundBarChartRodData(
       //   show: true,
@@ -214,14 +239,35 @@ class DataAggregator {
     );
   }
 
-  double _getPrices(int i, double value) {
-    if (i < 7 * 2) {
+  Color _getCostColor(int meterNum, int graphPos) {
+    //print("meterNum=$meterNum graphPos=$graphPos");
+    if (meterNum == 1) {
+      return colors[1]; // Controlled
+    } else if (graphPos < 7 * 2) {
+      return colors[2]; // Off peak
+    } else if (graphPos < 17 * 2) {
+      return colors[3]; // Shoulder
+    } else if (graphPos < 20 * 2) {
+      return colors[4]; // Peak
+    } else if (graphPos < 22 * 2) {
+      return colors[3]; // Shoulder
+    } else {
+      return colors[2]; // Off peak
+    }
+  }
+
+  double _getCost(int meterNum, int weekday, int graphPos, double value) {
+    if (meterNum == 0) {
+      return value * 0.11352; // Controlled
+    } else if (weekday == DateTime.saturday || weekday == DateTime.sunday) {
       return value * 0.15697; // Off peak
-    } else if (i < 17 * 2) {
+    } else if (graphPos < 7 * 2) {
+      return value * 0.15697; // Off peak
+    } else if (graphPos < 17 * 2) {
       return value * 0.27709; // Shoulder
-    } else if (i < 20 * 2) {
+    } else if (graphPos < 20 * 2) {
       return value * 0.32131; // Peak
-    } else if (i < 22 * 2) {
+    } else if (graphPos < 22 * 2) {
       return value * 0.27709; // Shoulder
     } else {
       return value * 0.15697; // Off peak
