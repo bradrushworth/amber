@@ -56,9 +56,7 @@ class BarChartState extends State<BarChartWidget1> {
                 padding: const EdgeInsets.only(right: 18, top: 18, bottom: 18),
                 child: BarChart(
                   BarChartData(
-                    barGroups: _barChartData,
-                    //[BarChartGroupData(x: 0, barRods: [makeRodData(80)]),],
-                    //barGroups: ,
+                    barGroups: _barChartData, //[BarChartGroupData(x: 0, barRods: [makeRodData(80)]),],
                     titlesData: FlTitlesData(
                       rightTitles: SideTitles(showTitles: false),
                       topTitles: SideTitles(showTitles: false),
@@ -68,24 +66,20 @@ class BarChartState extends State<BarChartWidget1> {
                         interval: 2,
                         rotateAngle: -90,
                         getTitles: (xValue) {
-                          //print('xValue=$xValue');
-                          if (_barChartTitles.containsKey(xValue.toInt())) {
-                            return _barChartTitles[xValue.toInt()]!;
-                          }
-                          return 'Unknown';
+                          return _barChartTitles[xValue.toInt()]!;
                         },
                       ),
                       leftTitles: SideTitles(
                         showTitles: true,
-                        interval: 20,
-                        reservedSize: 32,
+                        interval: 1,
+                        //reservedSize: 32,
                       ),
                     ),
                     //maxY: 10.0,
                     gridData: FlGridData(show: false),
                     borderData: FlBorderData(show: false),
                   ),
-                  swapAnimationDuration: Duration.zero,
+                  swapAnimationDuration: Duration.zero, // Duration(milliseconds: 1500)
                 ),
               ),
             ),
@@ -104,11 +98,8 @@ class BarChartState extends State<BarChartWidget1> {
     dataAggregator.aggregateData(data);
 
     setState(() {
-      //_csvFileData = data;
       _barChartData = dataAggregator.newData.values.toList();
       _barChartTitles = dataAggregator.newTitles;
-      //.map((r) => BarChartGroupData(x: i++, barRods: [makeRodData(r)]))
-      //.toList();
     });
   }
 }
@@ -117,11 +108,7 @@ class DataAggregator {
   final SplayTreeMap<int, BarChartGroupData> newData =
       SplayTreeMap<int, BarChartGroupData>();
   final SplayTreeMap<int, String> newTitles = SplayTreeMap<int, String>();
-  late Duration _duration;
-
-  //late MyThemeModel _themeModel;
-  //late BarChartGroupData _lastData;
-  //DateTime? _lastDate;
+  late final Duration _duration;
 
   DataAggregator(this._duration);
 
@@ -153,7 +140,6 @@ class DataAggregator {
       print('numMeters=$numMeters');
     }
 
-    //int i = 0;
     var earlier = DateTime.parse(dateParse(data.last[0]).substring(0, 8))
         .add(const Duration(days: 1))
         .subtract(_duration);
@@ -226,5 +212,19 @@ class DataAggregator {
       //   y: value * 1.2, // Dark background bar
       // ),
     );
+  }
+
+  double _getPrices(int i, double value) {
+    if (i < 7 * 2) {
+      return value * 0.15697; // Off peak
+    } else if (i < 17 * 2) {
+      return value * 0.27709; // Shoulder
+    } else if (i < 20 * 2) {
+      return value * 0.32131; // Peak
+    } else if (i < 22 * 2) {
+      return value * 0.27709; // Shoulder
+    } else {
+      return value * 0.15697; // Off peak
+    }
   }
 }
