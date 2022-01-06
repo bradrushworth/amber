@@ -209,7 +209,7 @@ class DataAggregator {
       if (_prices) {
         double dailySupplyChargePer30mins = 1.27787 / 24 / 2;
         stackedValue[graphPos] = stackedValue[graphPos]! + dailySupplyChargePer30mins;
-        stackedValues[graphPos]![numMeters] = dailySupplyChargePer30mins;
+        stackedValues[graphPos]![numMeters] = dailySupplyChargePer30mins * _duration.inDays;
       }
     }
 
@@ -233,7 +233,7 @@ class DataAggregator {
       //   const Color(0xFFFFAB5E),
       //   const Color(0xFFFFD336),
       // ],
-      width: 10, // / _duration.inDays,
+      width: 7, // / _duration.inDays,
       //borderRadius: BorderRadius.circular(2),
       rodStackItems: stackedValues
           .map((e) => BarChartRodStackItem(rodCumulative, rodCumulative += e,

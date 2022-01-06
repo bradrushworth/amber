@@ -1,6 +1,6 @@
 {
-    "name": "momentum_energy",
-    "short_name": "momentum_energy",
+    "name": "Momentum Energy Visualiser",
+    "short_name": "Momentum",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
