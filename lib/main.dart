@@ -110,8 +110,8 @@ class HomePage extends StatelessWidget {
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
                         children: [
-                          MyCard(child: BarChartWidget1(const Duration(days: 1))),
-                          MyCard(child: BarChartWidget1(const Duration(days: 3))),
+                          //MyCard(child: BarChartWidget1(const Duration(days: 1))),
+                          MyCard(child: BarChartWidget1(const Duration(days: 2))),
                           //MyCard(child: BarChartWidget1(const Duration(days: 7))),
                           //MyCard(child: BarChartWidget1(const Duration(days: 21))),
                           //MyCard(child: BarChartWidget2()),

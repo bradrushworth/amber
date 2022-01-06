@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -23,18 +25,18 @@ class BarChartState extends State<BarChartWidget1> {
   late MyThemeModel _themeModel;
   late final Duration _duration;
   List<BarChartGroupData> _barChartData = [];
-  List<String> _barChartTitles = [];
+  Map<int, String> _barChartTitles = {};
 
   BarChartState();
 
   @override
   void initState() {
     _duration = widget.duration;
+    openFile('assets/Your_Usage_List.csv');
   }
 
   @override
   Widget build(BuildContext context) {
-    openFile('assets/Your_Usage_List.csv');
     return Consumer<MyThemeModel>(
       builder: (context, themeModel, child) {
         _themeModel = themeModel;
@@ -61,11 +63,15 @@ class BarChartState extends State<BarChartWidget1> {
                       rightTitles: SideTitles(showTitles: false),
                       topTitles: SideTitles(showTitles: false),
                       bottomTitles: SideTitles(
-                        reservedSize: 75,
+                        reservedSize: 40,
                         showTitles: true,
+                        interval: 1,
                         rotateAngle: -90,
                         getTitles: (xValue) {
-                          return _barChartTitles[xValue.toInt()];
+                          //print('xValue=$xValue');
+                          if (_barChartTitles.containsKey(xValue.toInt()))
+                            return _barChartTitles[xValue.toInt()]!;
+                          return 'Unknown';
                         },
                       ),
                       leftTitles: SideTitles(
@@ -93,12 +99,12 @@ class BarChartState extends State<BarChartWidget1> {
     List<List<dynamic>> data =
         const CsvToListConverter().convert(myData, shouldParseNumbers: true);
     List<dynamic> fieldNames = data.removeAt(0);
-    DataAggregator dataAggregator = DataAggregator(_themeModel, _duration);
+    DataAggregator dataAggregator = DataAggregator(_duration);
     dataAggregator.aggregateData(data);
 
     setState(() {
       //_csvFileData = data;
-      _barChartData = dataAggregator.newData;
+      _barChartData = dataAggregator.newData.values.toList();
       _barChartTitles = dataAggregator.newTitles;
       //.map((r) => BarChartGroupData(x: i++, barRods: [makeRodData(r)]))
       //.toList();
@@ -107,14 +113,14 @@ class BarChartState extends State<BarChartWidget1> {
 }
 
 class DataAggregator {
-  final List<BarChartGroupData> newData = [];
-  final List<String> newTitles = [];
+  final SplayTreeMap<int, BarChartGroupData> newData = SplayTreeMap<int, BarChartGroupData>();
+  final SplayTreeMap<int, String> newTitles = SplayTreeMap<int, String>();
   late Duration _duration;
-  late MyThemeModel _themeModel;
-  late BarChartGroupData _lastData;
+  //late MyThemeModel _themeModel;
+  //late BarChartGroupData _lastData;
   DateTime? _lastDate;
 
-  DataAggregator(this._themeModel, this._duration);
+  DataAggregator(this._duration);
 
   String dateParse(String input) {
     // e.g. 13/12/21 02:30
@@ -130,10 +136,23 @@ class DataAggregator {
   }
 
   aggregateData(List<List<dynamic>> data) {
-    int i = 0;
+    int numMeters = 0;
+    String date, previousDate = '';
+    for (List record in data) {
+      date = record[0];
+      numMeters++;
+      if (date == previousDate) {
+        break;
+      }
+      previousDate = date;
+    }
+    print('numMeters=$numMeters');
+
+    //int i = 0;
     double stackedValue = 0;
     List<double> stackedValues = [];
-    var earlier = DateTime.parse(dateParse(data.last[0])).subtract(_duration);
+    var earlier = DateTime.parse(dateParse(data.last[0]).substring(0, 8)).add(const Duration(days: 1)).subtract(_duration);
+    print('earlier=$earlier');
     for (List<dynamic> record in data) {
       DateTime date = DateTime.parse(dateParse(record[0]));
       if (date.isBefore(earlier)) {
@@ -141,19 +160,36 @@ class DataAggregator {
         continue;
       }
       _lastDate ??= date; // Assign if null
+      int i = _lastDate!.hour * 2 + _lastDate!.minute ~/ 30;
+      print("i=$i");
       if (date == _lastDate) {
+        print("adding date=$date record[1]=${record[1]}");
         stackedValue += record[1];
-        stackedValues.add(record[1]);
+        stackedValues.add(0.0 + record[1]);
         continue;
-      } else {
-        newData.add(BarChartGroupData(x: i++, barRods: [
-          makeRodData(stackedValue, stackedValues.reversed.toList())
-        ]));
-        newTitles.add(_lastDate.toString().substring(0, 16));
+      } else if (newData.containsKey(i)) {
+        print("updating i=$i");
+        stackedValue += record[1];
+        stackedValues[i % numMeters] += (0.0 + record[1]);
+        newData[i] = BarChartGroupData(x: i, barRods: [
+          makeRodData(newData[i]!.barRods.first.y + stackedValue, stackedValues.reversed.toList())
+        ]);
 
         _lastDate = date;
-        stackedValue = record[1];
-        stackedValues = [record[1]];
+        stackedValue = 0.0 + record[1];
+        stackedValues = [0.0 + record[1]];
+      } else {
+        print("saving  i=$i date=$date record[1]=${record[1]}");
+        newData[i] = BarChartGroupData(x: i, barRods: [
+          makeRodData(stackedValue, stackedValues.reversed.toList())
+        ]);
+        newTitles[i] = _lastDate.toString().substring(11, 16);
+
+        _lastDate = date;
+        stackedValue = 0.0 + record[1];
+        stackedValues = [0.0 + record[1]];
+        //i++;
+        //if (i >= 2 * 24) i = 0;
       }
     }
     //_newData.add(_lastData);
@@ -167,6 +203,7 @@ class DataAggregator {
       Colors.pink,
       Colors.purple,
       Colors.deepOrangeAccent,
+      Colors.blueAccent,
     ];
     int i = 0;
     return BarChartRodData(
@@ -188,7 +225,7 @@ class DataAggregator {
       //         ? const Color(0xFF1D1D2B)
       //         : const Color(0xFFFCFCFC)
       //   ],
-      //   y: value,
+      //   y: value * 1.2, // Dark background bar
       // ),
     );
   }
