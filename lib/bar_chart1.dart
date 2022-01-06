@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:csv/csv_settings_autodetection.dart';
 
 import 'top_section.dart';
 
@@ -117,8 +118,10 @@ class BarChartState extends State<BarChartWidget1> {
 
   openFile(filepath) async {
     final myData = await rootBundle.loadString(filepath);
-    List<List<dynamic>> data =
-        const CsvToListConverter().convert(myData, shouldParseNumbers: true);
+    List<List<dynamic>> data = const CsvToListConverter(
+        csvSettingsDetector:
+        FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
+        .convert(myData, shouldParseNumbers: true);
     List<dynamic> fieldNames = data.removeAt(0);
     DataAggregator dataAggregator = DataAggregator(_duration, _prices);
     dataAggregator.aggregateData(data);
