@@ -58,15 +58,18 @@ class BarChartState extends State<BarChartWidget1> {
           children: [
             TopSectionWidget(
               title: _title,
-              legends: true || _prices
+              legends: _prices
                   ? [
                       Legend(title: 'Off Peak', color: colors[2]),
                       Legend(title: 'Shoulder', color: colors[3]),
                       Legend(title: 'Peak', color: colors[4]),
                       Legend(title: 'Controlled', color: colors[1]),
+                      Legend(title: 'Supply', color: colors[0]),
                     ]
                   : [
-                      Legend(title: 'Regular', color: colors[0]),
+                      Legend(title: 'Off Peak', color: colors[2]),
+                      Legend(title: 'Shoulder', color: colors[3]),
+                      Legend(title: 'Peak', color: colors[4]),
                       Legend(title: 'Controlled', color: colors[1]),
                     ],
               padding:
@@ -193,25 +196,34 @@ class DataAggregator {
                 ? _getCost(meterNum, date.weekday, graphPos, 0.0 + record[1])
                 : record[1]);
         stackedValues[graphPos] = (stackedValues[graphPos] ??
-            List<double>.generate(numMeters, (index) => 0.0));
+            List<double>.generate(
+                numMeters + (_prices ? 1 : 0), (index) => 0.0));
         stackedValues[graphPos]![meterNum] =
             (stackedValues[graphPos]![meterNum]) +
                 (_prices
-                    ? _getCost(meterNum, date.weekday, graphPos, 0.0 + record[1])
+                    ? _getCost(
+                        meterNum, date.weekday, graphPos, 0.0 + record[1])
                     : record[1]);
+      }
 
+      if (_prices) {
+        double dailySupplyChargePer30mins = 1.27787 / 24 / 2;
+        stackedValue[graphPos] = stackedValue[graphPos]! + dailySupplyChargePer30mins;
+        stackedValues[graphPos]![numMeters] = dailySupplyChargePer30mins;
       }
     }
 
     for (int graphPos in stackedValue.keys) {
       //print("saving graphPos=$graphPos record[1]=${stackedValue[graphPos]}");
       newData[graphPos] = BarChartGroupData(x: graphPos, barRods: [
-        makeRodData(graphPos, stackedValue[graphPos]!, stackedValues[graphPos]!.reversed.toList())
+        makeRodData(graphPos, stackedValue[graphPos]!,
+            stackedValues[graphPos]!.reversed.toList())
       ]);
     }
   }
 
-  BarChartRodData makeRodData(int graphPos, double value, List<double> stackedValues) {
+  BarChartRodData makeRodData(
+      int graphPos, double value, List<double> stackedValues) {
     double rodCumulative = 0.0;
     int i = 0;
     //print("meterNum=$meterNum");
@@ -241,8 +253,10 @@ class DataAggregator {
 
   Color _getCostColor(int meterNum, int graphPos) {
     //print("meterNum=$meterNum graphPos=$graphPos");
-    if (meterNum == 1) {
+    if (!_prices && meterNum == 1 || _prices && meterNum == 2) {
       return colors[1]; // Controlled
+    } else if (_prices && meterNum == 0) {
+      return colors[0]; // Supply
     } else if (graphPos < 7 * 2) {
       return colors[2]; // Off peak
     } else if (graphPos < 17 * 2) {
