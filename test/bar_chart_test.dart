@@ -9,7 +9,7 @@ import 'package:momentum_energy/bar_chart1.dart';
 void main() {
   group('Bar Chart', () {
     test('1 Day', () async {
-      final myData = await File('assets/Your_Usage_List.csv').readAsString();
+      final myData = await File('assets/Your_Usage_List_Sample.csv').readAsString();
       List<List<dynamic>> data =
           const CsvToListConverter().convert(myData, shouldParseNumbers: true);
       List<dynamic> fieldNames = data.removeAt(0);
