@@ -2,3 +2,6 @@
 
 [![Dashboard Example Screenshot](assets/screenshot.png)](https://momentumenergy.codemagic.app/)
 
+[Momentum Energy Dashboard](https://momentumenergy.codemagic.app/) is not affiliated with [Momentum Energy](https://www.momentumenergy.com.au/) other than we are a customer of their electricity services. The name Momentum Energy is their trademark.
+
+Feel free to [buy Brad a coffee](https://www.buymeacoffee.com/bitbot) if you thought this dashboard was great. Feedback welcome too.
