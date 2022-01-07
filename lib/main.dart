@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +7,12 @@ import 'package:provider/provider.dart';
 import 'package:momentum_energy/bar_chart1.dart';
 import 'package:momentum_energy/my_theme_model.dart';
 import 'package:momentum_energy/utils.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:csv/csv.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:csv/csv_settings_autodetection.dart';
 
 import 'bar_chart2.dart';
 import 'line_chart1.dart';
@@ -20,15 +28,25 @@ void main() {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({Key? key}) : super(key: key);
+
+  @override
+  State<StatefulWidget> createState() => MyAppState();
+}
+
+class MyAppState extends State<MyApp> {
+  @override
+  initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<MyThemeModel>(
       builder: (context, themeModel, child) {
         return MaterialApp(
-          title: 'Flutter4fun',
+          title: 'Momentum Energy Dashboard',
           debugShowCheckedModeBanner: false,
           theme: ThemeData.light().copyWith(
             textTheme: const TextTheme(
@@ -48,8 +66,59 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
+
+  @override
+  State<StatefulWidget> createState() => HomePageState();
+}
+
+class HomePageState extends State<HomePage> {
+  late String rawData = 'Loading';
+
+  Map<String, BarChartWidget1> charts = {};
+
+  @override
+  initState() {
+    super.initState();
+    _loadDefaultFile();
+  }
+
+  void _loadDefaultFile() async {
+    print('_loadDefaultFile');
+    String data = await rootBundle.loadString('assets/Your_Usage_List.csv');
+    //print('data=$data');
+    setState(() {
+      rawData = data;
+    });
+  }
+
+  void _pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['csv'],
+      allowMultiple: false,
+      allowCompression: false,
+    );
+    if (result != null) {
+      String data = String.fromCharCodes(result.files.first.bytes!);
+      print('_pickFile');
+      //print('data=$data');
+      setState(() {
+        rawData = data;
+      });
+    } else {
+      // User canceled the picker, use pre-canned example
+      _loadDefaultFile();
+    }
+    //notifyListeners();
+
+    //final HomePageState state = context.findAncestorStateOfType<HomePageState>()!;
+    //print('state=state');
+    // setState(() {
+    //   charts.forEach((key, value) { value.refresh(rawData); });
+    // });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +139,7 @@ class HomePage extends StatelessWidget {
                         children: [
                           RichText(
                             text: TextSpan(
-                              text: 'Momentum Energy Electricity (',
+                              text: 'Momentum Energy Dashboard\n(',
                               style: TextStyle(
                                 color: themeModel.isDark()
                                     ? Colors.white
@@ -78,8 +147,9 @@ class HomePage extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                               ),
                               children: [
+                                const TextSpan(text: 'Click '),
                                 TextSpan(
-                                  text: 'Click \'Export table\' from MyAccount',
+                                  text: '\'Export table\' from MyAccount',
                                   style: TextStyle(
                                       color: Theme.of(context)
                                               .textTheme
@@ -92,11 +162,25 @@ class HomePage extends StatelessWidget {
                                           'https://www.momentumenergy.com.au/myaccount/my-usage');
                                     },
                                 ),
+                                const TextSpan(text: ', Then '),
+                                TextSpan(
+                                  text: 'Upload File',
+                                  style: TextStyle(
+                                      color: Theme.of(context)
+                                              .textTheme
+                                              .button
+                                              ?.color ??
+                                          Colors.blueAccent),
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = () {
+                                      _pickFile();
+                                    },
+                                ),
                                 const TextSpan(text: ')'),
                               ],
                             ),
                           ),
-                          Expanded(child: Container()),
+                          const Spacer(),
                           Switch(
                             value: themeModel.isDark(),
                             onChanged: (newValue) {
@@ -117,108 +201,125 @@ class HomePage extends StatelessWidget {
                         mainAxisSpacing: 16,
                         children: [
                           MyCard(
-                              child: BarChartWidget1(
-                                  'Yesterday - Use', const Duration(days: 1),
-                                  ending: const Duration(days: 0),
-                                  prices: false)),
+                            child: charts['Yesterday - Use'] = BarChartWidget1(
+                              rawData,
+                              'Yesterday - Use',
+                              const Duration(days: 1),
+                              ending: const Duration(days: 0),
+                              prices: false,
+                              // voidCallback: () {
+                              //   setState(() {
+                              //     rawData = rawData;
+                              //   });
+                              // },
+                            ),
+                          ),
                           MyCard(
-                              child: BarChartWidget1(
+                              child: BarChartWidget1(rawData,
                                   'Yesterday - Cost', const Duration(days: 1),
                                   ending: const Duration(days: 0),
                                   prices: true)),
                           MyCard(
-                              child: BarChartWidget1(
-                                  '1 Day Ago - Use', const Duration(days: 1),
+                              child: BarChartWidget1(rawData, '1 Day Ago - Use',
+                                  const Duration(days: 1),
                                   ending: const Duration(days: 1),
                                   prices: false)),
                           MyCard(
-                              child: BarChartWidget1(
+                              child: BarChartWidget1(rawData,
                                   '1 Day Ago - Cost', const Duration(days: 1),
                                   ending: const Duration(days: 1),
                                   prices: true)),
                           MyCard(
-                              child: BarChartWidget1(
+                              child: BarChartWidget1(rawData,
                                   '2 Days Ago - Use', const Duration(days: 1),
                                   ending: const Duration(days: 2),
                                   prices: false)),
                           MyCard(
-                              child: BarChartWidget1(
+                              child: BarChartWidget1(rawData,
                                   '2 Days Ago - Cost', const Duration(days: 1),
                                   ending: const Duration(days: 2),
                                   prices: true)),
                           MyCard(
-                              child: BarChartWidget1(
+                              child: BarChartWidget1(rawData,
                                   '3 Days Ago - Use', const Duration(days: 1),
                                   ending: const Duration(days: 3),
                                   prices: false)),
                           MyCard(
-                              child: BarChartWidget1(
+                              child: BarChartWidget1(rawData,
                                   '3 Days Ago - Cost', const Duration(days: 1),
                                   ending: const Duration(days: 3),
                                   prices: true)),
-                          const Spacer(),
-                          const Spacer(),
+                          //const Spacer(),
+                          //const Spacer(),
                           MyCard(
-                              child: BarChartWidget1(
+                              child: BarChartWidget1(rawData,
                                   'Total 1 Day - Use', const Duration(days: 1),
                                   prices: false)),
                           MyCard(
-                              child: BarChartWidget1(
+                              child: BarChartWidget1(rawData,
                                   'Total 1 Day - Cost', const Duration(days: 1),
                                   prices: true)),
                           MyCard(
-                              child: BarChartWidget1(
+                              child: BarChartWidget1(rawData,
                                   'Total 2 Days - Use', const Duration(days: 2),
                                   prices: false)),
                           MyCard(
-                              child: BarChartWidget1('Total 2 Days - Cost',
+                              child: BarChartWidget1(
+                                  rawData,
+                                  'Total 2 Days - Cost',
                                   const Duration(days: 2),
                                   prices: true)),
                           MyCard(
-                              child: BarChartWidget1(
+                              child: BarChartWidget1(rawData,
                                   'Total 7 Days - Use', const Duration(days: 7),
                                   prices: false)),
                           MyCard(
-                              child: BarChartWidget1('Total 7 Days - Cost',
+                              child: BarChartWidget1(
+                                  rawData,
+                                  'Total 7 Days - Cost',
                                   const Duration(days: 7),
                                   prices: true)),
                           MyCard(
-                              child: BarChartWidget1('Total 21 Days - Use',
+                              child: BarChartWidget1(
+                                  rawData,
+                                  'Total 21 Days - Use',
                                   const Duration(days: 21),
                                   prices: false)),
                           MyCard(
-                              child: BarChartWidget1('Total 21 Days - Cost',
+                              child: BarChartWidget1(
+                                  rawData,
+                                  'Total 21 Days - Cost',
                                   const Duration(days: 21),
                                   prices: true)),
-                          const Spacer(),
-                          const Spacer(),
+                          //const Spacer(),
+                          //const Spacer(),
                           MyCard(
-                              child: BarChartWidget1(
-                                  'This Week - Use', const Duration(days: 7),
+                              child: BarChartWidget1(rawData, 'This Week - Use',
+                                  const Duration(days: 7),
                                   ending: const Duration(days: 0),
                                   prices: false)),
                           MyCard(
-                              child: BarChartWidget1(
+                              child: BarChartWidget1(rawData,
                                   'This Week - Cost', const Duration(days: 7),
                                   ending: const Duration(days: 0),
                                   prices: true)),
                           MyCard(
-                              child: BarChartWidget1(
+                              child: BarChartWidget1(rawData,
                                   '1 Week Ago - Use', const Duration(days: 7),
                                   ending: const Duration(days: 7),
                                   prices: false)),
                           MyCard(
-                              child: BarChartWidget1(
+                              child: BarChartWidget1(rawData,
                                   '1 Week Ago - Cost', const Duration(days: 7),
                                   ending: const Duration(days: 7),
                                   prices: true)),
                           MyCard(
-                              child: BarChartWidget1(
+                              child: BarChartWidget1(rawData,
                                   '2 Weeks Ago - Use', const Duration(days: 7),
                                   ending: const Duration(days: 14),
                                   prices: false)),
                           MyCard(
-                              child: BarChartWidget1(
+                              child: BarChartWidget1(rawData,
                                   '2 Weeks Ago - Cost', const Duration(days: 7),
                                   ending: const Duration(days: 14),
                                   prices: true)),
