@@ -3,9 +3,9 @@
     "short_name": "Momentum",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#20202A",
+    "theme_color": "#020202A",
+    "description": "Visualise your Momentum Energy electricity consumption using this flutter dashboard.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
