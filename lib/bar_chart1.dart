@@ -1,12 +1,8 @@
 import 'dart:collection';
-import 'dart:js';
-
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:momentum_energy/my_theme_model.dart';
-import 'dart:convert';
-import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:csv/csv_settings_autodetection.dart';
@@ -36,12 +32,6 @@ class BarChartWidget1 extends StatefulWidget {
   @override
   State<StatefulWidget> createState() => BarChartState();
 
-  void refresh(String rawData) {
-    print('refresh()');
-    //setState(() {
-    this.rawData = rawData;
-    //});
-  }
 }
 
 class BarChartState extends State<BarChartWidget1> {
@@ -50,7 +40,6 @@ class BarChartState extends State<BarChartWidget1> {
   late final Duration _duration;
   late final Duration _ending;
   late final bool _prices;
-  late DateTime _dateLastUpdated;
   List<BarChartGroupData> _barChartData = [];
   Map<int, String> _barChartTitles = {};
   bool _loading = true;
@@ -64,24 +53,30 @@ class BarChartState extends State<BarChartWidget1> {
     _duration = widget.duration;
     _ending = widget.ending;
     _prices = widget.prices;
-    _dateLastUpdated = DateTime.now();
     parseFile();
   }
 
   @override
   void didUpdateWidget(BarChartWidget1 oldWidget) {
     super.didUpdateWidget(oldWidget);
-    //parseFile();
-    print('didUpdateWidget _notEnoughData=$_notEnoughData _title=$_title');
+    if (widget.rawData != oldWidget.rawData) {
+      //print('new didUpdateWidget _notEnoughData=$_notEnoughData _title=$_title');
+      refresh(widget.rawData);
+      parseFile();
+    } else {
+      //print('old didUpdateWidget _notEnoughData=$_notEnoughData _title=$_title');
+    }
   }
 
-  void refresh() {
-    setState(() {});
+  void refresh(String rawData) {
+    setState(() {
+      _rawData = rawData;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    _rawData = widget.rawData;
+    //print('new build');
     return Consumer<MyThemeModel>(
       builder: (context, themeModel, child) {
         return Column(
@@ -164,7 +159,7 @@ class BarChartState extends State<BarChartWidget1> {
     );
   }
 
-  void parseFile() async {
+  void parseFile() {
     if (_rawData.isEmpty) {
       setState(() {
         _barChartData = [];
@@ -190,7 +185,7 @@ class BarChartState extends State<BarChartWidget1> {
                 FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
         .convert(_rawData, shouldParseNumbers: true);
     if (data.isEmpty) {
-      print('Data was empty!');
+      //print('Data was empty!');
       setState(() {
         _barChartData = [];
         _barChartTitles = {};
@@ -199,10 +194,10 @@ class BarChartState extends State<BarChartWidget1> {
       });
       return;
     }
-    print('Updating data!');
+    //print('Updating data!');
     List<dynamic> fieldNames = data.removeAt(0);
     if (data.isEmpty) {
-      print('Data only had field names!');
+      //print('Data only had field names!');
       setState(() {
         _barChartData = [];
         _barChartTitles = {};
@@ -221,12 +216,10 @@ class BarChartState extends State<BarChartWidget1> {
         _loading = false;
         _notEnoughData = false;
       });
-      setState(() {
-        _dateLastUpdated = DateTime.now();
-      });
-      print('Data updated successfully!');
+      //print('Data updated successfully!');
     } on NotEnoughDataException catch (e) {
-      print('NotEnoughDataException!');
+      // Data exists but not enough for this particular chart
+      //print('NotEnoughDataException!');
 
       setState(() {
         _barChartData = [];
