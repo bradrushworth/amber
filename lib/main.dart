@@ -1,4 +1,3 @@
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -7,7 +6,6 @@ import 'package:momentum_energy/my_theme_model.dart';
 import 'package:momentum_energy/utils.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart' show rootBundle;
-
 
 void main() {
   runApp(
@@ -343,6 +341,14 @@ class HomePageState extends State<HomePage> {
                                   'https://www.buymeacoffee.com/bitbot');
                             },
                             child: const Text('Buy Brad Coffee'),
+                          ),
+                          const MyDivider(),
+                          TextButton(
+                            onPressed: () {
+                              Utils.launchURL(
+                                  'mailto:bitbot@bitbot.com.au?subject=Help with Momentum Energy Dashboard');
+                            },
+                            child: const Text('Report Issue'),
                           ),
                         ],
                       ),
