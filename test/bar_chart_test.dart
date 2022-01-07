@@ -9,6 +9,8 @@ import 'package:momentum_energy/bar_chart1.dart';
 
 void main() {
   group('Bar Chart', () {
+    double dailySupplyChargePer30mins = 1.27787 / 24 / 2;
+
     test('1 Day', () async {
       final myData =
           await File('assets/Your_Usage_List_Sample.csv').readAsString();
@@ -22,8 +24,8 @@ void main() {
       expect(fieldNames[1].trim(), 'Read Value - kWh (kilowatt hours)');
       expect(fieldNames[2].trim(), 'Reading quality');
 
-      DataAggregator dataAggregator =
-          DataAggregator(const Duration(days: 1), false);
+      DataAggregator dataAggregator = DataAggregator(
+          const Duration(days: 1), const Duration(days: 0), false);
       dataAggregator.aggregateData(data);
 
       expect(dataAggregator.newTitles.length, 48);
@@ -60,8 +62,8 @@ void main() {
       final myData =
           await File('assets/Your_Usage_List_Sample.csv').readAsString();
       List<List<dynamic>> data = const CsvToListConverter(
-          csvSettingsDetector:
-          FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
+              csvSettingsDetector:
+                  FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
           .convert(myData, shouldParseNumbers: true);
       List<dynamic> fieldNames = data.removeAt(0);
       expect(fieldNames.length, 3);
@@ -69,11 +71,10 @@ void main() {
       expect(fieldNames[1].trim(), 'Read Value - kWh (kilowatt hours)');
       expect(fieldNames[2].trim(), 'Reading quality');
 
-      DataAggregator dataAggregator =
-          DataAggregator(const Duration(days: 1), true);
+      DataAggregator dataAggregator = DataAggregator(
+          const Duration(days: 1), const Duration(days: 0), true);
       dataAggregator.aggregateData(data);
 
-      double dailySupplyChargePer30mins = 1.27787 / 24 / 2;
       expect(dataAggregator.newData[0]!.barRods.first.y,
           closeTo(0.043 + dailySupplyChargePer30mins, 0.001));
       expect(dataAggregator.newData[1]!.barRods.first.y,
@@ -100,8 +101,8 @@ void main() {
       final myData =
           await File('assets/Your_Usage_List_Sample.csv').readAsString();
       List<List<dynamic>> data = const CsvToListConverter(
-          csvSettingsDetector:
-          FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
+              csvSettingsDetector:
+                  FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
           .convert(myData, shouldParseNumbers: true);
       List<dynamic> fieldNames = data.removeAt(0);
       expect(fieldNames.length, 3);
@@ -109,8 +110,8 @@ void main() {
       expect(fieldNames[1].trim(), 'Read Value - kWh (kilowatt hours)');
       expect(fieldNames[2].trim(), 'Reading quality');
 
-      DataAggregator dataAggregator =
-          DataAggregator(const Duration(days: 2), false);
+      DataAggregator dataAggregator = DataAggregator(
+          const Duration(days: 2), const Duration(days: 0), false);
       dataAggregator.aggregateData(data);
 
       expect(dataAggregator.newTitles.length, 48);
@@ -141,6 +142,52 @@ void main() {
           closeTo(0.389, 0.001));
       expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.last.toY,
           closeTo(0.847, 0.001));
+    });
+
+    test('1 Day Costs 1 Day Prior', () async {
+      final myData =
+          await File('assets/Your_Usage_List_Sample.csv').readAsString();
+      List<List<dynamic>> data = const CsvToListConverter(
+              csvSettingsDetector:
+                  FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
+          .convert(myData, shouldParseNumbers: true);
+      List<dynamic> fieldNames = data.removeAt(0);
+      expect(fieldNames.length, 3);
+      expect(fieldNames[0].trim(), 'Date and Time');
+      expect(fieldNames[1].trim(), 'Read Value - kWh (kilowatt hours)');
+      expect(fieldNames[2].trim(), 'Reading quality');
+
+      DataAggregator dataAggregator = DataAggregator(
+          const Duration(days: 1), const Duration(days: 1), false);
+      dataAggregator.aggregateData(data);
+
+      expect(dataAggregator.newTitles.length, 48);
+      expect(dataAggregator.newTitles[0], '00:00');
+      expect(dataAggregator.newTitles[1], '00:30');
+      expect(dataAggregator.newTitles[46], '23:00');
+      expect(dataAggregator.newTitles[47], '23:30');
+
+      expect(dataAggregator.newData.length, 48);
+      expect(dataAggregator.newData[0]!.x, 0);
+      expect(dataAggregator.newData[1]!.x, 1);
+      expect(dataAggregator.newData[46]!.x, 46);
+      expect(dataAggregator.newData[47]!.x, 47);
+
+      expect(dataAggregator.newData[0]!.barRods.first.y, 0.157);
+      expect(dataAggregator.newData[1]!.barRods.first.y, 0.129);
+      expect(dataAggregator.newData[11]!.barRods.first.y, 0.113);
+      expect(dataAggregator.newData[46]!.barRods.first.y, 0.292);
+      expect(dataAggregator.newData[47]!.barRods.first.y, 0.281);
+
+      expect(
+          dataAggregator.newData[11]!.barRods.first.rodStackItems.first.fromY,
+          closeTo(0.0, 0.001));
+      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.first.toY,
+          closeTo(0.113, 0.001));
+      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.last.fromY,
+          closeTo(0.113, 0.001));
+      expect(dataAggregator.newData[11]!.barRods.first.rodStackItems.last.toY,
+          closeTo(0.113, 0.001));
     });
   });
 }

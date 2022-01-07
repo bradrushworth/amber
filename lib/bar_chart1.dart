@@ -24,10 +24,11 @@ final List<Color> colors = [
 class BarChartWidget1 extends StatefulWidget {
   late String title;
   late final Duration duration;
+  late final Duration ending;
   bool prices;
 
   BarChartWidget1(this.title, this.duration,
-      {Key? key, bool this.prices = false})
+      {Key? key, this.ending = const Duration(days: 0), this.prices = false})
       : super(key: key);
 
   @override
@@ -37,9 +38,11 @@ class BarChartWidget1 extends StatefulWidget {
 class BarChartState extends State<BarChartWidget1> {
   late final String _title;
   late final Duration _duration;
+  late final Duration _ending;
   late final bool _prices;
   List<BarChartGroupData> _barChartData = [];
   Map<int, String> _barChartTitles = {};
+  bool _notEnoughData = false;
 
   BarChartState();
 
@@ -47,6 +50,7 @@ class BarChartState extends State<BarChartWidget1> {
   void initState() {
     _title = widget.title;
     _duration = widget.duration;
+    _ending = widget.ending;
     _prices = widget.prices;
     openFile('assets/Your_Usage_List.csv');
   }
@@ -56,61 +60,71 @@ class BarChartState extends State<BarChartWidget1> {
     return Consumer<MyThemeModel>(
       builder: (context, themeModel, child) {
         return Column(
-          children: [
-            TopSectionWidget(
-              title: _title,
-              legends: _prices
-                  ? [
-                      Legend(title: 'Off Peak', color: colors[2]),
-                      Legend(title: 'Shoulder', color: colors[3]),
-                      Legend(title: 'Peak', color: colors[4]),
-                      Legend(title: 'Controlled', color: colors[1]),
-                      Legend(title: 'Supply', color: colors[0]),
-                    ]
-                  : [
-                      Legend(title: 'Off Peak', color: colors[2]),
-                      Legend(title: 'Shoulder', color: colors[3]),
-                      Legend(title: 'Peak', color: colors[4]),
-                      Legend(title: 'Controlled', color: colors[1]),
-                    ],
-              padding:
-                  const EdgeInsets.only(left: 8, right: 18, top: 8, bottom: 8),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(right: 18, top: 18, bottom: 18),
-                child: BarChart(
-                  BarChartData(
-                    barGroups: _barChartData,
-                    //[BarChartGroupData(x: 0, barRods: [makeRodData(80)]),],
-                    titlesData: FlTitlesData(
-                      rightTitles: SideTitles(showTitles: false),
-                      topTitles: SideTitles(showTitles: false),
-                      bottomTitles: SideTitles(
-                        reservedSize: 40,
-                        showTitles: true,
-                        interval: 2,
-                        rotateAngle: -90,
-                        getTitles: (xValue) {
-                          return _barChartTitles[xValue.toInt()]!;
-                        },
-                      ),
-                      leftTitles: SideTitles(
-                        showTitles: true,
-                        interval: 1,
-                        //reservedSize: 32,
+          children: _notEnoughData
+              ? [
+                  const Spacer(),
+                  Text(
+                    'Not enough data in file for:\n$_title',
+                    textAlign: TextAlign.center,
+                  ),
+                  const Spacer()
+                ]
+              : [
+                  TopSectionWidget(
+                    title: _title,
+                    legends: _prices
+                        ? [
+                            Legend(title: 'OP', color: colors[2]),
+                            Legend(title: 'S', color: colors[3]),
+                            Legend(title: 'P', color: colors[4]),
+                            Legend(title: 'C', color: colors[1]),
+                            Legend(title: 'Supply', color: colors[0]),
+                          ]
+                        : [
+                            Legend(title: 'Off Peak', color: colors[2]),
+                            Legend(title: 'Shoulder', color: colors[3]),
+                            Legend(title: 'Peak', color: colors[4]),
+                            Legend(title: 'Control', color: colors[1]),
+                          ],
+                    padding: const EdgeInsets.only(
+                        left: 8, right: 18, top: 8, bottom: 8),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.only(right: 18, top: 18, bottom: 18),
+                      child: BarChart(
+                        BarChartData(
+                          barGroups: _barChartData,
+                          //[BarChartGroupData(x: 0, barRods: [makeRodData(80)]),],
+                          titlesData: FlTitlesData(
+                            rightTitles: SideTitles(showTitles: false),
+                            topTitles: SideTitles(showTitles: false),
+                            bottomTitles: SideTitles(
+                              reservedSize: 40,
+                              showTitles: true,
+                              interval: 2,
+                              rotateAngle: -90,
+                              getTitles: (xValue) {
+                                return _barChartTitles[xValue.toInt()]!;
+                              },
+                            ),
+                            leftTitles: SideTitles(
+                              showTitles: true,
+                              interval: 1,
+                              //reservedSize: 32,
+                            ),
+                          ),
+                          //maxY: 10.0,
+                          gridData: FlGridData(show: false),
+                          borderData: FlBorderData(show: false),
+                        ),
+                        swapAnimationDuration:
+                            Duration.zero, // Duration(milliseconds: 1500)
                       ),
                     ),
-                    //maxY: 10.0,
-                    gridData: FlGridData(show: false),
-                    borderData: FlBorderData(show: false),
                   ),
-                  swapAnimationDuration:
-                      Duration.zero, // Duration(milliseconds: 1500)
-                ),
-              ),
-            ),
-          ],
+                ],
         );
       },
     );
@@ -119,17 +133,25 @@ class BarChartState extends State<BarChartWidget1> {
   openFile(filepath) async {
     final myData = await rootBundle.loadString(filepath);
     List<List<dynamic>> data = const CsvToListConverter(
-        csvSettingsDetector:
-        FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
+            csvSettingsDetector:
+                FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
         .convert(myData, shouldParseNumbers: true);
     List<dynamic> fieldNames = data.removeAt(0);
-    DataAggregator dataAggregator = DataAggregator(_duration, _prices);
-    dataAggregator.aggregateData(data);
+    DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices);
+    try {
+      dataAggregator.aggregateData(data);
 
-    setState(() {
-      _barChartData = dataAggregator.newData.values.toList();
-      _barChartTitles = dataAggregator.newTitles;
-    });
+      setState(() {
+        _barChartData = dataAggregator.newData.values.toList();
+        _barChartTitles = dataAggregator.newTitles;
+      });
+    } on NotEnoughDataException catch (e) {
+      print('NotEnoughDataException!');
+
+      setState(() {
+        _notEnoughData = true;
+      });
+    }
   }
 }
 
@@ -138,10 +160,10 @@ class DataAggregator {
       SplayTreeMap<int, BarChartGroupData>();
   final SplayTreeMap<int, String> newTitles = SplayTreeMap<int, String>();
 
-  late final Duration _duration;
+  late final Duration _duration, _ending;
   late final bool _prices;
 
-  DataAggregator(this._duration, this._prices);
+  DataAggregator(this._duration, this._ending, this._prices);
 
   String dateParse(String input) {
     // e.g. 13/12/21 02:30
@@ -171,22 +193,35 @@ class DataAggregator {
       //print('numMeters=$numMeters');
     }
 
-    var earlier = DateTime.parse(dateParse(data.last[0]).substring(0, 8))
-        .add(const Duration(days: 1))
-        .subtract(_duration);
-    //print('earlier=$earlier');
+    DateTime latest = DateTime.parse(dateParse(data.last[0]).substring(0, 8))
+        .subtract(_ending)
+        .add(const Duration(days: 1));
+    DateTime earliest = latest.subtract(_duration);
+    //print('latest=$latest earliest=$earliest');
 
     Map<int, double> stackedValue = {};
     Map<int, List<double>> stackedValues = {};
+
+    bool beforeRange = false;
+    bool afterRange = false;
 
     for (int n = 0; n < data.length; n += numMeters) {
       List<dynamic> record = data[n];
       //print("adding record[0]=${record[0]}");
       DateTime date = DateTime.parse(dateParse(record[0]));
-      if (date.isBefore(earlier)) {
-        // Skip data outside of range
-        continue;
+      if (date.isBefore(earliest)) {
+        continue; // Skip data outside of range
       }
+      if (date.isAtSameMomentAs(earliest)) {
+        beforeRange = true;
+      }
+      if (date.isAtSameMomentAs(latest.subtract(const Duration(minutes: 30)))) {
+        afterRange = true;
+      }
+      if (date.isAfter(latest) || date.isAtSameMomentAs(latest)) {
+        continue; // Skip data outside of range
+      }
+      //print('Allowed date=$date');
 
       int graphPos = date.hour * 2 + date.minute ~/ 30;
       newTitles[graphPos] = date.toString().substring(11, 16);
@@ -211,9 +246,17 @@ class DataAggregator {
 
       if (_prices) {
         double dailySupplyChargePer30mins = 1.27787 / 24 / 2;
-        stackedValue[graphPos] = stackedValue[graphPos]! + dailySupplyChargePer30mins;
-        stackedValues[graphPos]![numMeters] = dailySupplyChargePer30mins * _duration.inDays;
+        stackedValue[graphPos] =
+            stackedValue[graphPos]! + dailySupplyChargePer30mins;
+        stackedValues[graphPos]![numMeters] =
+            dailySupplyChargePer30mins * _duration.inDays;
       }
+    }
+
+    //print('beforeRange=$beforeRange afterRange=$afterRange');
+    if (!beforeRange || !afterRange) {
+      // If there wasn't enough data to answer the questions
+      throw NotEnoughDataException();
     }
 
     for (int graphPos in stackedValue.keys) {
@@ -291,3 +334,5 @@ class DataAggregator {
     }
   }
 }
+
+class NotEnoughDataException implements Exception {}

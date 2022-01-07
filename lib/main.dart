@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -69,7 +70,7 @@ class HomePage extends StatelessWidget {
                         children: [
                           RichText(
                             text: TextSpan(
-                              text: 'Graphs For Dashboards (',
+                              text: 'Momentum Energy Electricity (',
                               style: TextStyle(
                                 color: themeModel.isDark()
                                     ? Colors.white
@@ -78,12 +79,17 @@ class HomePage extends StatelessWidget {
                               ),
                               children: [
                                 TextSpan(
-                                  text: 'Uplabs',
-                                  style: TextStyle(color: Theme.of(context).textTheme.button?.color ?? Colors.blueAccent),
+                                  text: 'Click \'Export table\' from MyAccount',
+                                  style: TextStyle(
+                                      color: Theme.of(context)
+                                              .textTheme
+                                              .button
+                                              ?.color ??
+                                          Colors.blueAccent),
                                   recognizer: TapGestureRecognizer()
                                     ..onTap = () {
                                       Utils.launchURL(
-                                          'https://www.uplabs.com/posts/dashboard-chart-elements-ui-kit-figma');
+                                          'https://www.momentumenergy.com.au/myaccount/my-usage');
                                     },
                                 ),
                                 const TextSpan(text: ')'),
@@ -110,22 +116,123 @@ class HomePage extends StatelessWidget {
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
                         children: [
-                          MyCard(child: BarChartWidget1('Electricity Use - Last 24 Hours', const Duration(days: 1), prices: false)),
-                          MyCard(child: BarChartWidget1('Electricity Cost - Last 24 Hours', const Duration(days: 1), prices: true)),
-                          MyCard(child: BarChartWidget1('Electricity Use - Last 3 Days', const Duration(days: 3), prices: false)),
-                          MyCard(child: BarChartWidget1('Electricity Cost - Last 3 Days', const Duration(days: 3), prices: true)),
-                          MyCard(child: BarChartWidget1('Electricity Use - Last 7 Days', const Duration(days: 7), prices: false)),
-                          MyCard(child: BarChartWidget1('Electricity Cost - Last 7 Days', const Duration(days: 7), prices: true)),
-                          MyCard(child: BarChartWidget1('Electricity Use - Last 28 Days', const Duration(days: 28), prices: false)),
-                          MyCard(child: BarChartWidget1('Electricity Cost - Last 28 Days', const Duration(days: 28), prices: true)),
-//MyCard(child: BarChartWidget2()),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  'Yesterday - Use', const Duration(days: 1),
+                                  ending: const Duration(days: 0),
+                                  prices: false)),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  'Yesterday - Cost', const Duration(days: 1),
+                                  ending: const Duration(days: 0),
+                                  prices: true)),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  '1 Day Ago - Use', const Duration(days: 1),
+                                  ending: const Duration(days: 1),
+                                  prices: false)),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  '1 Day Ago - Cost', const Duration(days: 1),
+                                  ending: const Duration(days: 1),
+                                  prices: true)),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  '2 Days Ago - Use', const Duration(days: 1),
+                                  ending: const Duration(days: 2),
+                                  prices: false)),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  '2 Days Ago - Cost', const Duration(days: 1),
+                                  ending: const Duration(days: 2),
+                                  prices: true)),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  '3 Days Ago - Use', const Duration(days: 1),
+                                  ending: const Duration(days: 3),
+                                  prices: false)),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  '3 Days Ago - Cost', const Duration(days: 1),
+                                  ending: const Duration(days: 3),
+                                  prices: true)),
+                          const Spacer(),
+                          const Spacer(),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  'Total 1 Day - Use', const Duration(days: 1),
+                                  prices: false)),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  'Total 1 Day - Cost', const Duration(days: 1),
+                                  prices: true)),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  'Total 2 Days - Use', const Duration(days: 2),
+                                  prices: false)),
+                          MyCard(
+                              child: BarChartWidget1('Total 2 Days - Cost',
+                                  const Duration(days: 2),
+                                  prices: true)),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  'Total 7 Days - Use', const Duration(days: 7),
+                                  prices: false)),
+                          MyCard(
+                              child: BarChartWidget1('Total 7 Days - Cost',
+                                  const Duration(days: 7),
+                                  prices: true)),
+                          MyCard(
+                              child: BarChartWidget1('Total 21 Days - Use',
+                                  const Duration(days: 21),
+                                  prices: false)),
+                          MyCard(
+                              child: BarChartWidget1('Total 21 Days - Cost',
+                                  const Duration(days: 21),
+                                  prices: true)),
+                          const Spacer(),
+                          const Spacer(),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  'This Week - Use', const Duration(days: 7),
+                                  ending: const Duration(days: 0),
+                                  prices: false)),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  'This Week - Cost', const Duration(days: 7),
+                                  ending: const Duration(days: 0),
+                                  prices: true)),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  '1 Week Ago - Use', const Duration(days: 7),
+                                  ending: const Duration(days: 7),
+                                  prices: false)),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  '1 Week Ago - Cost', const Duration(days: 7),
+                                  ending: const Duration(days: 7),
+                                  prices: true)),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  '2 Weeks Ago - Use', const Duration(days: 7),
+                                  ending: const Duration(days: 14),
+                                  prices: false)),
+                          MyCard(
+                              child: BarChartWidget1(
+                                  '2 Weeks Ago - Cost', const Duration(days: 7),
+                                  ending: const Duration(days: 14),
+                                  prices: true)),
+
+                          //MyCard(child: BarChartWidget2()),
                           //const MyCard(child: LineChartWidget1()),
                           //MyCard(child: LineChartWidget2()),
                         ],
                       ),
                     ),
                     Container(
-                      color: themeModel.isDark() ? const Color(0xFF20202A) : Colors.white,
+                      color: themeModel.isDark()
+                          ? const Color(0xFF20202A)
+                          : Colors.white,
                       width: double.infinity,
                       child: Wrap(
                         crossAxisAlignment: WrapCrossAlignment.center,
@@ -133,51 +240,25 @@ class HomePage extends StatelessWidget {
                           TextButton(
                             onPressed: () {
                               Utils.launchURL(
-                                  'https://flutter4fun.com/ui-challenge-7');
-                            },
-                            child: const Text('Blog Post in Flutter 4 Fun'),
-                          ),
-                          const MyDivider(),
-                          TextButton(
-                            onPressed: () {
-                              Utils.launchURL(
-                                  'https://github.com/Flutter4Fun/UI-Challenge-7');
+                                  'https://github.com/bradrushworth/momentumenergy');
                             },
                             child: const Text('Source Code'),
                           ),
-                          if (!kIsWeb) ...[
-                            const MyDivider(),
-                            TextButton(
-                              onPressed: () {
-                                Utils.launchURL(
-                                    'https://flutter4fun.github.io/UI-Challenge-7-Live/');
-                              },
-                              child: const Text('Live Demo'),
-                            ),
-                          ],
                           const MyDivider(),
                           TextButton(
                             onPressed: () {
                               Utils.launchURL(
                                   'https://pub.dev/packages/fl_chart');
                             },
-                            child: const Text('fl_chart'),
+                            child: const Text('Chart Library'),
                           ),
                           const MyDivider(),
                           TextButton(
                             onPressed: () {
                               Utils.launchURL(
-                                  'https://github.com/imaNNeoFighT/fl_chart/blob/master/CONTRIBUTING.md');
+                                  'https://www.buymeacoffee.com/bitbot');
                             },
-                            child: const Text('Contribute'),
-                          ),
-                          const MyDivider(),
-                          TextButton(
-                            onPressed: () {
-                              Utils.launchURL(
-                                  'https://www.buymeacoffee.com/fl_chart');
-                            },
-                            child: const Text('Donate'),
+                            child: const Text('Buy Brad Coffee'),
                           ),
                         ],
                       ),
