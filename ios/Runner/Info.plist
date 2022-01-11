@@ -42,6 +42,6 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<value>Need to download your energy CSV file.</value>
+	<string>Need to download your energy CSV file.</string>
 </dict>
 </plist>
