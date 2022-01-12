@@ -1,11 +1,11 @@
 import 'dart:collection';
+
+import 'package:csv/csv.dart';
+import 'package:csv/csv_settings_autodetection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:momentum_energy/my_theme_model.dart';
-import 'package:csv/csv.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:csv/csv_settings_autodetection.dart';
+import 'package:provider/provider.dart';
 
 import 'top_section.dart';
 
@@ -31,7 +31,6 @@ class BarChartWidget1 extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() => BarChartState();
-
 }
 
 class BarChartState extends State<BarChartWidget1> {
@@ -103,10 +102,10 @@ class BarChartState extends State<BarChartWidget1> {
                         title: _title,
                         legends: _prices
                             ? [
-                                Legend(title: 'OP', color: colors[2]),
-                                Legend(title: 'S', color: colors[3]),
-                                Legend(title: 'P', color: colors[4]),
-                                Legend(title: 'C', color: colors[1]),
+                                Legend(title: 'Off Peak', color: colors[2]),
+                                Legend(title: 'Shoulder', color: colors[3]),
+                                Legend(title: 'Peak', color: colors[4]),
+                                Legend(title: 'Control', color: colors[1]),
                                 Legend(title: 'Supply', color: colors[0]),
                               ]
                             : [
@@ -116,12 +115,12 @@ class BarChartState extends State<BarChartWidget1> {
                                 Legend(title: 'Control', color: colors[1]),
                               ],
                         padding: const EdgeInsets.only(
-                            left: 8, right: 18, top: 8, bottom: 8),
+                            left: 3, right: 3, top: 3, bottom: 3),
                       ),
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.only(
-                              right: 18, top: 18, bottom: 18),
+                              right: 8, top: 8, bottom: 8),
                           child: BarChart(
                             BarChartData(
                               barGroups: _barChartData,
@@ -130,7 +129,7 @@ class BarChartState extends State<BarChartWidget1> {
                                 rightTitles: SideTitles(showTitles: false),
                                 topTitles: SideTitles(showTitles: false),
                                 bottomTitles: SideTitles(
-                                  reservedSize: 40,
+                                  reservedSize: 30,
                                   showTitles: true,
                                   interval: 2,
                                   rotateAngle: -90,
@@ -141,7 +140,7 @@ class BarChartState extends State<BarChartWidget1> {
                                 leftTitles: SideTitles(
                                   showTitles: true,
                                   interval: 1,
-                                  //reservedSize: 32,
+                                  reservedSize: 13,
                                 ),
                               ),
                               //maxY: 10.0,
@@ -355,7 +354,7 @@ class DataAggregator {
       //   const Color(0xFFFFAB5E),
       //   const Color(0xFFFFD336),
       // ],
-      width: 7, // / _duration.inDays,
+      width: 6, // / _duration.inDays,
       //borderRadius: BorderRadius.circular(2),
       rodStackItems: stackedValues
           .map((e) => BarChartRodStackItem(rodCumulative, rodCumulative += e,
