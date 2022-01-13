@@ -1,18 +1,29 @@
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:device_preview/device_preview.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:momentum_energy/bar_chart1.dart';
 import 'package:momentum_energy/my_theme_model.dart';
+import 'package:momentum_energy/screenshots_mobile.dart'
+    if (dart.library.io) 'package:momentum_energy/screenshots_mobile.dart'
+    if (dart.library.js) 'package:momentum_energy/screenshots_other.dart';
 import 'package:momentum_energy/utils.dart';
 import 'package:provider/provider.dart';
 
 void main() {
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => MyThemeModel(),
-      child: const MyApp(),
+    DevicePreview(
+      enabled: !kReleaseMode && kIsWeb,
+      builder: (context) => ChangeNotifierProvider(
+        create: (context) => MyThemeModel(),
+        child: const MyApp(),
+      ), // Wrap your app
+      tools: kIsWeb
+          ? [...DevicePreview.defaultTools, simpleScreenShotModesPlugin]
+          : [],
     ),
   );
 }
@@ -36,7 +47,14 @@ class MyAppState extends State<MyApp> {
       builder: (context, themeModel, child) {
         return MaterialApp(
           title: 'Momentum Energy Dashboard',
+          // Create space for camera cut-outs etc
+          useInheritedMediaQuery: true,
+          // Hide the dev banner
           debugShowCheckedModeBanner: false,
+          // For DevicePreview
+          locale: DevicePreview.locale(context),
+          builder: DevicePreview.appBuilder,
+
           theme: ThemeData.light().copyWith(
             textTheme: const TextTheme(
               bodyText2: TextStyle(color: Color(0xFFA7A7A7), fontSize: 13),
@@ -140,7 +158,7 @@ class HomePageState extends State<HomePage> {
               themeModel.isDark() ? const Color(0xFF20202A) : Colors.white,
           resizeToAvoidBottomInset: true,
           extendBody: true,
-          extendBodyBehindAppBar: false,
+          extendBodyBehindAppBar: true,
           primary: true,
           body: Stack(
             children: [
@@ -151,8 +169,8 @@ class HomePageState extends State<HomePage> {
                       Container(
                         //height: 120,
                         padding: EdgeInsets.only(
-                            left: 16,
-                            top: orientation == Orientation.portrait ? 65 : 28,
+                            left: orientation == Orientation.portrait ? 6 : 36,
+                            top: orientation == Orientation.portrait ? 65 : 15,
                             bottom: 3),
                         child: Row(
                           children: [
@@ -232,8 +250,11 @@ class HomePageState extends State<HomePage> {
                           semanticChildCount: 2,
                           childAspectRatio: 2.34,
                           // Random number that makes my phone look good
-                          padding: const EdgeInsets.only(
-                              left: 4, right: 4, bottom: 4, top: 4),
+                          padding: orientation == Orientation.portrait
+                              ? const EdgeInsets.only(
+                                  left: 4, right: 4, bottom: 4, top: 4)
+                              : const EdgeInsets.only(
+                                  left: 30, right: 10, bottom: 4, top: 4),
                           crossAxisSpacing: 4,
                           mainAxisSpacing: 4,
                           children: _dropdownItemSelected.value ==
@@ -589,7 +610,7 @@ class MyCard extends StatelessWidget {
           child: child,
           decoration: BoxDecoration(
               color:
-              themeModel.isDark() ? const Color(0xFF1A1A26) : Colors.white,
+                  themeModel.isDark() ? const Color(0xFF1A1A26) : Colors.white,
               boxShadow: const [
                 BoxShadow(
                   color: Colors.black12,
