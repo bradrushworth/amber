@@ -16,11 +16,11 @@ final simpleScreenShotModesPlugin = SimpleScreenShot(
     Devices.android.smallPhone.identifier,
     Devices.android.largeTablet.identifier,
     Devices.ios.iPadAir4.identifier,
-    Devices.ios.iPad.identifier,
+    Devices.ios.iPhoneSE.identifier,
     Devices.ios.iPhone13ProMax.identifier,
   ],
   lang: const [Locale('en_AU')],
-  useToggleDarkMode: true,
+  useToggleDarkMode: false,
 );
 
 final listPush = [
