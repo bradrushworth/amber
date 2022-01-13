@@ -9,6 +9,9 @@ import 'package:provider/provider.dart';
 
 import 'top_section.dart';
 
+const String cancelled = 'Cancelled';
+const String loading = 'Loading';
+
 final List<Color> colors = [
   const Color(0xFF5974FF),
   const Color(0xFFFF3E8D),
@@ -42,6 +45,7 @@ class BarChartState extends State<BarChartWidget1> {
   List<BarChartGroupData> _barChartData = [];
   Map<int, String> _barChartTitles = {};
   bool _loading = true;
+  bool _cancelled = false;
   bool _notEnoughData = false;
 
   @override
@@ -83,76 +87,85 @@ class BarChartState extends State<BarChartWidget1> {
               ? [
                   const Spacer(),
                   Text(
-                    'Data is loading:\n$_title',
+                    'Data is loading for:\n$_title',
                     textAlign: TextAlign.center,
                   ),
                   const Spacer()
                 ]
-              : _notEnoughData
+              : _cancelled
                   ? [
                       const Spacer(),
                       Text(
-                        'Not enough data in file for:\n$_title',
+                        'User cancelled import for:\n$_title',
                         textAlign: TextAlign.center,
                       ),
                       const Spacer()
                     ]
-                  : [
-                      TopSectionWidget(
-                        title: _title,
-                        legends: _prices
-                            ? [
-                                Legend(title: 'Off Peak', color: colors[2]),
-                                Legend(title: 'Shoulder', color: colors[3]),
-                                Legend(title: 'Peak', color: colors[4]),
-                                Legend(title: 'Control', color: colors[1]),
-                                Legend(title: 'Supply', color: colors[0]),
-                              ]
-                            : [
-                                Legend(title: 'Off Peak', color: colors[2]),
-                                Legend(title: 'Shoulder', color: colors[3]),
-                                Legend(title: 'Peak', color: colors[4]),
-                                Legend(title: 'Control', color: colors[1]),
-                              ],
-                        padding: const EdgeInsets.only(
-                            left: 3, right: 3, top: 3, bottom: 3),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(
-                              right: 8, top: 8, bottom: 8),
-                          child: BarChart(
-                            BarChartData(
-                              barGroups: _barChartData,
-                              //[BarChartGroupData(x: 0, barRods: [makeRodData(80)]),],
-                              titlesData: FlTitlesData(
-                                rightTitles: SideTitles(showTitles: false),
-                                topTitles: SideTitles(showTitles: false),
-                                bottomTitles: SideTitles(
-                                  reservedSize: 30,
-                                  showTitles: true,
-                                  interval: 2,
-                                  rotateAngle: -90,
-                                  getTitles: (xValue) {
-                                    return _barChartTitles[xValue.toInt()]!;
-                                  },
-                                ),
-                                leftTitles: SideTitles(
-                                  showTitles: true,
-                                  interval: 1,
-                                  reservedSize: 13,
-                                ),
-                              ),
-                              //maxY: 10.0,
-                              gridData: FlGridData(show: false),
-                              borderData: FlBorderData(show: false),
-                            ),
-                            swapAnimationDuration:
-                                Duration.zero, // Duration(milliseconds: 1500)
+                  : _notEnoughData
+                      ? [
+                          const Spacer(),
+                          Text(
+                            'Not enough data in file for:\n$_title',
+                            textAlign: TextAlign.center,
                           ),
-                        ),
-                      ),
-                    ],
+                          const Spacer()
+                        ]
+                      : [
+                          TopSectionWidget(
+                            title: _title,
+                            legends: _prices
+                                ? [
+                                    Legend(title: 'Off Peak', color: colors[2]),
+                                    Legend(title: 'Shoulder', color: colors[3]),
+                                    Legend(title: 'Peak', color: colors[4]),
+                                    Legend(title: 'Control', color: colors[1]),
+                                    Legend(title: 'Supply', color: colors[0]),
+                                  ]
+                                : [
+                                    Legend(title: 'Off Peak', color: colors[2]),
+                                    Legend(title: 'Shoulder', color: colors[3]),
+                                    Legend(title: 'Peak', color: colors[4]),
+                                    Legend(title: 'Control', color: colors[1]),
+                                  ],
+                            padding: const EdgeInsets.only(
+                                left: 3, right: 3, top: 3, bottom: 3),
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                  right: 8, top: 8, bottom: 8),
+                              child: BarChart(
+                                BarChartData(
+                                  barGroups: _barChartData,
+                                  //[BarChartGroupData(x: 0, barRods: [makeRodData(80)]),],
+                                  titlesData: FlTitlesData(
+                                    rightTitles: SideTitles(showTitles: false),
+                                    topTitles: SideTitles(showTitles: false),
+                                    bottomTitles: SideTitles(
+                                      reservedSize: 30,
+                                      showTitles: true,
+                                      interval: 2,
+                                      rotateAngle: -90,
+                                      getTitles: (xValue) {
+                                        return _barChartTitles[xValue.toInt()]!;
+                                      },
+                                    ),
+                                    leftTitles: SideTitles(
+                                      showTitles: true,
+                                      interval: 1,
+                                      reservedSize: 13,
+                                    ),
+                                  ),
+                                  //maxY: 10.0,
+                                  gridData: FlGridData(show: false),
+                                  borderData: FlBorderData(show: false),
+                                ),
+                                swapAnimationDuration: Duration
+                                    .zero, // Duration(milliseconds: 1500)
+                              ),
+                            ),
+                          ),
+                        ],
         );
       },
     );
@@ -164,15 +177,27 @@ class BarChartState extends State<BarChartWidget1> {
         _barChartData = [];
         _barChartTitles = {};
         _loading = false;
+        _cancelled = false;
         _notEnoughData = true;
       });
       return;
     }
-    if (_rawData == 'Loading') {
+    if (_rawData == loading) {
       setState(() {
         _barChartData = [];
         _barChartTitles = {};
         _loading = true;
+        _cancelled = false;
+        _notEnoughData = false;
+      });
+      return;
+    }
+    if (_rawData == cancelled) {
+      setState(() {
+        _barChartData = [];
+        _barChartTitles = {};
+        _loading = false;
+        _cancelled = true;
         _notEnoughData = false;
       });
       return;
@@ -189,6 +214,7 @@ class BarChartState extends State<BarChartWidget1> {
         _barChartData = [];
         _barChartTitles = {};
         _loading = false;
+        _cancelled = false;
         _notEnoughData = true;
       });
       return;
@@ -201,6 +227,7 @@ class BarChartState extends State<BarChartWidget1> {
         _barChartData = [];
         _barChartTitles = {};
         _loading = false;
+        _cancelled = false;
         _notEnoughData = true;
       });
       return;
@@ -213,6 +240,7 @@ class BarChartState extends State<BarChartWidget1> {
         _barChartData = dataAggregator.newData.values.toList();
         _barChartTitles = dataAggregator.newTitles;
         _loading = false;
+        _cancelled = false;
         _notEnoughData = false;
       });
       //print('Data updated successfully!');
@@ -224,6 +252,7 @@ class BarChartState extends State<BarChartWidget1> {
         _barChartData = [];
         _barChartTitles = {};
         _loading = false;
+        _cancelled = false;
         _notEnoughData = true;
       });
     }

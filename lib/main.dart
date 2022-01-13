@@ -81,7 +81,7 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  late String rawData = 'Loading';
+  late String rawData = loading;
 
   final List<ListItem> _dropdownItems = [
     ListItem(1, "Recent Days"),
@@ -110,12 +110,13 @@ class HomePageState extends State<HomePage> {
 
   void _pickFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['csv'],
+      withData: true,
+      type: FileType.any,
+      //allowedExtensions: ['csv'],
       allowMultiple: false,
       allowCompression: false,
     );
-    if (result != null) {
+    if (result != null && result.files.first.bytes != null) {
       String data = String.fromCharCodes(result.files.first.bytes!);
       //print('_pickFile');
       //print('data=$data');
@@ -123,8 +124,10 @@ class HomePageState extends State<HomePage> {
         rawData = data;
       });
     } else {
-      // User canceled the picker, use pre-canned example
-      _loadDefaultFile();
+      // User canceled the picker
+      setState(() {
+        rawData = cancelled;
+      });
     }
   }
 
