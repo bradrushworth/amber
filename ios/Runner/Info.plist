@@ -43,13 +43,13 @@
 	<false/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Need to download your energy CSV file.</string>
-    <key>ITSAppUsesNonExemptEncryption</key>
-    <string>NO</string>
-    <key>LSApplicationQueriesSchemes</key>
-    <array>
-      <string>https</string>
-      <string>http</string>
-      <string>mailto</string>
-    </array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<string>NO</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>https</string>
+		<string>http</string>
+		<string>mailto</string>
+	</array>
 </dict>
 </plist>
