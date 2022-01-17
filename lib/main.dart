@@ -128,6 +128,11 @@ class HomePageState extends State<HomePage> {
       setState(() {
         rawData = cancelled;
       });
+
+      // Wait then load the template again
+      Future.delayed(const Duration(milliseconds: 2000), () {
+        _loadDefaultFile();
+      });
     }
   }
 
@@ -195,7 +200,8 @@ class HomePageState extends State<HomePage> {
                                                 .textTheme
                                                 .button
                                                 ?.color ??
-                                            Colors.blueAccent),
+                                            Colors.blueAccent,
+                                        height: 1.5),
                                     recognizer: TapGestureRecognizer()
                                       ..onTap = () {
                                         Utils.launchURL(
@@ -203,7 +209,9 @@ class HomePageState extends State<HomePage> {
                                       },
                                   ),
                                   orientation == Orientation.portrait
-                                      ? const TextSpan(text: '\nThen ')
+                                      ? const TextSpan(
+                                          text: '\nThen ',
+                                          style: TextStyle(height: 1.5))
                                       : const TextSpan(text: ', Then '),
                                   TextSpan(
                                     text: 'Upload File',
