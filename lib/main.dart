@@ -548,20 +548,35 @@ class HomePageState extends State<HomePage> {
                               ),
                             ),
                             const MyDivider(),
-                            Expanded(
-                              // Constrains AutoSizeText to the width of the Row
-                              child: TextButton(
-                                onPressed: () {
-                                  Utils.launchURL(
-                                      'https://www.buymeacoffee.com/bitbot');
-                                },
-                                child: AutoSizeText('Buy Coffee',
-                                    maxLines: 1,
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible,
-                                    group: bottomButtonGroup),
-                              ),
-                            ),
+                            kIsWeb
+                                ? Expanded(
+                                    // Constrains AutoSizeText to the width of the Row
+                                    child: TextButton(
+                                      onPressed: () {
+                                        Utils.launchURL(
+                                            'https://www.buymeacoffee.com/bitbot');
+                                      },
+                                      child: AutoSizeText('Buy Coffee',
+                                          maxLines: 1,
+                                          softWrap: true,
+                                          overflow: TextOverflow.visible,
+                                          group: bottomButtonGroup),
+                                    ),
+                                  )
+                                : Expanded(
+                                    // Constrains AutoSizeText to the width of the Row
+                                    child: TextButton(
+                                      onPressed: () {
+                                        Utils.launchURL(
+                                            'https://www.bitbot.com.au/');
+                                      },
+                                      child: AutoSizeText('Visit BitBot',
+                                          maxLines: 1,
+                                          softWrap: true,
+                                          overflow: TextOverflow.visible,
+                                          group: bottomButtonGroup),
+                                    ),
+                                  ),
                             const MyDivider(),
                             Expanded(
                               // Constrains AutoSizeText to the width of the Row
