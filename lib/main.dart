@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:momentum_energy/bar_chart1.dart';
+import 'package:momentum_energy/bar_chart.dart';
 import 'package:momentum_energy/my_theme_model.dart';
 import 'package:momentum_energy/screenshots_mobile.dart'
     if (dart.library.io) 'package:momentum_energy/screenshots_mobile.dart'

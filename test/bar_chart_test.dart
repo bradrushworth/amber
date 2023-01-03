@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:csv/csv.dart';
 import 'package:csv/csv_settings_autodetection.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:momentum_energy/bar_chart1.dart';
+import 'package:momentum_energy/bar_chart.dart';
 
 void main() {
   group('Bar Chart', () {
