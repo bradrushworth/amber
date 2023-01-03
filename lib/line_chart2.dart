@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import 'top_section.dart';
+import 'utils.dart';
 
 class LineChartWidget2 extends StatelessWidget {
   const LineChartWidget2({Key? key}) : super(key: key);
@@ -43,13 +44,19 @@ class LineChartWidget2 extends StatelessWidget {
                       FlSpot(11, 120),
                     ],
                     dotData: FlDotData(show: false),
-                    colors: const [Color(0xFFFF26B5), Color(0xFFFF5B5B)],
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFF26B5), Color(0xFFFF5B5B)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
                     isCurved: false,
                     belowBarData: BarAreaData(
                       show: true,
-                      colors: const [Color(0x10FF26B5), Color(0x00FF26B5)],
-                      gradientFrom: const Offset(0.5, 0),
-                      gradientTo: const Offset(0.5, 1),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF5B5B), Color(0x00FF26B5)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
                     ),
                   ),
                   LineChartBarData(
@@ -68,58 +75,49 @@ class LineChartWidget2 extends StatelessWidget {
                       FlSpot(11, 95),
                     ],
                     dotData: FlDotData(show: false),
-                    colors: const [Color(0xFF905BFF), Color(0xFF268AFF)],
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF905BFF), Color(0xFF268AFF)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
                     isCurved: false,
                     belowBarData: BarAreaData(
                       show: true,
-                      colors: const [Color(0x1f268AFF), Color(0x00268AFF)],
-                      gradientFrom: const Offset(0.5, 0),
-                      gradientTo: const Offset(0.5, 1),
+                      gradient: const LinearGradient(
+                        colors: [Color(0x1f268AFF), Color(0x00268AFF)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
                     ),
                   ),
                 ],
                 titlesData: FlTitlesData(
-                  rightTitles: SideTitles(showTitles: false),
-                  topTitles: SideTitles(showTitles: false),
-                  bottomTitles: SideTitles(
+                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
                     reservedSize: 6,
                     showTitles: true,
-                    getTitles: (xValue) {
-                      switch (xValue.toInt()) {
-                        case 0:
-                          return 'Jan';
-                        case 1:
-                          return 'Feb';
-                        case 2:
-                          return 'Mar';
-                        case 3:
-                          return 'Apr';
-                        case 4:
-                          return 'May';
-                        case 5:
-                          return 'Jun';
-                        case 6:
-                          return 'Jul';
-                        case 7:
-                          return 'Aug';
-                        case 8:
-                          return 'Sep';
-                        case 9:
-                          return 'Oct';
-                        case 10:
-                          return 'Nov';
-                        case 11:
-                          return 'Dec';
-                        default:
-                          throw StateError('Not supported');
-                      }
+                    getTitlesWidget: (xValue, titleMeta) {
+                      return RotatedBox(
+                          quarterTurns: 1,
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              Utils.monthIntToName(xValue),
+                              style: const TextStyle(color: Colors.yellow),
+                              textDirection: TextDirection.rtl,
+                              textAlign: TextAlign.center,
+                            ),
+                          ));
                     },
-                  ),
-                  leftTitles: SideTitles(
+                  )),
+                  leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
                     showTitles: true,
                     interval: 20,
                     reservedSize: 32,
-                  ),
+                  )),
                 ),
                 maxY: 140,
                 minY: 0,

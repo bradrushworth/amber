@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math';
 
 import 'package:csv/csv.dart';
 import 'package:csv/csv_settings_autodetection.dart';
@@ -6,11 +7,14 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:momentum_energy/my_theme_model.dart';
 import 'package:provider/provider.dart';
+import 'package:vector_math/vector_math.dart' as math;
 
 import 'top_section.dart';
 
 const String cancelled = 'Cancelled';
 const String loading = 'Loading';
+
+const int METER_INTERVAL = 5; // minutes
 
 final List<Color> colors = [
   const Color(0xFF5974FF),
@@ -127,41 +131,64 @@ class BarChartState extends State<BarChartWidget1> {
                                     Legend(title: 'Peak', color: colors[4]),
                                     Legend(title: 'Control', color: colors[1]),
                                   ],
-                            padding: const EdgeInsets.only(
-                                left: 3, right: 3, top: 3, bottom: 3),
+                            padding: const EdgeInsets.only(left: 3, right: 3, top: 3, bottom: 3),
                           ),
                           Expanded(
                             child: Padding(
-                              padding: const EdgeInsets.only(
-                                  right: 8, top: 8, bottom: 8),
+                              padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
                               child: BarChart(
                                 BarChartData(
                                   barGroups: _barChartData,
                                   //[BarChartGroupData(x: 0, barRods: [makeRodData(80)]),],
                                   titlesData: FlTitlesData(
-                                    rightTitles: SideTitles(showTitles: false),
-                                    topTitles: SideTitles(showTitles: false),
-                                    bottomTitles: SideTitles(
+                                    rightTitles:
+                                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                    topTitles:
+                                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                    bottomTitles: AxisTitles(
+                                        sideTitles: SideTitles(
                                       reservedSize: 30,
                                       showTitles: true,
-                                      interval: 2,
-                                      rotateAngle: -90,
-                                      getTitles: (xValue) {
-                                        return _barChartTitles[xValue.toInt()]!;
+                                      interval: 2, // Not working anymore for some reason
+                                      getTitlesWidget: (xValue, titleMeta) {
+                                        return SideTitleWidget(
+                                          axisSide: AxisSide.bottom,
+                                          angle: math.radians(-90),
+                                          space: 11,
+                                          child: Text(
+                                            xValue.toInt() % 2 == 0
+                                                ? _barChartTitles[xValue.toInt()]!
+                                                : '',
+                                            // Workaround
+                                            style: const TextStyle(fontSize: 8),
+                                          ),
+                                        );
                                       },
-                                    ),
-                                    leftTitles: SideTitles(
-                                      showTitles: true,
-                                      interval: 1,
-                                      reservedSize: 13,
-                                    ),
+                                    )),
+                                    leftTitles: AxisTitles(
+                                        sideTitles: SideTitles(
+                                            showTitles: true,
+                                            //interval: 1,
+                                            reservedSize: 25,
+                                            getTitlesWidget: (xValue, titleMeta) {
+                                              String formattedNumber =
+                                                  xValue.toStringAsPrecision(1);
+                                              return SideTitleWidget(
+                                                axisSide: AxisSide.left,
+                                                //child: Text(xValue == xValue.roundToDouble() ? "$xValue" : ''),
+                                                child: Text(
+                                                  formattedNumber,
+                                                  style: const TextStyle(fontSize: 8),
+                                                ),
+                                              );
+                                            })),
                                   ),
                                   //maxY: 10.0,
                                   gridData: FlGridData(show: false),
                                   borderData: FlBorderData(show: false),
                                 ),
-                                swapAnimationDuration: Duration
-                                    .zero, // Duration(milliseconds: 1500)
+                                swapAnimationDuration:
+                                    Duration.zero, // Duration(milliseconds: 1500)
                               ),
                             ),
                           ),
@@ -205,8 +232,7 @@ class BarChartState extends State<BarChartWidget1> {
 
     //final rawData = await rootBundle.loadString(filepath);
     List<List<dynamic>> data = const CsvToListConverter(
-            csvSettingsDetector:
-                FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
+            csvSettingsDetector: FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
         .convert(_rawData, shouldParseNumbers: true);
     if (data.isEmpty) {
       //print('Data was empty!');
@@ -260,8 +286,7 @@ class BarChartState extends State<BarChartWidget1> {
 }
 
 class DataAggregator {
-  final SplayTreeMap<int, BarChartGroupData> newData =
-      SplayTreeMap<int, BarChartGroupData>();
+  final SplayTreeMap<int, BarChartGroupData> newData = SplayTreeMap<int, BarChartGroupData>();
   final SplayTreeMap<int, String> newTitles = SplayTreeMap<int, String>();
 
   late final Duration _duration, _ending;
@@ -328,32 +353,24 @@ class DataAggregator {
       //print('Allowed date=$date');
 
       int graphPos = date.hour * 2 + date.minute ~/ 30;
-      newTitles[graphPos] = date.toString().substring(11, 16);
+      newTitles[graphPos] = newTitles[graphPos] ?? date.toString().substring(11, 16);
 
       for (int meterNum = 0; meterNum < numMeters; meterNum++) {
         record = data[n + meterNum];
         //print("adding date=$date record[1]=${record[1]}");
         stackedValue[graphPos] = (stackedValue[graphPos] ?? 0.0) +
-            (_prices
-                ? _getCost(meterNum, date.weekday, graphPos, 0.0 + record[1])
-                : record[1]);
+            (_prices ? _getCost(meterNum, date.weekday, graphPos, 0.0 + record[1]) : record[1]);
         stackedValues[graphPos] = (stackedValues[graphPos] ??
-            List<double>.generate(
-                numMeters + (_prices ? 1 : 0), (index) => 0.0));
-        stackedValues[graphPos]![meterNum] =
-            (stackedValues[graphPos]![meterNum]) +
-                (_prices
-                    ? _getCost(
-                        meterNum, date.weekday, graphPos, 0.0 + record[1])
-                    : record[1]);
+            List<double>.generate(numMeters + (_prices ? 1 : 0), (index) => 0.0));
+        stackedValues[graphPos]![meterNum] = (stackedValues[graphPos]![meterNum]) +
+            (_prices ? _getCost(meterNum, date.weekday, graphPos, 0.0 + record[1]) : record[1]);
       }
 
       if (_prices) {
-        double dailySupplyChargePer30mins = 1.27787 / 24 / 2;
-        stackedValue[graphPos] =
-            stackedValue[graphPos]! + dailySupplyChargePer30mins;
-        stackedValues[graphPos]![numMeters] =
-            dailySupplyChargePer30mins * _duration.inDays;
+        double dailySupplyChargePerInterval = 1.46 / 24 / (60 / METER_INTERVAL);
+        double dailySupplyChargePer30Mins = 1.46 / 24 / 2;
+        stackedValue[graphPos] = stackedValue[graphPos]! + dailySupplyChargePerInterval;
+        stackedValues[graphPos]![numMeters] = dailySupplyChargePer30Mins * _duration.inDays;
       }
     }
 
@@ -366,19 +383,22 @@ class DataAggregator {
     for (int graphPos in stackedValue.keys) {
       //print("saving graphPos=$graphPos record[1]=${stackedValue[graphPos]}");
       newData[graphPos] = BarChartGroupData(x: graphPos, barRods: [
-        makeRodData(graphPos, stackedValue[graphPos]!,
-            stackedValues[graphPos]!.reversed.toList())
+        makeRodData(graphPos, stackedValue[graphPos]!, stackedValues[graphPos]!.reversed.toList())
       ]);
     }
   }
 
-  BarChartRodData makeRodData(
-      int graphPos, double value, List<double> stackedValues) {
+  double roundDouble(double value, int places) {
+    num mod = pow(10.0, places);
+    return ((value * mod).ceilToDouble() / mod);
+  }
+
+  BarChartRodData makeRodData(int graphPos, double value, List<double> stackedValues) {
     double rodCumulative = 0.0;
     int i = 0;
     //print("meterNum=$meterNum");
     return BarChartRodData(
-      y: value,
+      toY: roundDouble(value, _prices ? 2 : 3),
       // colors: [
       //   const Color(0xFFFFAB5E),
       //   const Color(0xFFFFD336),
@@ -386,8 +406,8 @@ class DataAggregator {
       width: 6, // / _duration.inDays,
       //borderRadius: BorderRadius.circular(2),
       rodStackItems: stackedValues
-          .map((e) => BarChartRodStackItem(rodCumulative, rodCumulative += e,
-              true || _prices ? _getCostColor(i++, graphPos) : colors[i++]))
+          .map((e) => BarChartRodStackItem(rodCumulative,
+              rodCumulative += roundDouble(e, _prices ? 2 : 3), _getCostColor(i++, graphPos)))
           .toList(),
       // backDrawRodData: BackgroundBarChartRodData(
       //   show: true,
@@ -422,19 +442,19 @@ class DataAggregator {
 
   double _getCost(int meterNum, int weekday, int graphPos, double value) {
     if (meterNum == 0) {
-      return value * 0.11352; // Controlled
+      return value * 0.2049; // Controlled
     } else if (weekday == DateTime.saturday || weekday == DateTime.sunday) {
-      return value * 0.15697; // Off peak
+      return value * 0.2800; // Off peak
     } else if (graphPos < 7 * 2) {
-      return value * 0.15697; // Off peak
+      return value * 0.2800; // Off peak
     } else if (graphPos < 17 * 2) {
-      return value * 0.27709; // Shoulder
+      return value * 0.3819; // Shoulder
     } else if (graphPos < 20 * 2) {
-      return value * 0.32131; // Peak
+      return value * 0.4400; // Peak
     } else if (graphPos < 22 * 2) {
-      return value * 0.27709; // Shoulder
+      return value * 0.3819; // Shoulder
     } else {
-      return value * 0.15697; // Off peak
+      return value * 0.2800; // Off peak
     }
   }
 }

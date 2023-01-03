@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'my_theme_model.dart';
 import 'top_section.dart';
+import 'utils.dart';
 
 class BarChartWidget2 extends StatelessWidget {
   const BarChartWidget2({Key? key}) : super(key: key);
@@ -13,21 +14,18 @@ class BarChartWidget2 extends StatelessWidget {
     return Consumer<MyThemeModel>(builder: (context, themeModel, child) {
       BarChartRodData makeRodData(double y) {
         return BarChartRodData(
-          y: y,
-          colors: [
-            const Color(0xFF1726AB),
-            const Color(0xFF364AFF),
-          ],
+          toY: y,
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1726AB), Color(0xFF364AFF)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
           width: 3,
           borderRadius: BorderRadius.circular(2),
           backDrawRodData: BackgroundBarChartRodData(
             show: true,
-            colors: [
-              themeModel.isDark()
-                  ? const Color(0xFF1D1D2B)
-                  : const Color(0xFFFCFCFC)
-            ],
-            y: 140,
+            color: themeModel.isDark() ? const Color(0xFF1D1D2B) : const Color(0xFFFCFCFC),
+            toY: 140,
           ),
         );
       }
@@ -59,44 +57,29 @@ class BarChartWidget2 extends StatelessWidget {
                     BarChartGroupData(x: 11, barRods: [makeRodData(120)]),
                   ],
                   titlesData: FlTitlesData(
-                      rightTitles: SideTitles(showTitles: false),
-                      topTitles: SideTitles(showTitles: false),
-                      bottomTitles: SideTitles(
+                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
                         reservedSize: 6,
                         showTitles: true,
-                        getTitles: (xValue) {
-                          switch (xValue.toInt()) {
-                            case 0:
-                              return 'Jan';
-                            case 1:
-                              return 'Feb';
-                            case 2:
-                              return 'Mar';
-                            case 3:
-                              return 'Apr';
-                            case 4:
-                              return 'May';
-                            case 5:
-                              return 'Jun';
-                            case 6:
-                              return 'Jul';
-                            case 7:
-                              return 'Aug';
-                            case 8:
-                              return 'Sep';
-                            case 9:
-                              return 'Oct';
-                            case 10:
-                              return 'Nov';
-                            case 11:
-                              return 'Dec';
-                            default:
-                              throw StateError('Not supported');
-                          }
+                        getTitlesWidget: (xValue, titleMeta) {
+                          return RotatedBox(
+                              quarterTurns: 1,
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  Utils.monthIntToName(xValue),
+                                  style: const TextStyle(color: Colors.blue),
+                                  textDirection: TextDirection.rtl,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ));
                         },
-                      ),
-                      leftTitles: SideTitles(
-                          showTitles: true, interval: 20, reservedSize: 32)),
+                      )),
+                      leftTitles: AxisTitles(
+                          sideTitles:
+                              SideTitles(showTitles: true, interval: 20, reservedSize: 32))),
                   maxY: 140,
                   gridData: FlGridData(show: false),
                   borderData: FlBorderData(show: false),
