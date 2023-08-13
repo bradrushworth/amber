@@ -7,7 +7,7 @@ import 'package:momentum_energy/bar_chart.dart';
 
 void main() {
   group('Bar Chart', () {
-    double dailySupplyChargePer30mins = 2.1109 / 24 / 2;
+    double dailySupplyChargePer30mins = DAILY / 24 / 2;
 
     test('1 Day', () async {
       final myData = await File('assets/Your_Usage_List_Sample.csv').readAsString();
@@ -70,12 +70,13 @@ void main() {
       expect(
           dataAggregator.newData[0]!.barRods.first.toY,
           closeTo(
-              0.2992 * (0.018 + 0.015 + 0.016 + 0.016 + 0.018 + 0.019) + dailySupplyChargePer30mins,
+              OFFPEAK * (0.018 + 0.015 + 0.016 + 0.016 + 0.018 + 0.019) +
+                  dailySupplyChargePer30mins,
               0.01));
       expect(
           dataAggregator.newData[47]!.barRods.first.toY,
           closeTo(
-              0.2992 * (0.023 + 0.02 + 0.019 + 0.019 + 0.021 + 0.022) + dailySupplyChargePer30mins,
+              OFFPEAK * (0.023 + 0.02 + 0.019 + 0.019 + 0.021 + 0.022) + dailySupplyChargePer30mins,
               0.01));
 
       expect(
@@ -168,15 +169,15 @@ void main() {
       expect(
           dataAggregator.newData[0]!.barRods.first.toY,
           closeTo(
-              (0.2992 * (0.023 + 0.023 + 0.023 + 0.018 + 0.017 + 0.017)) +
-                  (0.1771 * (0.0 + 0.0 + 0.3 + 0.23 + 0.0 + 0.2)) +
+              (OFFPEAK * (0.023 + 0.023 + 0.023 + 0.018 + 0.017 + 0.017)) +
+                  (CONTROLLED * (0.0 + 0.0 + 0.3 + 0.23 + 0.0 + 0.2)) +
                   dailySupplyChargePer30mins,
               0.01));
       expect(
           dataAggregator.newData[47]!.barRods.first.toY,
           closeTo(
-              (0.2992 * (0.016 + 0.017 + 0.019 + 0.019 + 0.02 + 0.019)) +
-                  (0.1771 * (0.0 + 0.0 + 0.0 + 0.0 + 0.0 + 0.0)) +
+              (OFFPEAK * (0.016 + 0.017 + 0.019 + 0.019 + 0.02 + 0.019)) +
+                  (CONTROLLED * (0.0 + 0.0 + 0.0 + 0.0 + 0.0 + 0.0)) +
                   dailySupplyChargePer30mins,
               0.01));
 

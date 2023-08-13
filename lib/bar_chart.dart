@@ -15,6 +15,11 @@ const String cancelled = 'Cancelled';
 const String loading = 'Loading';
 
 const int METER_INTERVAL = 5; // minutes
+const double DAILY = 2.1109; // Daily charge
+const double CONTROLLED = 0.1771; // Controlled
+const double OFFPEAK = 0.2992; // Off peak
+const double SHOULDER = 0.3971; // Shoulder
+const double PEAK = 0.4620; // Peak
 
 final List<Color> colors = [
   const Color(0xFF5974FF),
@@ -367,8 +372,8 @@ class DataAggregator {
       }
 
       if (_prices) {
-        double dailySupplyChargePerInterval = 2.1109 / 24 / (60 / METER_INTERVAL);
-        double dailySupplyChargePer30Mins = 2.1109 / 24 / 2;
+        double dailySupplyChargePerInterval = DAILY / 24 / (60 / METER_INTERVAL);
+        double dailySupplyChargePer30Mins = DAILY / 24 / 2;
         stackedValue[graphPos] = stackedValue[graphPos]! + dailySupplyChargePerInterval;
         stackedValues[graphPos]![numMeters] = dailySupplyChargePer30Mins * _duration.inDays;
       }
@@ -442,19 +447,19 @@ class DataAggregator {
 
   double _getCost(int meterNum, int weekday, int graphPos, double value) {
     if (meterNum == 0) {
-      return value * 0.1771; // Controlled
+      return value * CONTROLLED; // Controlled
     } else if (weekday == DateTime.saturday || weekday == DateTime.sunday) {
-      return value * 0.2992; // Off peak
+      return value * OFFPEAK; // Off peak
     } else if (graphPos < 7 * 2) {
-      return value * 0.2992; // Off peak
+      return value * OFFPEAK; // Off peak
     } else if (graphPos < 17 * 2) {
-      return value * 0.3971; // Shoulder
+      return value * SHOULDER; // Shoulder
     } else if (graphPos < 20 * 2) {
-      return value * 0.4620; // Peak
+      return value * PEAK; // Peak
     } else if (graphPos < 22 * 2) {
-      return value * 0.3971; // Shoulder
+      return value * SHOULDER; // Shoulder
     } else {
-      return value * 0.2992; // Off peak
+      return value * OFFPEAK; // Off peak
     }
   }
 }
