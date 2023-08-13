@@ -7,7 +7,7 @@ import 'package:momentum_energy/bar_chart.dart';
 
 void main() {
   group('Bar Chart', () {
-    double dailySupplyChargePer30mins = 1.46 / 24 / 2;
+    double dailySupplyChargePer30mins = 2.1109 / 24 / 2;
 
     test('1 Day', () async {
       final myData = await File('assets/Your_Usage_List_Sample.csv').readAsString();
@@ -66,26 +66,25 @@ void main() {
           DataAggregator(const Duration(days: 1), const Duration(days: 0), true);
       dataAggregator.aggregateData(data);
 
-      expect(dailySupplyChargePer30mins, closeTo(0.0304, 0.001));
+      expect(dailySupplyChargePer30mins, closeTo(0.0440, 0.001));
       expect(
           dataAggregator.newData[0]!.barRods.first.toY,
           closeTo(
-              0.28 * (0.018 + 0.015 + 0.016 + 0.016 + 0.018 + 0.019) + dailySupplyChargePer30mins,
+              0.2992 * (0.018 + 0.015 + 0.016 + 0.016 + 0.018 + 0.019) + dailySupplyChargePer30mins,
               0.01));
       expect(
           dataAggregator.newData[47]!.barRods.first.toY,
           closeTo(
-              0.28 * (0.023 + 0.02 + 0.019 + 0.019 + 0.021 + 0.022) + dailySupplyChargePer30mins,
+              0.2992 * (0.023 + 0.02 + 0.019 + 0.019 + 0.021 + 0.022) + dailySupplyChargePer30mins,
               0.01));
 
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.01));
-      expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.0336, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.05, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY,
-          closeTo(0.0336 + dailySupplyChargePer30mins, 0.01));
+          closeTo(0.05 + dailySupplyChargePer30mins, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY,
-          closeTo(0.0336 + dailySupplyChargePer30mins, 0.01));
+          closeTo(0.05 + dailySupplyChargePer30mins, 0.01));
     });
 
     test('2 Days', () async {
@@ -165,25 +164,25 @@ void main() {
       expect(dataAggregator.newData[46]!.x, 46);
       expect(dataAggregator.newData[47]!.x, 47);
 
-      expect(dailySupplyChargePer30mins, closeTo(0.0304, 0.001));
+      expect(dailySupplyChargePer30mins, closeTo(0.0440, 0.001));
       expect(
           dataAggregator.newData[0]!.barRods.first.toY,
           closeTo(
-              (0.2800 * (0.023 + 0.023 + 0.023 + 0.018 + 0.017 + 0.017)) +
-                  (0.2049 * (0.0 + 0.0 + 0.3 + 0.23 + 0.0 + 0.2)) +
+              (0.2992 * (0.023 + 0.023 + 0.023 + 0.018 + 0.017 + 0.017)) +
+                  (0.1771 * (0.0 + 0.0 + 0.3 + 0.23 + 0.0 + 0.2)) +
                   dailySupplyChargePer30mins,
               0.01));
       expect(
           dataAggregator.newData[47]!.barRods.first.toY,
           closeTo(
-              (0.2800 * (0.016 + 0.017 + 0.019 + 0.019 + 0.02 + 0.019)) +
-                  (0.2049 * (0.0 + 0.0 + 0.0 + 0.0 + 0.0 + 0.0)) +
+              (0.2992 * (0.016 + 0.017 + 0.019 + 0.019 + 0.02 + 0.019)) +
+                  (0.1771 * (0.0 + 0.0 + 0.0 + 0.0 + 0.0 + 0.0)) +
                   dailySupplyChargePer30mins,
               0.01));
 
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.00, 0.01));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.04, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.05, 0.01));
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.08, 0.01));
       expect(
