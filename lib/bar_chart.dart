@@ -265,7 +265,6 @@ class DataAggregator {
     //print('numMeters=$numMeters');
 
     DateTime latest = DateTime.parse(data.last.date!)
-        .add(const Duration(hours: 10))
         .subtract(_ending)
         .add(const Duration(days: 1));
     DateTime earliest = latest.subtract(_duration);

@@ -30,7 +30,7 @@ void main() {
       expect(dataAggregator.newData[47]!.x, 47);
 
       expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(0.06, 0.001));
-      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.057, 0.001));
+      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.067, 0.001));
 
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.001));
@@ -81,7 +81,7 @@ void main() {
       expect(dataAggregator.newData[47]!.x, 47);
 
       expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(0.125, 0.001));
-      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.124, 0.001));
+      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.133, 0.001));
 
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.001));
@@ -180,7 +180,7 @@ void main() {
       expect(dataAggregator.newData[47]!.x, 47);
 
       expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(0.06, 0.001));
-      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.057, 0.001));
+      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.067, 0.001));
 
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.001));
