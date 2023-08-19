@@ -23,7 +23,7 @@ final List<Color> colors = [
   Colors.orange,
   Colors.red,
   Colors.blueAccent,
-  Colors.yellow,
+  Colors.yellowAccent,
 ];
 
 class BarChartWidget1 extends StatefulWidget {
@@ -264,6 +264,7 @@ class DataAggregator {
   aggregateData(List<Usage> data) {
     int numMeters =
         data.map((u) => u.channelIdentifier!).reduce((value, element) => element).length;
+    //int numMeters = 3;
     //print('numMeters=$numMeters');
 
     DateTime latest =
@@ -273,6 +274,7 @@ class DataAggregator {
 
     Map<int, double> stackedValue = {};
     Map<int, List<double>> stackedValues = {};
+    Map<int, double> feedInValue = {};
 
     bool beforeRange = false;
     bool afterRange = false;
@@ -304,14 +306,23 @@ class DataAggregator {
         record = data[n + meterNum * data.length ~/ numMeters];
         //print("adding date=$date record=${record.kwh}");
         int channelType = record.channelType == "controlledLoad"
-            ? 0
-            : 1;
-        stackedValue[graphPos] =
-            (stackedValue[graphPos] ?? 0.0) + (_prices ? record.cost! / 100 : record.kwh!);
-        stackedValues[graphPos] = (stackedValues[graphPos] ??
-            List<double>.generate(numMeters + (_prices ? 1 : 0), (index) => 0.0));
-        stackedValues[graphPos]![channelType] =
-            (stackedValues[graphPos]![channelType]) + (_prices ? record.cost! / 100 : record.kwh!);
+            ? 1
+            : record.channelType == "feedIn"
+                ? 2
+                : 0;
+        if (channelType != 2) {
+          // Ignore feed in tariff here
+          stackedValue[graphPos] =
+              (stackedValue[graphPos] ?? 0.0) + (_prices ? record.cost! / 100 : record.kwh!);
+          stackedValues[graphPos] = (stackedValues[graphPos] ??
+              List<double>.generate(numMeters + (_prices ? 1 : 0), (index) => 0.0));
+          stackedValues[graphPos]![channelType] = (stackedValues[graphPos]![channelType]) +
+              (_prices ? record.cost! / 100 : record.kwh!);
+        } else {
+          // Calculate feed in tarrif
+          feedInValue[graphPos] =
+              (feedInValue[graphPos] ?? 0.0) + (_prices ? record.cost! / 100 : record.kwh!);
+        }
       }
 
       if (_prices) {
@@ -329,9 +340,11 @@ class DataAggregator {
     }
 
     for (int graphPos in stackedValue.keys) {
+      //print("feedInValue=$feedInValue");
       //print("saving graphPos=$graphPos record[1]=${stackedValue[graphPos]}");
       newData[graphPos] = BarChartGroupData(x: graphPos, barRods: [
-        makeRodData(graphPos, stackedValue[graphPos]!, stackedValues[graphPos]!.reversed.toList())
+        makeRodData(graphPos, stackedValue[graphPos]!, stackedValues[graphPos]!.reversed.toList(),
+            feedInValue[graphPos] ?? 0.0)
       ]);
     }
   }
@@ -341,7 +354,8 @@ class DataAggregator {
     return ((value * mod).ceilToDouble() / mod);
   }
 
-  BarChartRodData makeRodData(int graphPos, double value, List<double> stackedValues) {
+  BarChartRodData makeRodData(
+      int graphPos, double value, List<double> stackedValues, double feedInValue) {
     double rodCumulative = 0.0;
     int i = 0;
     //print("meterNum=$meterNum");
@@ -357,21 +371,17 @@ class DataAggregator {
           .map((e) => BarChartRodStackItem(rodCumulative,
               rodCumulative += roundDouble(e, _prices ? 2 : 3), _getCostColor(i++, graphPos)))
           .toList(),
-      // backDrawRodData: BackgroundBarChartRodData(
-      //   show: true,
-      //   colors: [
-      //     _themeModel.isDark()
-      //         ? const Color(0xFF1D1D2B)
-      //         : const Color(0xFFFCFCFC)
-      //   ],
-      //   y: value * 1.2, // Dark background bar
-      // ),
+      backDrawRodData: BackgroundBarChartRodData(
+        show: true,
+        toY: feedInValue,
+        color: colors[6],
+      ),
     );
   }
 
   Color _getCostColor(int meterNum, int graphPos) {
     //print("meterNum=$meterNum graphPos=$graphPos");
-    if (!_prices && meterNum == 1 || _prices && meterNum == 2) {
+    if (!_prices && meterNum == 2 || _prices && meterNum == 3) {
       return colors[1]; // Controlled
     } else if (_prices && meterNum == 0) {
       return colors[0]; // Supply

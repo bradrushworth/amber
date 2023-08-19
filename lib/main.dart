@@ -162,32 +162,32 @@ class HomePageState extends State<HomePage> {
     String uri =
         'https://api.amber.com.au/v1/sites/${_siteIdItemSelected!.value}/usage?startDate=$startDate&endDate=$endDate&resolution=$METER_INTERVAL';
     print(uri);
-    // final response = await http.get(Uri.parse(uri), headers: {
-    //   "accept": "application/json",
-    //   "Authorization": "Bearer ${amberToken!}",
-    // });
+    final response = await http.get(Uri.parse(uri), headers: {
+      "accept": "application/json",
+      "Authorization": "Bearer ${amberToken!}",
+    });
 
-    if (true) {//response.statusCode == 200) {
+    if (response.statusCode == 200) {
       // If the server did return a 200 OK response,
       // then parse the JSON.
-      // List<Usage> usage =
-      //     (jsonDecode(response.body) as List).map((json) => Usage.fromJson(json)).toList();
-      final myData = await File('assets/usage.json').readAsString();
-      List<Usage> usage = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
+      List<Usage> usage =
+          (jsonDecode(response.body) as List).map((json) => Usage.fromJson(json)).toList();
+      // final myData = await File('assets/usage.json').readAsString();
+      // List<Usage> usage = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       setState(() {
         rawData = usage;
       });
     } else {
-    //   setState(() {
-    //     rawData = null;
-    //   });
-    //   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.body)));
-    //
-    //   // If the server did not return a 200 OK response,
-    //   // then throw an exception.
-    //   throw Exception(
-    //       'Failed to load usage for site ${_siteIdItemSelected!.value}! code=${response.statusCode}\n${response.body}');
+      setState(() {
+        rawData = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.body)));
+
+      // If the server did not return a 200 OK response,
+      // then throw an exception.
+      throw Exception(
+          'Failed to load usage for site ${_siteIdItemSelected!.value}! code=${response.statusCode}\n${response.body}');
     }
   }
 
