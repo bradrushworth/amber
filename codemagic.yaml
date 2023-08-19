@@ -1,0 +1,41 @@
+# Check out https://docs.codemagic.io/yaml/building-a-native-android-app/ for more information
+
+workflows:
+  google-play:
+    name: Google Play Beta
+    max_build_duration: 120
+    instance_type: linux
+    scripts:
+      - name: Build Android App Bundle
+        script: ./gradlew bundleRelease
+    artifacts:
+      - app/build/outputs/**/*.aab
+    publishing:
+      email:
+        recipients:
+          - brushworth@bitbot.com.au
+        notify:
+          success: true
+          failure: true
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: beta
+        in_app_update_priority: 0
+        changes_not_sent_for_review: false
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: master
+          include: true
+      cancel_previous_builds: true
+    cache:
+      cache_paths:
+        - $HOME/.gradle/caches
+    environment:
+      groups:
+        - google_credentials
+      android_signing:
+        - android_bitbot.jks
+      vars:
+        PACKAGE_NAME: "au.com.bitbot.amber"
