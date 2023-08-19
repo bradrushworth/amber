@@ -60,7 +60,11 @@ android {
         release {
             signingConfig signingConfigs.release
         }
+        debug {
+            signingConfig signingConfigs.release
+        }
     }
+    namespace 'au.com.bitbot.amber'
 }
 
 flutter {
