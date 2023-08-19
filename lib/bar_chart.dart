@@ -10,9 +10,6 @@ import 'package:vector_math/vector_math.dart' as math;
 import 'model/Usage.dart';
 import 'top_section.dart';
 
-// const String cancelled = 'Cancelled';
-// const String loading = 'Loading';
-
 const int METER_INTERVAL = 30; // minutes
 const double DAILY = 19.00 * 12 / 365; // Daily charge
 
@@ -145,9 +142,9 @@ class BarChartState extends State<BarChartWidget1> {
                                   //[BarChartGroupData(x: 0, barRods: [makeRodData(80)]),],
                                   titlesData: FlTitlesData(
                                     rightTitles:
-                                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                                     topTitles:
-                                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                                     bottomTitles: AxisTitles(
                                         sideTitles: SideTitles(
                                       reservedSize: 30,
@@ -187,7 +184,7 @@ class BarChartState extends State<BarChartWidget1> {
                                             })),
                                   ),
                                   //maxY: 10.0,
-                                  gridData: FlGridData(show: false),
+                                  gridData: const FlGridData(show: false),
                                   borderData: FlBorderData(show: false),
                                 ),
                                 swapAnimationDuration:
@@ -283,6 +280,7 @@ class DataAggregator {
       Usage record = data[n];
       //print("adding record=" + record.startTime!.substring(0, 18) + "0");
       DateTime date = DateTime.parse(record.nemTime!)
+          .toUtc()
           .add(const Duration(hours: 10))
           .subtract(const Duration(minutes: METER_INTERVAL));
       if (date.isBefore(earliest)) {
@@ -399,24 +397,6 @@ class DataAggregator {
       return colors[2]; // Off peak
     }
   }
-
-  // double _getCost(int meterNum, int weekday, int graphPos, double value) {
-  //   if (meterNum == 0) {
-  //     return value * CONTROLLED; // Controlled
-  //   } else if (weekday == DateTime.saturday || weekday == DateTime.sunday) {
-  //     return value * OFFPEAK; // Off peak
-  //   } else if (graphPos < 7 * 2) {
-  //     return value * OFFPEAK; // Off peak
-  //   } else if (graphPos < 17 * 2) {
-  //     return value * SHOULDER; // Shoulder
-  //   } else if (graphPos < 20 * 2) {
-  //     return value * PEAK; // Peak
-  //   } else if (graphPos < 22 * 2) {
-  //     return value * SHOULDER; // Shoulder
-  //   } else {
-  //     return value * OFFPEAK; // Off peak
-  //   }
-  // }
 }
 
 class NotEnoughDataException implements Exception {}
