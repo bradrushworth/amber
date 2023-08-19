@@ -5,12 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:momentum_energy/bar_chart.dart';
-import 'package:momentum_energy/my_theme_model.dart';
-import 'package:momentum_energy/screenshots_mobile.dart'
-    if (dart.library.io) 'package:momentum_energy/screenshots_mobile.dart'
-    if (dart.library.js) 'package:momentum_energy/screenshots_other.dart';
-import 'package:momentum_energy/utils.dart';
+import 'package:amber/bar_chart.dart';
+import 'package:amber/my_theme_model.dart';
+import 'package:amber/screenshots_mobile.dart'
+    if (dart.library.io) 'package:amber/screenshots_mobile.dart'
+    if (dart.library.js) 'package:amber/screenshots_other.dart';
+import 'package:amber/utils.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -485,7 +485,7 @@ class HomePageState extends State<HomePage> {
                               child: TextButton(
                                 onPressed: () {
                                   Utils.launchURL(
-                                      'https://github.com/bradrushworth/momentumenergy');
+                                      'https://github.com/bradrushworth/amber');
                                 },
                                 // Constrains AutoSizeText to the width of the Row
                                 child: AutoSizeText('Source Code',
@@ -544,7 +544,7 @@ class HomePageState extends State<HomePage> {
                               child: TextButton(
                                 onPressed: () {
                                   Utils.launchURL(
-                                      'mailto:bitbot@bitbot.com.au?subject=Help with Momentum Energy Dashboard');
+                                      'mailto:bitbot@bitbot.com.au?subject=Help with Amber Electric Dashboard');
                                 },
                                 child: AutoSizeText('Report Issue',
                                     maxLines: 1,

@@ -1,6 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
-import 'package:momentum_energy/my_theme_model.dart';
+import 'package:amber/my_theme_model.dart';
 import 'package:provider/provider.dart';
 
 final AutoSizeGroup legendSizeGroup = AutoSizeGroup();
