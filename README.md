@@ -1,9 +1,9 @@
-[Visualise your Amber Electric electricity consumption](https://amber.codemagic.app/)
+[Visualise your Amber Electric electricity consumption](https://amberelectric.codemagic.app/)
 using this flutter dashboard.
 
-[![Dashboard Example Screenshot](assets/screenshot.png)](https://amber.codemagic.app/)
+[![Dashboard Example Screenshot](assets/screenshot.png)](https://amberelectric.codemagic.app/)
 
-[Amber Electric Dashboard](https://amber.codemagic.app/) is not affiliated
+[Amber Electric Dashboard](https://amberelectric.codemagic.app/) is not affiliated
 with [Amber Electric](https://www.amber.com.au/) other than we are a customer of their
 electricity services. The name Amber Electric is their trademark.
 
