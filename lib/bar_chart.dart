@@ -283,8 +283,8 @@ class DataAggregator {
       Usage record = data[n];
       //print("adding record=" + record.startTime!.substring(0, 18) + "0");
       DateTime date = DateTime.parse(record.nemTime!)
-          .subtract(const Duration(minutes: METER_INTERVAL))
-          .toLocal();
+          .add(const Duration(hours: 10))
+          .subtract(const Duration(minutes: METER_INTERVAL));
       if (date.isBefore(earliest)) {
         continue; // Skip data outside of range
       }
