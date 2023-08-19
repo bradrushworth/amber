@@ -145,7 +145,7 @@ class HomePageState extends State<HomePage> {
       // then parse the JSON.
       _sites = (jsonDecode(response.body) as List).map((json) => Site.fromJson(json)).toList();
       int i = 1;
-      return _sites.map((site) => ListItem(site.id!, "${site.network} ${site.nmi}")).toList();
+      return _sites.map((site) => ListItem(site.id!, "${site.network}\n${site.nmi}")).toList();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.body)));
       // If the server did not return a 200 OK response,
@@ -298,7 +298,7 @@ class HomePageState extends State<HomePage> {
                                         orientation == Orientation.portrait
                                             ? const TextSpan(
                                                 text: '\nThen ', style: TextStyle(height: 1.5))
-                                            : const TextSpan(text: ', Then '),
+                                            : const TextSpan(text: '\nThen '),
                                         TextSpan(
                                           text: 'Generate a new Token',
                                           style: TextStyle(
@@ -368,7 +368,7 @@ class HomePageState extends State<HomePage> {
                                   MyCard(
                                     child: BarChartWidget1(
                                       rawData,
-                                      'Last Day - Use',
+                                      'Yesterday - Use',
                                       const Duration(days: 1),
                                       ending: const Duration(days: 0),
                                       prices: false,
@@ -376,105 +376,105 @@ class HomePageState extends State<HomePage> {
                                   ),
                                   MyCard(
                                       child: BarChartWidget1(
-                                          rawData, 'Last Day - Cost', const Duration(days: 1),
+                                          rawData, 'Yesterday - Cost', const Duration(days: 1),
                                           ending: const Duration(days: 0), prices: true)),
                                   MyCard(
                                       child: BarChartWidget1(
-                                          rawData, '1 Day Before - Use', const Duration(days: 1),
+                                          rawData, '1 Before - Use', const Duration(days: 1),
                                           ending: const Duration(days: 1), prices: false)),
                                   MyCard(
                                       child: BarChartWidget1(
-                                          rawData, '1 Day Before - Cost', const Duration(days: 1),
+                                          rawData, '1 Before - Cost', const Duration(days: 1),
                                           ending: const Duration(days: 1), prices: true)),
                                   MyCard(
                                       child: BarChartWidget1(
-                                          rawData, '2 Days Before - Use', const Duration(days: 1),
+                                          rawData, '2 Before - Use', const Duration(days: 1),
                                           ending: const Duration(days: 2), prices: false)),
                                   MyCard(
                                       child: BarChartWidget1(
-                                          rawData, '2 Days Before - Cost', const Duration(days: 1),
+                                          rawData, '2 Before - Cost', const Duration(days: 1),
                                           ending: const Duration(days: 2), prices: true)),
                                   MyCard(
                                       child: BarChartWidget1(
-                                          rawData, '3 Days Before - Use', const Duration(days: 1),
+                                          rawData, '3 Before - Use', const Duration(days: 1),
                                           ending: const Duration(days: 3), prices: false)),
                                   MyCard(
                                       child: BarChartWidget1(
-                                          rawData, '3 Days Before - Cost', const Duration(days: 1),
+                                          rawData, '3 Before - Cost', const Duration(days: 1),
                                           ending: const Duration(days: 3), prices: true)),
                                   MyCard(
                                       child: BarChartWidget1(
-                                          rawData, '4 Days Before - Use', const Duration(days: 1),
+                                          rawData, '4 Before - Use', const Duration(days: 1),
                                           ending: const Duration(days: 4), prices: false)),
                                   MyCard(
                                       child: BarChartWidget1(
-                                          rawData, '4 Days Before - Cost', const Duration(days: 1),
+                                          rawData, '4 Before - Cost', const Duration(days: 1),
                                           ending: const Duration(days: 4), prices: true)),
                                   MyCard(
                                       child: BarChartWidget1(
-                                          rawData, '5 Days Before - Use', const Duration(days: 1),
+                                          rawData, '5 Before - Use', const Duration(days: 1),
                                           ending: const Duration(days: 5), prices: false)),
                                   MyCard(
                                       child: BarChartWidget1(
-                                          rawData, '5 Days Before - Cost', const Duration(days: 1),
+                                          rawData, '5 Before - Cost', const Duration(days: 1),
                                           ending: const Duration(days: 5), prices: true)),
                                   MyCard(
                                       child: BarChartWidget1(
-                                          rawData, '6 Days Before - Use', const Duration(days: 1),
+                                          rawData, '6 Before - Use', const Duration(days: 1),
                                           ending: const Duration(days: 6), prices: false)),
                                   MyCard(
                                       child: BarChartWidget1(
-                                          rawData, '6 Days Before - Cost', const Duration(days: 1),
+                                          rawData, '6 Before - Cost', const Duration(days: 1),
                                           ending: const Duration(days: 6), prices: true)),
                                 ]
                               : _dropdownItemSelected.value == _dropdownItems[1].value
                                   ? [
                                       MyCard(
                                           child: BarChartWidget1(
-                                              rawData, 'Last 1 Day - Use', const Duration(days: 1),
+                                              rawData, 'Last 1 - Use', const Duration(days: 1),
                                               prices: false)),
                                       MyCard(
                                           child: BarChartWidget1(
-                                              rawData, 'Last 1 Day - Cost', const Duration(days: 1),
+                                              rawData, 'Last 1 - Cost', const Duration(days: 1),
                                               prices: true)),
                                       MyCard(
                                           child: BarChartWidget1(
-                                              rawData, 'Last 2 Days - Use', const Duration(days: 2),
+                                              rawData, 'Last 2 - Use', const Duration(days: 2),
                                               prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 2 Days - Cost',
+                                          child: BarChartWidget1(rawData, 'Last 2 - Cost',
                                               const Duration(days: 2),
                                               prices: true)),
                                       MyCard(
                                           child: BarChartWidget1(
-                                              rawData, 'Last 7 Days - Use', const Duration(days: 7),
+                                              rawData, 'Last 7 - Use', const Duration(days: 7),
                                               prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 7 Days - Cost',
+                                          child: BarChartWidget1(rawData, 'Last 7 - Cost',
                                               const Duration(days: 7),
                                               prices: true)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 14 Days - Use',
+                                          child: BarChartWidget1(rawData, 'Last 14 - Use',
                                               const Duration(days: 14),
                                               prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 14 Days - Cost',
+                                          child: BarChartWidget1(rawData, 'Last 14 - Cost',
                                               const Duration(days: 14),
                                               prices: true)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 21 Days - Use',
+                                          child: BarChartWidget1(rawData, 'Last 21 - Use',
                                               const Duration(days: 21),
                                               prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 21 Days - Cost',
+                                          child: BarChartWidget1(rawData, 'Last 21 - Cost',
                                               const Duration(days: 21),
                                               prices: true)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 28 Days - Use',
+                                          child: BarChartWidget1(rawData, 'Last 28 - Use',
                                               const Duration(days: 28),
                                               prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 28 Days - Cost',
+                                          child: BarChartWidget1(rawData, 'Last 28 - Cost',
                                               const Duration(days: 28),
                                               prices: true)),
                                     ]
