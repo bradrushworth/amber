@@ -120,18 +120,18 @@ class BarChartState extends State<BarChartWidget1> {
                             title: _title,
                             legends: _prices
                                 ? [
-                                    Legend(title: 'Off Peak', color: colors[2]),
+                                    Legend(title: 'Off', color: colors[2]),
                                     Legend(title: 'Shoulder', color: colors[3]),
                                     Legend(title: 'Peak', color: colors[4]),
                                     Legend(title: 'Control', color: colors[1]),
-                                    Legend(title: 'Feed In', color: colors[6]),
-                                    Legend(title: 'Supply', color: colors[0]),
+                                    Legend(title: 'Feed', color: colors[6]),
+                                    Legend(title: 'Amber', color: colors[0]),
                                   ]
                                 : [
-                                    Legend(title: 'Off Peak', color: colors[2]),
+                                    Legend(title: 'Off', color: colors[2]),
                                     Legend(title: 'Shoulder', color: colors[3]),
                                     Legend(title: 'Peak', color: colors[4]),
-                                    Legend(title: 'Feed In', color: colors[6]),
+                                    Legend(title: 'Feed', color: colors[6]),
                                     Legend(title: 'Control', color: colors[1]),
                                   ],
                             padding: const EdgeInsets.only(left: 3, right: 3, top: 3, bottom: 3),

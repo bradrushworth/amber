@@ -172,8 +172,8 @@ class HomePageState extends State<HomePage> {
       // then parse the JSON.
       List<Usage> usage =
           (jsonDecode(response.body) as List).map((json) => Usage.fromJson(json)).toList();
-      // final myData = await File('assets/usage.json').readAsString();
-      // List<Usage> usage = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
+      // final myData = await File('assets/feedin.json').readAsString();
+      // usage = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       setState(() {
         rawData = usage;
@@ -216,7 +216,7 @@ class HomePageState extends State<HomePage> {
                 textColor: Colors.white,
                 child: const Text('OK'),
                 onPressed: () {
-                  _getUsage();
+                  _loadDefaultFile();
                   setState(() {
                     Navigator.pop(context);
                   });
@@ -272,44 +272,47 @@ class HomePageState extends State<HomePage> {
                             bottom: 3),
                         child: Row(
                           children: [
-                            AutoSizeText.rich(
-                              TextSpan(
-                                text: 'Amber Electric Dashboard\n(',
-                                style: TextStyle(
-                                  color: themeModel.isDark() ? Colors.white : Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                children: [
-                                  const TextSpan(text: 'Click '),
-                                  TextSpan(
-                                    text: '\'For Developers\' in Amber',
-                                    style: TextStyle(
-                                        color: Theme.of(context).textTheme.button?.color ??
-                                            Colors.blueAccent,
-                                        height: 1.5),
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () {
-                                        Utils.launchURL('https://app.amber.com.au/developers/');
-                                      },
+                            orientation == Orientation.portrait && _siteIdItemSelected != null
+                                ? const Text('')
+                                : AutoSizeText.rich(
+                                    TextSpan(
+                                      text: 'Amber Electric Dashboard\n(',
+                                      style: TextStyle(
+                                        color: themeModel.isDark() ? Colors.white : Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      children: [
+                                        const TextSpan(text: 'Click '),
+                                        TextSpan(
+                                          text: '\'For Developers\' in Amber',
+                                          style: TextStyle(
+                                              color: Theme.of(context).textTheme.button?.color ??
+                                                  Colors.blueAccent,
+                                              height: 1.5),
+                                          recognizer: TapGestureRecognizer()
+                                            ..onTap = () {
+                                              Utils.launchURL(
+                                                  'https://app.amber.com.au/developers/');
+                                            },
+                                        ),
+                                        orientation == Orientation.portrait
+                                            ? const TextSpan(
+                                                text: '\nThen ', style: TextStyle(height: 1.5))
+                                            : const TextSpan(text: ', Then '),
+                                        TextSpan(
+                                          text: 'Generate a new Token',
+                                          style: TextStyle(
+                                              color: Theme.of(context).textTheme.button?.color ??
+                                                  Colors.blueAccent),
+                                          recognizer: TapGestureRecognizer()
+                                            ..onTap = () {
+                                              _displayTextInputDialog(context);
+                                            },
+                                        ),
+                                        const TextSpan(text: ')'),
+                                      ],
+                                    ),
                                   ),
-                                  orientation == Orientation.portrait
-                                      ? const TextSpan(
-                                          text: '\nThen ', style: TextStyle(height: 1.5))
-                                      : const TextSpan(text: ', Then '),
-                                  TextSpan(
-                                    text: 'Generate a new Token',
-                                    style: TextStyle(
-                                        color: Theme.of(context).textTheme.button?.color ??
-                                            Colors.blueAccent),
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = () {
-                                        _displayTextInputDialog(context);
-                                      },
-                                  ),
-                                  const TextSpan(text: ')'),
-                                ],
-                              ),
-                            ),
                             const Spacer(flex: 10),
                             // Switch(
                             //   value: themeModel.isDark(),
