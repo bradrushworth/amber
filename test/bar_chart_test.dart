@@ -1,7 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
-import 'package:csv/csv.dart';
-import 'package:csv/csv_settings_autodetection.dart';
+import 'package:amber/model/Usage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:amber/bar_chart.dart';
 
@@ -10,15 +10,8 @@ void main() {
     double dailySupplyChargePer30mins = DAILY / 24 / 2;
 
     test('1 Day', () async {
-      final myData = await File('assets/Your_Usage_List_Sample.csv').readAsString();
-      List<List<dynamic>> data = const CsvToListConverter(
-              csvSettingsDetector: FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
-          .convert(myData, shouldParseNumbers: true);
-      List<dynamic> fieldNames = data.removeAt(0);
-      expect(fieldNames.length, 3);
-      expect(fieldNames[0].trim(), 'Date and Time');
-      expect(fieldNames[1].trim(), 'Read Value - kWh (kilowatt hours)');
-      expect(fieldNames[2].trim(), 'Reading quality');
+      final myData = await File('assets/usage.json').readAsString();
+      List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
           DataAggregator(const Duration(days: 1), const Duration(days: 0), false);
@@ -36,68 +29,42 @@ void main() {
       expect(dataAggregator.newData[46]!.x, 46);
       expect(dataAggregator.newData[47]!.x, 47);
 
-      expect(dataAggregator.newData[0]!.barRods.first.toY,
-          closeTo(0.018 + 0.015 + 0.016 + 0.016 + 0.018 + 0.019, 0.001));
-      expect(dataAggregator.newData[47]!.barRods.first.toY,
-          closeTo(0.023 + 0.02 + 0.019 + 0.019 + 0.021 + 0.022, 0.001));
+      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(0.06, 0.001));
+      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.057, 0.001));
 
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.001));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY,
-          closeTo(0.018 + 0.015 + 0.016 + 0.016 + 0.018 + 0.019, 0.001));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY,
-          closeTo(0.018 + 0.015 + 0.016 + 0.016 + 0.018 + 0.019, 0.001));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY,
-          closeTo(0.018 + 0.015 + 0.016 + 0.016 + 0.018 + 0.019, 0.001));
+      expect(
+          dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.06, 0.001));
+      expect(
+          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.06, 0.001));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.06, 0.001));
     });
 
     test('1 Day Costs', () async {
-      final myData = await File('assets/Your_Usage_List_Sample.csv').readAsString();
-      List<List<dynamic>> data = const CsvToListConverter(
-              csvSettingsDetector: FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
-          .convert(myData, shouldParseNumbers: true);
-      List<dynamic> fieldNames = data.removeAt(0);
-      expect(fieldNames.length, 3);
-      expect(fieldNames[0].trim(), 'Date and Time');
-      expect(fieldNames[1].trim(), 'Read Value - kWh (kilowatt hours)');
-      expect(fieldNames[2].trim(), 'Reading quality');
+      final myData = await File('assets/usage.json').readAsString();
+      List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
           DataAggregator(const Duration(days: 1), const Duration(days: 0), true);
       dataAggregator.aggregateData(data);
 
-      expect(dailySupplyChargePer30mins, closeTo(0.0440, 0.001));
-      expect(
-          dataAggregator.newData[0]!.barRods.first.toY,
-          closeTo(
-              OFFPEAK * (0.018 + 0.015 + 0.016 + 0.016 + 0.018 + 0.019) +
-                  dailySupplyChargePer30mins,
-              0.01));
-      expect(
-          dataAggregator.newData[47]!.barRods.first.toY,
-          closeTo(
-              OFFPEAK * (0.023 + 0.02 + 0.019 + 0.019 + 0.021 + 0.022) + dailySupplyChargePer30mins,
-              0.01));
+      expect(dailySupplyChargePer30mins, closeTo(0.013013698630136987, 0.001));
+      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(0.03, 0.01));
+      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.03, 0.01));
 
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.01));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.05, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.02, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY,
-          closeTo(0.05 + dailySupplyChargePer30mins, 0.01));
+          closeTo(0.03 + dailySupplyChargePer30mins, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY,
-          closeTo(0.05 + dailySupplyChargePer30mins, 0.01));
+          closeTo(0.03 + dailySupplyChargePer30mins, 0.01));
     });
 
     test('2 Days', () async {
-      final myData = await File('assets/Your_Usage_List_Sample.csv').readAsString();
-      List<List<dynamic>> data = const CsvToListConverter(
-              csvSettingsDetector: FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
-          .convert(myData, shouldParseNumbers: true);
-      List<dynamic> fieldNames = data.removeAt(0);
-      expect(fieldNames.length, 3);
-      expect(fieldNames[0].trim(), 'Date and Time');
-      expect(fieldNames[1].trim(), 'Read Value - kWh (kilowatt hours)');
-      expect(fieldNames[2].trim(), 'Reading quality');
+      final myData = await File('assets/usage.json').readAsString();
+      List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
           DataAggregator(const Duration(days: 2), const Duration(days: 0), false);
@@ -113,41 +80,22 @@ void main() {
       expect(dataAggregator.newData[0]!.x, 0);
       expect(dataAggregator.newData[47]!.x, 47);
 
-      expect(
-          dataAggregator.newData[0]!.barRods.first.toY,
-          closeTo(
-              (0.018 + 0.015 + 0.016 + 0.016 + 0.018 + 0.019) +
-                  (0.023 + 0.023 + 0.023 + 0.018 + 0.017 + 0.017) +
-                  (0.0 + 0.3 + 0.23 + 0.0 + 0.2 + 0.0) +
-                  (0.0),
-              0.001));
-      expect(
-          dataAggregator.newData[47]!.barRods.first.toY,
-          closeTo(
-              (0.023 + 0.02 + 0.019 + 0.019 + 0.021 + 0.022) +
-                  (0.016 + 0.017 + 0.019 + 0.019 + 0.02 + 0.019),
-              0.001));
+      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(0.125, 0.001));
+      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.124, 0.001));
 
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.001));
       expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.224, 0.001));
+          dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.125, 0.001));
       expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.224, 0.001));
+          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.125, 0.001));
       expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.9535, 0.001));
+          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.125, 0.001));
     });
 
     test('1 Day Costs 1 Day Prior', () async {
-      final myData = await File('assets/Your_Usage_List_Sample.csv').readAsString();
-      List<List<dynamic>> data = const CsvToListConverter(
-              csvSettingsDetector: FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
-          .convert(myData, shouldParseNumbers: true);
-      List<dynamic> fieldNames = data.removeAt(0);
-      expect(fieldNames.length, 3);
-      expect(fieldNames[0].trim(), 'Date and Time');
-      expect(fieldNames[1].trim(), 'Read Value - kWh (kilowatt hours)');
-      expect(fieldNames[2].trim(), 'Reading quality');
+      final myData = await File('assets/usage.json').readAsString();
+      List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
           DataAggregator(const Duration(days: 1), const Duration(days: 1), true);
@@ -165,29 +113,50 @@ void main() {
       expect(dataAggregator.newData[46]!.x, 46);
       expect(dataAggregator.newData[47]!.x, 47);
 
-      expect(dailySupplyChargePer30mins, closeTo(0.0440, 0.001));
-      expect(
-          dataAggregator.newData[0]!.barRods.first.toY,
-          closeTo(
-              (OFFPEAK * (0.023 + 0.023 + 0.023 + 0.018 + 0.017 + 0.017)) +
-                  (CONTROLLED * (0.0 + 0.0 + 0.3 + 0.23 + 0.0 + 0.2)) +
-                  dailySupplyChargePer30mins,
-              0.01));
-      expect(
-          dataAggregator.newData[47]!.barRods.first.toY,
-          closeTo(
-              (OFFPEAK * (0.016 + 0.017 + 0.019 + 0.019 + 0.02 + 0.019)) +
-                  (CONTROLLED * (0.0 + 0.0 + 0.0 + 0.0 + 0.0 + 0.0)) +
-                  dailySupplyChargePer30mins,
-              0.01));
+      expect(dailySupplyChargePer30mins, closeTo(0.013013698630136987, 0.001));
+      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(0.03, 0.01));
+      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.03, 0.01));
 
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.00, 0.01));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.05, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.02, 0.01));
       expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.08, 0.01));
+          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.04, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.04, 0.01));
+    });
+
+    test('1 Day Costs 2 Day Prior', () async {
+      final myData = await File('assets/usage.json').readAsString();
+      List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
+
+      DataAggregator dataAggregator =
+          DataAggregator(const Duration(days: 1), const Duration(days: 2), true);
+      dataAggregator.aggregateData(data);
+
+      expect(dataAggregator.newTitles.length, 48);
+      expect(dataAggregator.newTitles[0], '00:00');
+      expect(dataAggregator.newTitles[1], '00:30');
+      expect(dataAggregator.newTitles[7], '03:30');
+      expect(dataAggregator.newTitles[8], '04:00');
+      expect(dataAggregator.newTitles[46], '23:00');
+      expect(dataAggregator.newTitles[47], '23:30');
+
+      expect(dataAggregator.newData.length, 48);
+      expect(dataAggregator.newData[0]!.x, 0);
+      expect(dataAggregator.newData[1]!.x, 1);
+      expect(dataAggregator.newData[46]!.x, 46);
+      expect(dataAggregator.newData[47]!.x, 47);
+
+      expect(dailySupplyChargePer30mins, closeTo(0.013013698630136987, 0.001));
+      expect(dataAggregator.newData[7]!.barRods.first.toY, closeTo(1.4835 / 100 + dailySupplyChargePer30mins, 0.01));
+      expect(dataAggregator.newData[8]!.barRods.first.toY, closeTo(2.8617 / 100 + dailySupplyChargePer30mins, 0.01));
+
       expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.2299, 0.01));
+          dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.00, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.02, 0.01));
+      expect(
+          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.04, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.04, 0.01));
     });
   });
 }

@@ -1,25 +1,20 @@
 import 'dart:collection';
 import 'dart:math';
 
-import 'package:csv/csv.dart';
-import 'package:csv/csv_settings_autodetection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:amber/my_theme_model.dart';
 import 'package:provider/provider.dart';
 import 'package:vector_math/vector_math.dart' as math;
 
+import 'model/Usage.dart';
 import 'top_section.dart';
 
-const String cancelled = 'Cancelled';
-const String loading = 'Loading';
+// const String cancelled = 'Cancelled';
+// const String loading = 'Loading';
 
-const int METER_INTERVAL = 5; // minutes
-const double DAILY = 2.1109; // Daily charge
-const double CONTROLLED = 0.1771; // Controlled
-const double OFFPEAK = 0.2992; // Off peak
-const double SHOULDER = 0.3971; // Shoulder
-const double PEAK = 0.4620; // Peak
+const int METER_INTERVAL = 30; // minutes
+const double DAILY = 19.00 * 12 / 365; // Daily charge
 
 final List<Color> colors = [
   const Color(0xFF5974FF),
@@ -28,10 +23,11 @@ final List<Color> colors = [
   Colors.orange,
   Colors.red,
   Colors.blueAccent,
+  Colors.yellow,
 ];
 
 class BarChartWidget1 extends StatefulWidget {
-  late String rawData;
+  late List<Usage>? rawData;
   late String title;
   late final Duration duration;
   late final Duration ending;
@@ -46,7 +42,7 @@ class BarChartWidget1 extends StatefulWidget {
 }
 
 class BarChartState extends State<BarChartWidget1> {
-  late String _rawData;
+  late List<Usage>? _rawData;
   late final String _title;
   late final Duration _duration;
   late final Duration _ending;
@@ -80,7 +76,7 @@ class BarChartState extends State<BarChartWidget1> {
     }
   }
 
-  void refresh(String rawData) {
+  void refresh(List<Usage>? rawData) {
     setState(() {
       _rawData = rawData;
     });
@@ -105,7 +101,7 @@ class BarChartState extends State<BarChartWidget1> {
                   ? [
                       const Spacer(),
                       Text(
-                        'User cancelled import for:\n$_title',
+                        'No API key entered yet:\n$_title',
                         textAlign: TextAlign.center,
                       ),
                       const Spacer()
@@ -114,7 +110,7 @@ class BarChartState extends State<BarChartWidget1> {
                       ? [
                           const Spacer(),
                           Text(
-                            'Not enough data in file for:\n$_title',
+                            'Not enough data available for:\n$_title',
                             textAlign: TextAlign.center,
                           ),
                           const Spacer()
@@ -128,12 +124,14 @@ class BarChartState extends State<BarChartWidget1> {
                                     Legend(title: 'Shoulder', color: colors[3]),
                                     Legend(title: 'Peak', color: colors[4]),
                                     Legend(title: 'Control', color: colors[1]),
+                                    Legend(title: 'Feed In', color: colors[6]),
                                     Legend(title: 'Supply', color: colors[0]),
                                   ]
                                 : [
                                     Legend(title: 'Off Peak', color: colors[2]),
                                     Legend(title: 'Shoulder', color: colors[3]),
                                     Legend(title: 'Peak', color: colors[4]),
+                                    Legend(title: 'Feed In', color: colors[6]),
                                     Legend(title: 'Control', color: colors[1]),
                                   ],
                             padding: const EdgeInsets.only(left: 3, right: 3, top: 3, bottom: 3),
@@ -204,27 +202,7 @@ class BarChartState extends State<BarChartWidget1> {
   }
 
   void parseFile() {
-    if (_rawData.isEmpty) {
-      setState(() {
-        _barChartData = [];
-        _barChartTitles = {};
-        _loading = false;
-        _cancelled = false;
-        _notEnoughData = true;
-      });
-      return;
-    }
-    if (_rawData == loading) {
-      setState(() {
-        _barChartData = [];
-        _barChartTitles = {};
-        _loading = true;
-        _cancelled = false;
-        _notEnoughData = false;
-      });
-      return;
-    }
-    if (_rawData == cancelled) {
+    if (_rawData == null) {
       setState(() {
         _barChartData = [];
         _barChartTitles = {};
@@ -234,35 +212,19 @@ class BarChartState extends State<BarChartWidget1> {
       });
       return;
     }
+    if (_rawData!.isEmpty) {
+      setState(() {
+        _barChartData = [];
+        _barChartTitles = {};
+        _loading = true;
+        _cancelled = false;
+        _notEnoughData = false;
+      });
+      return;
+    }
 
     //final rawData = await rootBundle.loadString(filepath);
-    List<List<dynamic>> data = const CsvToListConverter(
-            csvSettingsDetector: FirstOccurrenceSettingsDetector(eols: ['\r\n', '\n']))
-        .convert(_rawData, shouldParseNumbers: true);
-    if (data.isEmpty) {
-      //print('Data was empty!');
-      setState(() {
-        _barChartData = [];
-        _barChartTitles = {};
-        _loading = false;
-        _cancelled = false;
-        _notEnoughData = true;
-      });
-      return;
-    }
-    //print('Updating data!');
-    List<dynamic> fieldNames = data.removeAt(0);
-    if (data.isEmpty) {
-      //print('Data only had field names!');
-      setState(() {
-        _barChartData = [];
-        _barChartTitles = {};
-        _loading = false;
-        _cancelled = false;
-        _notEnoughData = true;
-      });
-      return;
-    }
+    List<Usage> data = _rawData!;
     DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices);
     try {
       dataAggregator.aggregateData(data);
@@ -299,37 +261,13 @@ class DataAggregator {
 
   DataAggregator(this._duration, this._ending, this._prices);
 
-  String dateParse(String input) {
-    // e.g. 13/12/21 02:30
-    return '20' +
-        input.substring(6, 8) +
-        input.substring(3, 5) +
-        input.substring(0, 2) +
-        'T' +
-        input.substring(9, 11) +
-        ':' +
-        input.substring(12, 14) +
-        ':00';
-  }
+  aggregateData(List<Usage> data) {
+    int numMeters =
+        data.map((u) => u.channelIdentifier!).reduce((value, element) => element).length;
+    //print('numMeters=$numMeters');
 
-  aggregateData(List<List<dynamic>> data) {
-    int numMeters = 0;
-    {
-      String date, previousDate = '';
-      for (List record in data) {
-        date = record[0];
-        numMeters++;
-        if (date == previousDate) {
-          break;
-        }
-        previousDate = date;
-      }
-      //print('numMeters=$numMeters');
-    }
-
-    DateTime latest = DateTime.parse(dateParse(data.last[0]).substring(0, 8))
-        .subtract(_ending)
-        .add(const Duration(days: 1));
+    DateTime latest =
+        DateTime.parse(data.last.date!).subtract(_ending).add(const Duration(days: 1));
     DateTime earliest = latest.subtract(_duration);
     //print('latest=$latest earliest=$earliest');
 
@@ -339,10 +277,12 @@ class DataAggregator {
     bool beforeRange = false;
     bool afterRange = false;
 
-    for (int n = 0; n < data.length; n += numMeters) {
-      List<dynamic> record = data[n];
-      //print("adding record[0]=${record[0]}");
-      DateTime date = DateTime.parse(dateParse(record[0]));
+    for (int n = 0; n < data.length ~/ numMeters; n++) {
+      Usage record = data[n];
+      //print("adding record=" + record.startTime!.substring(0, 18) + "0");
+      DateTime date = DateTime.parse(record.nemTime!)
+          .subtract(const Duration(minutes: METER_INTERVAL))
+          .toLocal();
       if (date.isBefore(earliest)) {
         continue; // Skip data outside of range
       }
@@ -361,14 +301,17 @@ class DataAggregator {
       newTitles[graphPos] = newTitles[graphPos] ?? date.toString().substring(11, 16);
 
       for (int meterNum = 0; meterNum < numMeters; meterNum++) {
-        record = data[n + meterNum];
-        //print("adding date=$date record[1]=${record[1]}");
-        stackedValue[graphPos] = (stackedValue[graphPos] ?? 0.0) +
-            (_prices ? _getCost(meterNum, date.weekday, graphPos, 0.0 + record[1]) : record[1]);
+        record = data[n + meterNum * data.length ~/ numMeters];
+        //print("adding date=$date record=${record.kwh}");
+        int channelType = record.channelType == "controlledLoad"
+            ? 0
+            : 1;
+        stackedValue[graphPos] =
+            (stackedValue[graphPos] ?? 0.0) + (_prices ? record.cost! / 100 : record.kwh!);
         stackedValues[graphPos] = (stackedValues[graphPos] ??
             List<double>.generate(numMeters + (_prices ? 1 : 0), (index) => 0.0));
-        stackedValues[graphPos]![meterNum] = (stackedValues[graphPos]![meterNum]) +
-            (_prices ? _getCost(meterNum, date.weekday, graphPos, 0.0 + record[1]) : record[1]);
+        stackedValues[graphPos]![channelType] =
+            (stackedValues[graphPos]![channelType]) + (_prices ? record.cost! / 100 : record.kwh!);
       }
 
       if (_prices) {
@@ -434,6 +377,8 @@ class DataAggregator {
       return colors[0]; // Supply
     } else if (graphPos < 7 * 2) {
       return colors[2]; // Off peak
+    } else if (graphPos < 9 * 2) {
+      return colors[4]; // Peak
     } else if (graphPos < 17 * 2) {
       return colors[3]; // Shoulder
     } else if (graphPos < 20 * 2) {
@@ -445,23 +390,23 @@ class DataAggregator {
     }
   }
 
-  double _getCost(int meterNum, int weekday, int graphPos, double value) {
-    if (meterNum == 0) {
-      return value * CONTROLLED; // Controlled
-    } else if (weekday == DateTime.saturday || weekday == DateTime.sunday) {
-      return value * OFFPEAK; // Off peak
-    } else if (graphPos < 7 * 2) {
-      return value * OFFPEAK; // Off peak
-    } else if (graphPos < 17 * 2) {
-      return value * SHOULDER; // Shoulder
-    } else if (graphPos < 20 * 2) {
-      return value * PEAK; // Peak
-    } else if (graphPos < 22 * 2) {
-      return value * SHOULDER; // Shoulder
-    } else {
-      return value * OFFPEAK; // Off peak
-    }
-  }
+  // double _getCost(int meterNum, int weekday, int graphPos, double value) {
+  //   if (meterNum == 0) {
+  //     return value * CONTROLLED; // Controlled
+  //   } else if (weekday == DateTime.saturday || weekday == DateTime.sunday) {
+  //     return value * OFFPEAK; // Off peak
+  //   } else if (graphPos < 7 * 2) {
+  //     return value * OFFPEAK; // Off peak
+  //   } else if (graphPos < 17 * 2) {
+  //     return value * SHOULDER; // Shoulder
+  //   } else if (graphPos < 20 * 2) {
+  //     return value * PEAK; // Peak
+  //   } else if (graphPos < 22 * 2) {
+  //     return value * SHOULDER; // Shoulder
+  //   } else {
+  //     return value * OFFPEAK; // Off peak
+  //   }
+  // }
 }
 
 class NotEnoughDataException implements Exception {}

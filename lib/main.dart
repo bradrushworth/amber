@@ -1,6 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:device_preview/device_preview.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +13,13 @@ import 'package:amber/screenshots_mobile.dart'
     if (dart.library.io) 'package:amber/screenshots_mobile.dart'
     if (dart.library.js) 'package:amber/screenshots_other.dart';
 import 'package:amber/utils.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+
+import 'model/Sites.dart';
+import 'model/Usage.dart';
 
 void main() {
   runApp(
@@ -21,9 +29,7 @@ void main() {
         create: (context) => MyThemeModel(),
         child: const MyApp(),
       ), // Wrap your app
-      tools: kIsWeb
-          ? [...DevicePreview.defaultTools, simpleScreenShotModesPlugin]
-          : [],
+      tools: kIsWeb ? [...DevicePreview.defaultTools, simpleScreenShotModesPlugin] : [],
     ),
   );
 }
@@ -46,7 +52,7 @@ class MyAppState extends State<MyApp> {
     return Consumer<MyThemeModel>(
       builder: (context, themeModel, child) {
         return MaterialApp(
-          title: 'Momentum Energy Dashboard',
+          title: 'Amber Electric Dashboard',
           // Create space for camera cut-outs etc
           useInheritedMediaQuery: true,
           // Hide the dev banner
@@ -81,15 +87,22 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  late String rawData = loading;
+  late List<Usage>? rawData = [];
+  late SharedPreferences prefs;
 
   final List<ListItem> _dropdownItems = [
-    ListItem(1, "Recent Days"),
-    ListItem(2, "Combined Days"),
-    ListItem(3, "Combined Weeks"),
+    ListItem("1", "Recent Days"),
+    ListItem("2", "Combined Days"),
+    ListItem("3", "Combined Weeks"),
   ];
   late List<DropdownMenuItem<ListItem>> _dropdownMenuItems;
   late ListItem _dropdownItemSelected;
+
+  final TextEditingController _amberTokenController = TextEditingController();
+  String? amberToken;
+  List<DropdownMenuItem<ListItem>> _siteIdMenuItems = [];
+  late List<Site> _sites;
+  ListItem? _siteIdItemSelected;
 
   @override
   initState() {
@@ -101,39 +114,117 @@ class HomePageState extends State<HomePage> {
 
   void _loadDefaultFile() async {
     //print('_loadDefaultFile');
-    String data = await rootBundle.loadString('assets/Your_Usage_List.csv');
-    //print('data=$data');
-    setState(() {
-      rawData = data;
-    });
-  }
 
-  void _pickFile() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      withData: true,
-      type: FileType.any,
-      //allowedExtensions: ['csv'],
-      allowMultiple: false,
-      allowCompression: false,
-    );
-    if (result != null && result.files.first.bytes != null) {
-      String data = String.fromCharCodes(result.files.first.bytes!);
-      //print('_pickFile');
-      //print('data=$data');
-      setState(() {
-        rawData = data;
-      });
+    // obtain shared preferences
+    prefs = await SharedPreferences.getInstance();
+    amberToken = prefs.getString('amberToken');
+    List<Usage>? data;
+    if (amberToken != null) {
+      _amberTokenController.text = amberToken!;
+
+      List<ListItem> sites = await _getSites();
+      _siteIdMenuItems = buildDropDownMenuItems(sites);
+      _siteIdItemSelected = _siteIdMenuItems[0].value!;
+
+      _getUsage();
     } else {
-      // User canceled the picker
       setState(() {
-        rawData = cancelled;
-      });
-
-      // Wait then load the template again
-      Future.delayed(const Duration(milliseconds: 2000), () {
-        _loadDefaultFile();
+        rawData = null;
       });
     }
+  }
+
+  Future<List<ListItem>> _getSites() async {
+    final response = await http.get(Uri.parse('https://api.amber.com.au/v1/sites'), headers: {
+      "accept": "application/json",
+      "Authorization": "Bearer ${amberToken!}",
+    });
+
+    if (response.statusCode == 200) {
+      // If the server did return a 200 OK response,
+      // then parse the JSON.
+      _sites = (jsonDecode(response.body) as List).map((json) => Site.fromJson(json)).toList();
+      int i = 1;
+      return _sites.map((site) => ListItem(site.id!, "${site.network} ${site.nmi}")).toList();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.body)));
+      // If the server did not return a 200 OK response,
+      // then throw an exception.
+      throw Exception('Failed to load sites! code=${response.statusCode}\n${response.body}');
+    }
+  }
+
+  Future<void> _getUsage() async {
+    String startDate =
+        DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 32)));
+    String endDate =
+        DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 1)));
+    String uri =
+        'https://api.amber.com.au/v1/sites/${_siteIdItemSelected!.value}/usage?startDate=$startDate&endDate=$endDate&resolution=$METER_INTERVAL';
+    print(uri);
+    // final response = await http.get(Uri.parse(uri), headers: {
+    //   "accept": "application/json",
+    //   "Authorization": "Bearer ${amberToken!}",
+    // });
+
+    if (true) {//response.statusCode == 200) {
+      // If the server did return a 200 OK response,
+      // then parse the JSON.
+      // List<Usage> usage =
+      //     (jsonDecode(response.body) as List).map((json) => Usage.fromJson(json)).toList();
+      final myData = await File('assets/usage.json').readAsString();
+      List<Usage> usage = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
+
+      setState(() {
+        rawData = usage;
+      });
+    } else {
+    //   setState(() {
+    //     rawData = null;
+    //   });
+    //   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.body)));
+    //
+    //   // If the server did not return a 200 OK response,
+    //   // then throw an exception.
+    //   throw Exception(
+    //       'Failed to load usage for site ${_siteIdItemSelected!.value}! code=${response.statusCode}\n${response.body}');
+    }
+  }
+
+  Future<void> _displayTextInputDialog(BuildContext context) async {
+    return showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Amber API Token'),
+            content: TextField(
+              onChanged: (value) async {
+                if (value.length != 36) {
+                  return;
+                }
+                await prefs.setString('amberToken', value);
+                setState(() {
+                  amberToken = value;
+                });
+              },
+              controller: _amberTokenController,
+              decoration: const InputDecoration(hintText: "Amber API Token"),
+            ),
+            actions: <Widget>[
+              MaterialButton(
+                color: Colors.green,
+                textColor: Colors.white,
+                child: const Text('OK'),
+                onPressed: () {
+                  _getUsage();
+                  setState(() {
+                    Navigator.pop(context);
+                  });
+                },
+              ),
+            ],
+          );
+        });
   }
 
   List<DropdownMenuItem<ListItem>> buildDropDownMenuItems(List listItems) {
@@ -141,11 +232,11 @@ class HomePageState extends State<HomePage> {
     for (ListItem listItem in listItems) {
       items.add(
         DropdownMenuItem(
+          value: listItem,
           child: Text(
             listItem.name,
             style: const TextStyle(color: Colors.white),
           ),
-          value: listItem,
           //onTap: () => setState(() {}),
         ),
       );
@@ -162,8 +253,7 @@ class HomePageState extends State<HomePage> {
     return Consumer<MyThemeModel>(
       builder: (context, themeModel, child) {
         return Scaffold(
-          backgroundColor:
-              themeModel.isDark() ? const Color(0xFF20202A) : Colors.white,
+          backgroundColor: themeModel.isDark() ? const Color(0xFF20202A) : Colors.white,
           resizeToAvoidBottomInset: true,
           extendBody: true,
           extendBodyBehindAppBar: true,
@@ -184,50 +274,43 @@ class HomePageState extends State<HomePage> {
                           children: [
                             AutoSizeText.rich(
                               TextSpan(
-                                text: 'Amber Electic Dashboard\n(',
+                                text: 'Amber Electric Dashboard\n(',
                                 style: TextStyle(
-                                  color: themeModel.isDark()
-                                      ? Colors.white
-                                      : Colors.black,
+                                  color: themeModel.isDark() ? Colors.white : Colors.black,
                                   fontWeight: FontWeight.bold,
                                 ),
                                 children: [
                                   const TextSpan(text: 'Click '),
                                   TextSpan(
-                                    text: '\'For Developers\' from Amber',
+                                    text: '\'For Developers\' in Amber',
                                     style: TextStyle(
-                                        color: Theme.of(context)
-                                                .textTheme
-                                                .button
-                                                ?.color ??
+                                        color: Theme.of(context).textTheme.button?.color ??
                                             Colors.blueAccent,
                                         height: 1.5),
                                     recognizer: TapGestureRecognizer()
                                       ..onTap = () {
-                                        Utils.launchURL(
-                                            'https://app.amber.com.au/developers/');
+                                        Utils.launchURL('https://app.amber.com.au/developers/');
                                       },
                                   ),
                                   orientation == Orientation.portrait
                                       ? const TextSpan(
-                                          text: '\nThen ',
-                                          style: TextStyle(height: 1.5))
+                                          text: '\nThen ', style: TextStyle(height: 1.5))
                                       : const TextSpan(text: ', Then '),
                                   TextSpan(
-                                    text: 'Select File',
+                                    text: 'Generate a new Token',
                                     style: TextStyle(
                                         color: Theme.of(context).textTheme.button?.color ??
                                             Colors.blueAccent),
                                     recognizer: TapGestureRecognizer()
                                       ..onTap = () {
-                                        _pickFile();
+                                        _displayTextInputDialog(context);
                                       },
                                   ),
                                   const TextSpan(text: ')'),
                                 ],
                               ),
                             ),
-                            const Spacer(),
+                            const Spacer(flex: 10),
                             // Switch(
                             //   value: themeModel.isDark(),
                             //   onChanged: (newValue) {
@@ -235,6 +318,20 @@ class HomePageState extends State<HomePage> {
                             //         .switchTheme();
                             //   },
                             // ),
+                            DropdownButtonHideUnderline(
+                              child: DropdownButton(
+                                  dropdownColor: const Color(0xFF20202A),
+                                  value: _siteIdItemSelected,
+                                  items: _siteIdMenuItems,
+                                  onChanged: (ListItem? value) {
+                                    //print("value=${value!.name}");
+                                    setState(() {
+                                      _siteIdItemSelected = value!;
+                                    });
+                                    _getUsage();
+                                  }),
+                            ),
+                            const Spacer(),
                             DropdownButtonHideUnderline(
                               child: DropdownButton(
                                   dropdownColor: const Color(0xFF20202A),
@@ -259,14 +356,11 @@ class HomePageState extends State<HomePage> {
                           childAspectRatio: 2.34,
                           // Random number that makes my phone look good
                           padding: orientation == Orientation.portrait
-                              ? const EdgeInsets.only(
-                                  left: 4, right: 4, bottom: 4, top: 4)
-                              : const EdgeInsets.only(
-                                  left: 30, right: 10, bottom: 4, top: 4),
+                              ? const EdgeInsets.only(left: 4, right: 4, bottom: 4, top: 4)
+                              : const EdgeInsets.only(left: 30, right: 10, bottom: 4, top: 4),
                           crossAxisSpacing: 4,
                           mainAxisSpacing: 4,
-                          children: _dropdownItemSelected.value ==
-                                  _dropdownItems[0].value
+                          children: _dropdownItemSelected.value == _dropdownItems[0].value
                               ? [
                                   MyCard(
                                     child: BarChartWidget1(
@@ -279,11 +373,8 @@ class HomePageState extends State<HomePage> {
                                   ),
                                   MyCard(
                                       child: BarChartWidget1(
-                                          rawData,
-                                          'Last Day - Cost',
-                                          const Duration(days: 1),
-                                          ending: const Duration(days: 0),
-                                          prices: true)),
+                                          rawData, 'Last Day - Cost', const Duration(days: 1),
+                                          ending: const Duration(days: 0), prices: true)),
                                   MyCard(
                                       child: BarChartWidget1(
                                           rawData, '1 Day Before - Use', const Duration(days: 1),
@@ -333,139 +424,90 @@ class HomePageState extends State<HomePage> {
                                           rawData, '6 Days Before - Cost', const Duration(days: 1),
                                           ending: const Duration(days: 6), prices: true)),
                                 ]
-                              : _dropdownItemSelected.value ==
-                                      _dropdownItems[1].value
+                              : _dropdownItemSelected.value == _dropdownItems[1].value
                                   ? [
                                       MyCard(
                                           child: BarChartWidget1(
-                                              rawData,
-                                              'Last 1 Day - Use',
-                                              const Duration(days: 1),
+                                              rawData, 'Last 1 Day - Use', const Duration(days: 1),
                                               prices: false)),
                                       MyCard(
                                           child: BarChartWidget1(
-                                              rawData,
-                                              'Last 1 Day - Cost',
-                                              const Duration(days: 1),
+                                              rawData, 'Last 1 Day - Cost', const Duration(days: 1),
                                               prices: true)),
                                       MyCard(
                                           child: BarChartWidget1(
-                                              rawData,
-                                              'Last 2 Days - Use',
-                                              const Duration(days: 2),
+                                              rawData, 'Last 2 Days - Use', const Duration(days: 2),
                                               prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(
-                                              rawData,
-                                              'Last 2 Days - Cost',
+                                          child: BarChartWidget1(rawData, 'Last 2 Days - Cost',
                                               const Duration(days: 2),
                                               prices: true)),
                                       MyCard(
                                           child: BarChartWidget1(
-                                              rawData,
-                                              'Last 7 Days - Use',
-                                              const Duration(days: 7),
+                                              rawData, 'Last 7 Days - Use', const Duration(days: 7),
                                               prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(
-                                              rawData,
-                                              'Last 7 Days - Cost',
+                                          child: BarChartWidget1(rawData, 'Last 7 Days - Cost',
                                               const Duration(days: 7),
                                               prices: true)),
                                       MyCard(
-                                          child: BarChartWidget1(
-                                              rawData,
-                                              'Last 14 Days - Use',
+                                          child: BarChartWidget1(rawData, 'Last 14 Days - Use',
                                               const Duration(days: 14),
                                               prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(
-                                              rawData,
-                                              'Last 14 Days - Cost',
+                                          child: BarChartWidget1(rawData, 'Last 14 Days - Cost',
                                               const Duration(days: 14),
                                               prices: true)),
                                       MyCard(
-                                          child: BarChartWidget1(
-                                              rawData,
-                                              'Last 21 Days - Use',
+                                          child: BarChartWidget1(rawData, 'Last 21 Days - Use',
                                               const Duration(days: 21),
                                               prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(
-                                              rawData,
-                                              'Last 21 Days - Cost',
+                                          child: BarChartWidget1(rawData, 'Last 21 Days - Cost',
                                               const Duration(days: 21),
                                               prices: true)),
                                       MyCard(
-                                          child: BarChartWidget1(
-                                              rawData,
-                                              'Last 28 Days - Use',
+                                          child: BarChartWidget1(rawData, 'Last 28 Days - Use',
                                               const Duration(days: 28),
                                               prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(
-                                              rawData,
-                                              'Last 28 Days - Cost',
+                                          child: BarChartWidget1(rawData, 'Last 28 Days - Cost',
                                               const Duration(days: 28),
                                               prices: true)),
                                     ]
                                   : [
                                       MyCard(
                                           child: BarChartWidget1(
-                                              rawData,
-                                              'This Week - Use',
-                                              const Duration(days: 7),
-                                              ending: const Duration(days: 0),
-                                              prices: false)),
+                                              rawData, 'This Week - Use', const Duration(days: 7),
+                                              ending: const Duration(days: 0), prices: false)),
                                       MyCard(
                                           child: BarChartWidget1(
-                                              rawData,
-                                              'This Week - Cost',
-                                              const Duration(days: 7),
-                                              ending: const Duration(days: 0),
-                                              prices: true)),
+                                              rawData, 'This Week - Cost', const Duration(days: 7),
+                                              ending: const Duration(days: 0), prices: true)),
                                       MyCard(
                                           child: BarChartWidget1(
-                                              rawData,
-                                              '1 Week Ago - Use',
-                                              const Duration(days: 7),
-                                              ending: const Duration(days: 7),
-                                              prices: false)),
+                                              rawData, '1 Week Ago - Use', const Duration(days: 7),
+                                              ending: const Duration(days: 7), prices: false)),
                                       MyCard(
                                           child: BarChartWidget1(
-                                              rawData,
-                                              '1 Week Ago - Cost',
-                                              const Duration(days: 7),
-                                              ending: const Duration(days: 7),
-                                              prices: true)),
+                                              rawData, '1 Week Ago - Cost', const Duration(days: 7),
+                                              ending: const Duration(days: 7), prices: true)),
                                       MyCard(
                                           child: BarChartWidget1(
-                                              rawData,
-                                              '2 Weeks Ago - Use',
+                                              rawData, '2 Weeks Ago - Use', const Duration(days: 7),
+                                              ending: const Duration(days: 14), prices: false)),
+                                      MyCard(
+                                          child: BarChartWidget1(rawData, '2 Weeks Ago - Cost',
                                               const Duration(days: 7),
-                                              ending: const Duration(days: 14),
-                                              prices: false)),
+                                              ending: const Duration(days: 14), prices: true)),
                                       MyCard(
                                           child: BarChartWidget1(
-                                              rawData,
-                                              '2 Weeks Ago - Cost',
-                                              const Duration(days: 7),
-                                              ending: const Duration(days: 14),
-                                              prices: true)),
+                                              rawData, '3 Weeks Ago - Use', const Duration(days: 7),
+                                              ending: const Duration(days: 21), prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(
-                                              rawData,
-                                              '3 Weeks Ago - Use',
+                                          child: BarChartWidget1(rawData, '3 Weeks Ago - Cost',
                                               const Duration(days: 7),
-                                              ending: const Duration(days: 21),
-                                              prices: false)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData,
-                                              '3 Weeks Ago - Cost',
-                                              const Duration(days: 7),
-                                              ending: const Duration(days: 21),
-                                              prices: true)),
+                                              ending: const Duration(days: 21), prices: true)),
 
                                       //MyCard(child: BarChartWidget2()),
                                       //const MyCard(child: LineChartWidget1()),
@@ -474,9 +516,7 @@ class HomePageState extends State<HomePage> {
                         ),
                       ),
                       Container(
-                        color: themeModel.isDark()
-                            ? const Color(0xFF20202A)
-                            : Colors.white,
+                        color: themeModel.isDark() ? const Color(0xFF20202A) : Colors.white,
                         width: double.infinity,
                         height: 30,
                         child: Row(
@@ -484,14 +524,11 @@ class HomePageState extends State<HomePage> {
                             Expanded(
                               child: TextButton(
                                 onPressed: () {
-                                  Utils.launchURL(
-                                      'https://github.com/bradrushworth/amber');
+                                  Utils.launchURL('https://github.com/bradrushworth/amber');
                                 },
                                 // Constrains AutoSizeText to the width of the Row
                                 child: AutoSizeText('Source Code',
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    group: bottomButtonGroup),
+                                    maxLines: 1, softWrap: false, group: bottomButtonGroup),
                               ),
                             ),
                             const MyDivider(),
@@ -499,13 +536,10 @@ class HomePageState extends State<HomePage> {
                               // Constrains AutoSizeText to the width of the Row
                               child: TextButton(
                                 onPressed: () {
-                                  Utils.launchURL(
-                                      'https://pub.dev/packages/fl_chart');
+                                  Utils.launchURL('https://pub.dev/packages/fl_chart');
                                 },
                                 child: AutoSizeText('Chart Library',
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    group: bottomButtonGroup),
+                                    maxLines: 1, softWrap: false, group: bottomButtonGroup),
                               ),
                             ),
                             const MyDivider(),
@@ -514,8 +548,7 @@ class HomePageState extends State<HomePage> {
                                     // Constrains AutoSizeText to the width of the Row
                                     child: TextButton(
                                       onPressed: () {
-                                        Utils.launchURL(
-                                            'https://www.buymeacoffee.com/bitbot');
+                                        Utils.launchURL('https://www.buymeacoffee.com/bitbot');
                                       },
                                       child: AutoSizeText('Buy Coffee',
                                           maxLines: 1,
@@ -528,8 +561,7 @@ class HomePageState extends State<HomePage> {
                                     // Constrains AutoSizeText to the width of the Row
                                     child: TextButton(
                                       onPressed: () {
-                                        Utils.launchURL(
-                                            'https://www.bitbot.com.au/');
+                                        Utils.launchURL('https://www.bitbot.com.au/');
                                       },
                                       child: AutoSizeText('Visit BitBot',
                                           maxLines: 1,
@@ -547,9 +579,7 @@ class HomePageState extends State<HomePage> {
                                       'mailto:bitbot@bitbot.com.au?subject=Help with Amber Electric Dashboard');
                                 },
                                 child: AutoSizeText('Report Issue',
-                                    maxLines: 1,
-                                    softWrap: false,
-                                    group: bottomButtonGroup),
+                                    maxLines: 1, softWrap: false, group: bottomButtonGroup),
                               ),
                             ),
                           ],
@@ -594,10 +624,8 @@ class MyCard extends StatelessWidget {
     return Consumer<MyThemeModel>(
       builder: (context, themeModel, _) {
         return Container(
-          child: child,
           decoration: BoxDecoration(
-              color:
-                  themeModel.isDark() ? const Color(0xFF1A1A26) : Colors.white,
+              color: themeModel.isDark() ? const Color(0xFF1A1A26) : Colors.white,
               boxShadow: const [
                 BoxShadow(
                   color: Colors.black12,
@@ -605,6 +633,7 @@ class MyCard extends StatelessWidget {
                   spreadRadius: 1,
                 )
               ]),
+          child: child,
         );
       },
     );
@@ -612,7 +641,7 @@ class MyCard extends StatelessWidget {
 }
 
 class ListItem {
-  int value;
+  String value;
   String name;
 
   ListItem(this.value, this.name);
