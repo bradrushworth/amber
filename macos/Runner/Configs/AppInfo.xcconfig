@@ -8,7 +8,7 @@
 PRODUCT_NAME = momentum_energy
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = au.com.bitbot.momentumenergy
+PRODUCT_BUNDLE_IDENTIFIER = au.com.bitbot.amber
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2021 BitBot Software Pty Ltd. All rights reserved.

@@ -1,5 +1,5 @@
-name: momentum_energy
-description: "Momentum Energy Dashboard: View energy usage patterns with Momentum Energy electricity provider in Australia."
+name: amber
+description: "Amber Electric Dashboard: View energy usage patterns with Amber Electric electricity provider in Australia."
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -15,7 +15,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.2.1+12
+version: 0.0.1+1
 
 environment:
   sdk: ">=2.18.4 <3.0.0"

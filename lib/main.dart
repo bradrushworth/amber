@@ -184,7 +184,7 @@ class HomePageState extends State<HomePage> {
                           children: [
                             AutoSizeText.rich(
                               TextSpan(
-                                text: 'Momentum Energy Dashboard\n(',
+                                text: 'Amber Electic Dashboard\n(',
                                 style: TextStyle(
                                   color: themeModel.isDark()
                                       ? Colors.white
@@ -194,7 +194,7 @@ class HomePageState extends State<HomePage> {
                                 children: [
                                   const TextSpan(text: 'Click '),
                                   TextSpan(
-                                    text: '\'Export table\' from MyAccount',
+                                    text: '\'For Developers\' from Amber',
                                     style: TextStyle(
                                         color: Theme.of(context)
                                                 .textTheme
@@ -205,7 +205,7 @@ class HomePageState extends State<HomePage> {
                                     recognizer: TapGestureRecognizer()
                                       ..onTap = () {
                                         Utils.launchURL(
-                                            'https://www.momentumenergy.com.au/myaccount/my-usage');
+                                            'https://app.amber.com.au/developers/');
                                       },
                                   ),
                                   orientation == Orientation.portrait

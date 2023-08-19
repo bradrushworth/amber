@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="au.com.bitbot.momentumenergy">
+    package="au.com.bitbot.amber">
 
     <queries>
         <!-- If your app opens https URLs -->

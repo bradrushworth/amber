@@ -1,23 +1,23 @@
 {
-    "name": "Momentum Energy Dashboard",
-    "short_name": "Momentum",
+    "name": "Amber Electric Dashboard",
+    "short_name": "Amber Dashboard",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#20202A",
     "theme_color": "#020202A",
-    "description": "Visualise your Momentum Energy electricity consumption using this flutter dashboard.",
+    "description": "Visualise your Amber Electric electricity consumption using this flutter dashboard.",
     "orientation": "any",
     "iarc_rating_id": "ab38cab2-ee82-47a2-9a48-526ed5c9454f",
     "prefer_related_applications": false,
     "related_applications": [
         {
             "platform": "play",
-            "url": "https://play.google.com/store/apps/details?id=au.com.bitbot.momentumenergy",
-            "id": "au.com.bitbot.momentumenergy"
+            "url": "https://play.google.com/store/apps/details?id=au.com.bitbot.amber",
+            "id": "au.com.bitbot.amber"
         },
         {
             "platform": "itunes",
-            "url": "https://apps.apple.com/us/app/momentum-energy-dashboard/id1604316869"
+            "url": ""
         }
     ],
     "icons": [
