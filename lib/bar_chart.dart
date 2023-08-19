@@ -264,8 +264,10 @@ class DataAggregator {
     //int numMeters = 3;
     //print('numMeters=$numMeters');
 
-    DateTime latest =
-        DateTime.parse(data.last.date!).subtract(_ending).add(const Duration(days: 1));
+    DateTime latest = DateTime.parse(data.last.date!)
+        .add(const Duration(hours: 10))
+        .subtract(_ending)
+        .add(const Duration(days: 1));
     DateTime earliest = latest.subtract(_duration);
     //print('latest=$latest earliest=$earliest');
 
@@ -280,7 +282,6 @@ class DataAggregator {
       Usage record = data[n];
       //print("adding record=" + record.startTime!.substring(0, 18) + "0");
       DateTime date = DateTime.parse(record.nemTime!)
-          .toUtc()
           .add(const Duration(hours: 10))
           .subtract(const Duration(minutes: METER_INTERVAL));
       if (date.isBefore(earliest)) {
