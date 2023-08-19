@@ -15,7 +15,7 @@
     </queries>
 
     <application
-        android:label="Momentum Energy Dashboard"
+        android:label="Amber Electric Dashboard"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
