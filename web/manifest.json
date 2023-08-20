@@ -4,7 +4,7 @@
     "start_url": ".",
     "display": "standalone",
     "background_color": "#20202A",
-    "theme_color": "#020202A",
+    "theme_color": "#20202A",
     "description": "Visualise your Amber Electric electricity consumption using this flutter dashboard.",
     "orientation": "any",
     "iarc_rating_id": "ab4f5d1a-0c5b-4a49-a19d-ffc62342dfb9",
@@ -22,14 +22,26 @@
     ],
     "icons": [
         {
-            "src": "android-chrome-192x192.png",
+            "src": "icons/Icon-192.png",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "android-chrome-512x512.png",
+            "src": "icons/Icon-512.png",
             "sizes": "512x512",
             "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
         }
     ]
 }

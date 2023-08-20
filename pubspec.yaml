@@ -124,3 +124,12 @@ flutter_icons:
   remove_alpha_ios: true
   #adaptive_icon_background: "#FFFFFF"
   #adaptive_icon_foreground: "assets/electricity.png"
+  web:
+    generate: true
+    image_path: "assets/electricity.png"
+    background_color: "#20202A"
+    theme_color: "#20202A"
+  windows:
+    generate: true
+    image_path: "assets/electricity.png"
+    icon_size: 256 # min:48, max:256, default: 48
