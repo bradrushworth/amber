@@ -282,7 +282,7 @@ class HomePageState extends State<HomePage> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                       children: [
-                                        const TextSpan(text: 'Click '),
+                                        const TextSpan(text: 'Enable '),
                                         TextSpan(
                                           text: '\'For Developers\' in Amber',
                                           style: TextStyle(
