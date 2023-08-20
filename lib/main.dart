@@ -292,7 +292,7 @@ class HomePageState extends State<HomePage> {
                                           recognizer: TapGestureRecognizer()
                                             ..onTap = () {
                                               Utils.launchURL(
-                                                  'https://app.amber.com.au/developers/');
+                                                  'https://app.amber.com.au/');
                                             },
                                         ),
                                         orientation == Orientation.portrait
