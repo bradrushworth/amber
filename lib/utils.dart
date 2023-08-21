@@ -2,8 +2,8 @@
 import 'package:url_launcher/url_launcher.dart';
 
 class Utils {
-  static void launchURL(String url) async =>
-      await canLaunch(url) ? await launch(url) : throw 'Could not launch $url';
+  static void launchURI(Uri uri) async =>
+      await canLaunchUrl(uri) ? await launchUrl(uri) : throw 'Could not launch $uri';
 
   static String monthIntToName(double xValue) {
     switch (xValue.toInt()) {

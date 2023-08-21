@@ -268,39 +268,46 @@ class HomePageState extends State<HomePage> {
                         //height: 120,
                         padding: EdgeInsets.only(
                             left: orientation == Orientation.portrait ? 6 : 36,
-                            top: orientation == Orientation.portrait ? 65 : 15,
+                            top: orientation == Orientation.portrait ? 30 : 5,
                             bottom: 3),
                         child: Row(
                           children: [
-                            orientation == Orientation.portrait && _siteIdItemSelected != null
-                                ? const Text('')
-                                : AutoSizeText.rich(
-                                    TextSpan(
-                                      text: 'Amber Electric Dashboard\n(',
-                                      style: TextStyle(
-                                        color: themeModel.isDark() ? Colors.white : Colors.black,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      children: [
-                                        const TextSpan(text: 'Enable '),
+                            AutoSizeText.rich(
+                              TextSpan(
+                                text: orientation == Orientation.portrait &&
+                                        _siteIdItemSelected != null
+                                    ? 'Amber\nDashboard'
+                                    : 'Amber Electric Dashboard',
+                                style: TextStyle(
+                                  color: themeModel.isDark() ? Colors.white : Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                children: orientation == Orientation.portrait &&
+                                        _siteIdItemSelected != null
+                                    ? [const TextSpan(text: '')]
+                                    : [
+                                        const TextSpan(text: '\nEnable '),
                                         TextSpan(
-                                          text: '\'For Developers\' in Amber',
+                                          text: '\'For Developers\'',
                                           style: TextStyle(
                                               color: Theme.of(context).textTheme.button?.color ??
                                                   Colors.blueAccent,
                                               height: 1.5),
                                           recognizer: TapGestureRecognizer()
                                             ..onTap = () {
-                                              Utils.launchURL(
-                                                  'https://app.amber.com.au/');
+                                              Utils.launchURI(Uri(
+                                                scheme: 'https',
+                                                host: 'app.amber.com.au',
+                                                path: '/',
+                                              ));
                                             },
                                         ),
                                         orientation == Orientation.portrait
                                             ? const TextSpan(
                                                 text: '\nThen ', style: TextStyle(height: 1.5))
-                                            : const TextSpan(text: '\nThen '),
+                                            : const TextSpan(text: ', Then '),
                                         TextSpan(
-                                          text: 'Generate a new Token',
+                                          text: '\'Generate a new Token\'',
                                           style: TextStyle(
                                               color: Theme.of(context).textTheme.button?.color ??
                                                   Colors.blueAccent),
@@ -309,10 +316,10 @@ class HomePageState extends State<HomePage> {
                                               _displayTextInputDialog(context);
                                             },
                                         ),
-                                        const TextSpan(text: ')'),
+                                        const TextSpan(text: ''),
                                       ],
-                                    ),
-                                  ),
+                              ),
+                            ),
                             const Spacer(flex: 10),
                             // Switch(
                             //   value: themeModel.isDark(),
@@ -360,7 +367,7 @@ class HomePageState extends State<HomePage> {
                           // Random number that makes my phone look good
                           padding: orientation == Orientation.portrait
                               ? const EdgeInsets.only(left: 4, right: 4, bottom: 4, top: 4)
-                              : const EdgeInsets.only(left: 30, right: 10, bottom: 4, top: 4),
+                              : const EdgeInsets.only(left: 35, right: 10, bottom: 4, top: 4),
                           crossAxisSpacing: 4,
                           mainAxisSpacing: 4,
                           children: _dropdownItemSelected.value == _dropdownItems[0].value
@@ -442,40 +449,40 @@ class HomePageState extends State<HomePage> {
                                               rawData, 'Last 2 - Use', const Duration(days: 2),
                                               prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 2 - Cost',
-                                              const Duration(days: 2),
+                                          child: BarChartWidget1(
+                                              rawData, 'Last 2 - Cost', const Duration(days: 2),
                                               prices: true)),
                                       MyCard(
                                           child: BarChartWidget1(
                                               rawData, 'Last 7 - Use', const Duration(days: 7),
                                               prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 7 - Cost',
-                                              const Duration(days: 7),
+                                          child: BarChartWidget1(
+                                              rawData, 'Last 7 - Cost', const Duration(days: 7),
                                               prices: true)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 14 - Use',
-                                              const Duration(days: 14),
+                                          child: BarChartWidget1(
+                                              rawData, 'Last 14 - Use', const Duration(days: 14),
                                               prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 14 - Cost',
-                                              const Duration(days: 14),
+                                          child: BarChartWidget1(
+                                              rawData, 'Last 14 - Cost', const Duration(days: 14),
                                               prices: true)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 21 - Use',
-                                              const Duration(days: 21),
+                                          child: BarChartWidget1(
+                                              rawData, 'Last 21 - Use', const Duration(days: 21),
                                               prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 21 - Cost',
-                                              const Duration(days: 21),
+                                          child: BarChartWidget1(
+                                              rawData, 'Last 21 - Cost', const Duration(days: 21),
                                               prices: true)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 28 - Use',
-                                              const Duration(days: 28),
+                                          child: BarChartWidget1(
+                                              rawData, 'Last 28 - Use', const Duration(days: 28),
                                               prices: false)),
                                       MyCard(
-                                          child: BarChartWidget1(rawData, 'Last 28 - Cost',
-                                              const Duration(days: 28),
+                                          child: BarChartWidget1(
+                                              rawData, 'Last 28 - Cost', const Duration(days: 28),
                                               prices: true)),
                                     ]
                                   : [
@@ -527,7 +534,11 @@ class HomePageState extends State<HomePage> {
                             Expanded(
                               child: TextButton(
                                 onPressed: () {
-                                  Utils.launchURL('https://github.com/bradrushworth/amber');
+                                  Utils.launchURI(Uri(
+                                    scheme: 'https',
+                                    host: 'github.com',
+                                    path: '/bradrushworth/amber',
+                                  ));
                                 },
                                 // Constrains AutoSizeText to the width of the Row
                                 child: AutoSizeText('Source Code',
@@ -539,19 +550,27 @@ class HomePageState extends State<HomePage> {
                               // Constrains AutoSizeText to the width of the Row
                               child: TextButton(
                                 onPressed: () {
-                                  Utils.launchURL('https://pub.dev/packages/fl_chart');
+                                  Utils.launchURI(Uri(
+                                    scheme: 'https',
+                                    host: 'pub.dev',
+                                    path: '/packages/fl_chart',
+                                  ));
                                 },
                                 child: AutoSizeText('Chart Library',
                                     maxLines: 1, softWrap: false, group: bottomButtonGroup),
                               ),
                             ),
                             const MyDivider(),
-                            kIsWeb
+                            kIsWeb && kReleaseMode
                                 ? Expanded(
                                     // Constrains AutoSizeText to the width of the Row
                                     child: TextButton(
                                       onPressed: () {
-                                        Utils.launchURL('https://www.buymeacoffee.com/bitbot');
+                                        Utils.launchURI(Uri(
+                                          scheme: 'https',
+                                          host: 'www.buymeacoffee.com',
+                                          path: '/bitbot',
+                                        ));
                                       },
                                       child: AutoSizeText('Buy Coffee',
                                           maxLines: 1,
@@ -564,7 +583,11 @@ class HomePageState extends State<HomePage> {
                                     // Constrains AutoSizeText to the width of the Row
                                     child: TextButton(
                                       onPressed: () {
-                                        Utils.launchURL('https://www.bitbot.com.au/');
+                                        Utils.launchURI(Uri(
+                                          scheme: 'https',
+                                          host: 'www.bitbot.com.au',
+                                          path: '/',
+                                        ));
                                       },
                                       child: AutoSizeText('Visit BitBot',
                                           maxLines: 1,
@@ -578,8 +601,11 @@ class HomePageState extends State<HomePage> {
                               // Constrains AutoSizeText to the width of the Row
                               child: TextButton(
                                 onPressed: () {
-                                  Utils.launchURL(
-                                      'mailto:bitbot@bitbot.com.au?subject=Help with Amber Electric Dashboard');
+                                  Utils.launchURI(Uri(
+                                    scheme: 'mailto',
+                                    path: 'bitbot@bitbot.com.au',
+                                    query: 'subject=Help with Amber Electric Dashboard',
+                                  ));
                                 },
                                 child: AutoSizeText('Report Issue',
                                     maxLines: 1, softWrap: false, group: bottomButtonGroup),
