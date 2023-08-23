@@ -128,8 +128,8 @@ class BarChartState extends State<BarChartWidget1> {
                                     Legend(title: 'Off', color: colors[2]),
                                     Legend(title: 'Shoulder', color: colors[3]),
                                     Legend(title: 'Peak', color: colors[4]),
-                                    Legend(title: 'Feed', color: colors[6]),
                                     Legend(title: 'Control', color: colors[1]),
+                                    Legend(title: 'Feed', color: colors[6]),
                                   ],
                             padding: const EdgeInsets.only(left: 3, right: 3, top: 3, bottom: 3),
                           ),
@@ -264,9 +264,8 @@ class DataAggregator {
     //int numMeters = 3;
     //print('numMeters=$numMeters');
 
-    DateTime latest = DateTime.parse(data.last.date!)
-        .subtract(_ending)
-        .add(const Duration(days: 1));
+    DateTime latest =
+        DateTime.parse(data.last.date!).subtract(_ending).add(const Duration(days: 1));
     DateTime earliest = latest.subtract(_duration);
     //print('latest=$latest earliest=$earliest');
 
