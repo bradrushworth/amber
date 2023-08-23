@@ -256,27 +256,30 @@ class HomePageState extends State<HomePage> {
           backgroundColor: themeModel.isDark() ? const Color(0xFF20202A) : Colors.white,
           resizeToAvoidBottomInset: true,
           extendBody: true,
-          extendBodyBehindAppBar: true,
+          extendBodyBehindAppBar: false,
           primary: true,
           body: Stack(
             children: [
               OrientationBuilder(builder: (context, orientation) {
                 return LayoutBuilder(builder: (context, constraints) {
-                  return Column(
-                    children: [
-                      Container(
-                        //height: 120,
-                        padding: EdgeInsets.only(
-                            left: orientation == Orientation.portrait ? 6 : 36,
-                            top: orientation == Orientation.portrait ? 30 : 5,
-                            bottom: 3),
-                        child: Row(
+                  return SafeArea(
+                    minimum: EdgeInsets.only(
+                        left: orientation == Orientation.portrait ? 6 : 0,
+                        right: orientation == Orientation.portrait ? 2 : 0,
+                        top: 0,
+                        bottom: 0),
+                    bottom: false,
+                    child: Column(
+                      children: [
+                        Row(
                           children: [
                             AutoSizeText.rich(
                               TextSpan(
                                 text: orientation == Orientation.portrait &&
                                         _siteIdItemSelected != null
-                                    ? 'Amber\nDashboard'
+                                    ? constraints.maxWidth <= 360
+                                        ? 'Amber'
+                                        : 'Amber\nDashboard'
                                     : 'Amber Electric Dashboard',
                                 style: TextStyle(
                                   color: themeModel.isDark() ? Colors.white : Colors.black,
@@ -356,265 +359,261 @@ class HomePageState extends State<HomePage> {
                             ),
                           ],
                         ),
-                      ),
-                      Expanded(
-                        child: GridView.count(
-                          // Ensure that widget state changes with dropdown changes
-                          key: Key(_dropdownItemSelected.name),
-                          crossAxisCount: constraints.maxWidth < 710 ? 1 : 2,
-                          semanticChildCount: 2,
-                          childAspectRatio: 2.34,
-                          // Random number that makes my phone look good
-                          padding: orientation == Orientation.portrait
-                              ? const EdgeInsets.only(left: 4, right: 4, bottom: 4, top: 4)
-                              : const EdgeInsets.only(left: 35, right: 10, bottom: 4, top: 4),
-                          crossAxisSpacing: 4,
-                          mainAxisSpacing: 4,
-                          children: _dropdownItemSelected.value == _dropdownItems[0].value
-                              ? [
-                                  MyCard(
-                                    child: BarChartWidget1(
-                                      rawData,
-                                      'Yesterday - Use',
-                                      const Duration(days: 1),
-                                      ending: const Duration(days: 0),
-                                      prices: false,
+                        Expanded(
+                          child: GridView.count(
+                            // Ensure that widget state changes with dropdown changes
+                            key: Key(_dropdownItemSelected.name),
+                            crossAxisCount: constraints.maxWidth < 710 ? 1 : 2,
+                            semanticChildCount: 2,
+                            childAspectRatio: 2.34,
+                            crossAxisSpacing: 4,
+                            mainAxisSpacing: 4,
+                            children: _dropdownItemSelected.value == _dropdownItems[0].value
+                                ? [
+                                    MyCard(
+                                      child: BarChartWidget1(
+                                        rawData,
+                                        'Yesterday - Use',
+                                        const Duration(days: 1),
+                                        ending: const Duration(days: 0),
+                                        prices: false,
+                                      ),
                                     ),
-                                  ),
-                                  MyCard(
-                                      child: BarChartWidget1(
-                                          rawData, 'Yesterday - Cost', const Duration(days: 1),
-                                          ending: const Duration(days: 0), prices: true)),
-                                  MyCard(
-                                      child: BarChartWidget1(
-                                          rawData, '1 Before - Use', const Duration(days: 1),
-                                          ending: const Duration(days: 1), prices: false)),
-                                  MyCard(
-                                      child: BarChartWidget1(
-                                          rawData, '1 Before - Cost', const Duration(days: 1),
-                                          ending: const Duration(days: 1), prices: true)),
-                                  MyCard(
-                                      child: BarChartWidget1(
-                                          rawData, '2 Before - Use', const Duration(days: 1),
-                                          ending: const Duration(days: 2), prices: false)),
-                                  MyCard(
-                                      child: BarChartWidget1(
-                                          rawData, '2 Before - Cost', const Duration(days: 1),
-                                          ending: const Duration(days: 2), prices: true)),
-                                  MyCard(
-                                      child: BarChartWidget1(
-                                          rawData, '3 Before - Use', const Duration(days: 1),
-                                          ending: const Duration(days: 3), prices: false)),
-                                  MyCard(
-                                      child: BarChartWidget1(
-                                          rawData, '3 Before - Cost', const Duration(days: 1),
-                                          ending: const Duration(days: 3), prices: true)),
-                                  MyCard(
-                                      child: BarChartWidget1(
-                                          rawData, '4 Before - Use', const Duration(days: 1),
-                                          ending: const Duration(days: 4), prices: false)),
-                                  MyCard(
-                                      child: BarChartWidget1(
-                                          rawData, '4 Before - Cost', const Duration(days: 1),
-                                          ending: const Duration(days: 4), prices: true)),
-                                  MyCard(
-                                      child: BarChartWidget1(
-                                          rawData, '5 Before - Use', const Duration(days: 1),
-                                          ending: const Duration(days: 5), prices: false)),
-                                  MyCard(
-                                      child: BarChartWidget1(
-                                          rawData, '5 Before - Cost', const Duration(days: 1),
-                                          ending: const Duration(days: 5), prices: true)),
-                                  MyCard(
-                                      child: BarChartWidget1(
-                                          rawData, '6 Before - Use', const Duration(days: 1),
-                                          ending: const Duration(days: 6), prices: false)),
-                                  MyCard(
-                                      child: BarChartWidget1(
-                                          rawData, '6 Before - Cost', const Duration(days: 1),
-                                          ending: const Duration(days: 6), prices: true)),
-                                ]
-                              : _dropdownItemSelected.value == _dropdownItems[1].value
-                                  ? [
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, 'Last 1 - Use', const Duration(days: 1),
-                                              prices: false)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, 'Last 1 - Cost', const Duration(days: 1),
-                                              prices: true)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, 'Last 2 - Use', const Duration(days: 2),
-                                              prices: false)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, 'Last 2 - Cost', const Duration(days: 2),
-                                              prices: true)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, 'Last 7 - Use', const Duration(days: 7),
-                                              prices: false)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, 'Last 7 - Cost', const Duration(days: 7),
-                                              prices: true)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, 'Last 14 - Use', const Duration(days: 14),
-                                              prices: false)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, 'Last 14 - Cost', const Duration(days: 14),
-                                              prices: true)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, 'Last 21 - Use', const Duration(days: 21),
-                                              prices: false)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, 'Last 21 - Cost', const Duration(days: 21),
-                                              prices: true)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, 'Last 28 - Use', const Duration(days: 28),
-                                              prices: false)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, 'Last 28 - Cost', const Duration(days: 28),
-                                              prices: true)),
-                                    ]
-                                  : [
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, 'This Week - Use', const Duration(days: 7),
-                                              ending: const Duration(days: 0), prices: false)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, 'This Week - Cost', const Duration(days: 7),
-                                              ending: const Duration(days: 0), prices: true)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, '1 Week Ago - Use', const Duration(days: 7),
-                                              ending: const Duration(days: 7), prices: false)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, '1 Week Ago - Cost', const Duration(days: 7),
-                                              ending: const Duration(days: 7), prices: true)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, '2 Weeks Ago - Use', const Duration(days: 7),
-                                              ending: const Duration(days: 14), prices: false)),
-                                      MyCard(
-                                          child: BarChartWidget1(rawData, '2 Weeks Ago - Cost',
-                                              const Duration(days: 7),
-                                              ending: const Duration(days: 14), prices: true)),
-                                      MyCard(
-                                          child: BarChartWidget1(
-                                              rawData, '3 Weeks Ago - Use', const Duration(days: 7),
-                                              ending: const Duration(days: 21), prices: false)),
-                                      MyCard(
-                                          child: BarChartWidget1(rawData, '3 Weeks Ago - Cost',
-                                              const Duration(days: 7),
-                                              ending: const Duration(days: 21), prices: true)),
+                                    MyCard(
+                                        child: BarChartWidget1(
+                                            rawData, 'Yesterday - Cost', const Duration(days: 1),
+                                            ending: const Duration(days: 0), prices: true)),
+                                    MyCard(
+                                        child: BarChartWidget1(
+                                            rawData, '1 Before - Use', const Duration(days: 1),
+                                            ending: const Duration(days: 1), prices: false)),
+                                    MyCard(
+                                        child: BarChartWidget1(
+                                            rawData, '1 Before - Cost', const Duration(days: 1),
+                                            ending: const Duration(days: 1), prices: true)),
+                                    MyCard(
+                                        child: BarChartWidget1(
+                                            rawData, '2 Before - Use', const Duration(days: 1),
+                                            ending: const Duration(days: 2), prices: false)),
+                                    MyCard(
+                                        child: BarChartWidget1(
+                                            rawData, '2 Before - Cost', const Duration(days: 1),
+                                            ending: const Duration(days: 2), prices: true)),
+                                    MyCard(
+                                        child: BarChartWidget1(
+                                            rawData, '3 Before - Use', const Duration(days: 1),
+                                            ending: const Duration(days: 3), prices: false)),
+                                    MyCard(
+                                        child: BarChartWidget1(
+                                            rawData, '3 Before - Cost', const Duration(days: 1),
+                                            ending: const Duration(days: 3), prices: true)),
+                                    MyCard(
+                                        child: BarChartWidget1(
+                                            rawData, '4 Before - Use', const Duration(days: 1),
+                                            ending: const Duration(days: 4), prices: false)),
+                                    MyCard(
+                                        child: BarChartWidget1(
+                                            rawData, '4 Before - Cost', const Duration(days: 1),
+                                            ending: const Duration(days: 4), prices: true)),
+                                    MyCard(
+                                        child: BarChartWidget1(
+                                            rawData, '5 Before - Use', const Duration(days: 1),
+                                            ending: const Duration(days: 5), prices: false)),
+                                    MyCard(
+                                        child: BarChartWidget1(
+                                            rawData, '5 Before - Cost', const Duration(days: 1),
+                                            ending: const Duration(days: 5), prices: true)),
+                                    MyCard(
+                                        child: BarChartWidget1(
+                                            rawData, '6 Before - Use', const Duration(days: 1),
+                                            ending: const Duration(days: 6), prices: false)),
+                                    MyCard(
+                                        child: BarChartWidget1(
+                                            rawData, '6 Before - Cost', const Duration(days: 1),
+                                            ending: const Duration(days: 6), prices: true)),
+                                  ]
+                                : _dropdownItemSelected.value == _dropdownItems[1].value
+                                    ? [
+                                        MyCard(
+                                            child: BarChartWidget1(
+                                                rawData, 'Last 1 - Use', const Duration(days: 1),
+                                                prices: false)),
+                                        MyCard(
+                                            child: BarChartWidget1(
+                                                rawData, 'Last 1 - Cost', const Duration(days: 1),
+                                                prices: true)),
+                                        MyCard(
+                                            child: BarChartWidget1(
+                                                rawData, 'Last 2 - Use', const Duration(days: 2),
+                                                prices: false)),
+                                        MyCard(
+                                            child: BarChartWidget1(
+                                                rawData, 'Last 2 - Cost', const Duration(days: 2),
+                                                prices: true)),
+                                        MyCard(
+                                            child: BarChartWidget1(
+                                                rawData, 'Last 7 - Use', const Duration(days: 7),
+                                                prices: false)),
+                                        MyCard(
+                                            child: BarChartWidget1(
+                                                rawData, 'Last 7 - Cost', const Duration(days: 7),
+                                                prices: true)),
+                                        MyCard(
+                                            child: BarChartWidget1(
+                                                rawData, 'Last 14 - Use', const Duration(days: 14),
+                                                prices: false)),
+                                        MyCard(
+                                            child: BarChartWidget1(
+                                                rawData, 'Last 14 - Cost', const Duration(days: 14),
+                                                prices: true)),
+                                        MyCard(
+                                            child: BarChartWidget1(
+                                                rawData, 'Last 21 - Use', const Duration(days: 21),
+                                                prices: false)),
+                                        MyCard(
+                                            child: BarChartWidget1(
+                                                rawData, 'Last 21 - Cost', const Duration(days: 21),
+                                                prices: true)),
+                                        MyCard(
+                                            child: BarChartWidget1(
+                                                rawData, 'Last 28 - Use', const Duration(days: 28),
+                                                prices: false)),
+                                        MyCard(
+                                            child: BarChartWidget1(
+                                                rawData, 'Last 28 - Cost', const Duration(days: 28),
+                                                prices: true)),
+                                      ]
+                                    : [
+                                        MyCard(
+                                            child: BarChartWidget1(
+                                                rawData, 'This Week - Use', const Duration(days: 7),
+                                                ending: const Duration(days: 0), prices: false)),
+                                        MyCard(
+                                            child: BarChartWidget1(rawData, 'This Week - Cost',
+                                                const Duration(days: 7),
+                                                ending: const Duration(days: 0), prices: true)),
+                                        MyCard(
+                                            child: BarChartWidget1(rawData, '1 Week Ago - Use',
+                                                const Duration(days: 7),
+                                                ending: const Duration(days: 7), prices: false)),
+                                        MyCard(
+                                            child: BarChartWidget1(rawData, '1 Week Ago - Cost',
+                                                const Duration(days: 7),
+                                                ending: const Duration(days: 7), prices: true)),
+                                        MyCard(
+                                            child: BarChartWidget1(rawData, '2 Weeks Ago - Use',
+                                                const Duration(days: 7),
+                                                ending: const Duration(days: 14), prices: false)),
+                                        MyCard(
+                                            child: BarChartWidget1(rawData, '2 Weeks Ago - Cost',
+                                                const Duration(days: 7),
+                                                ending: const Duration(days: 14), prices: true)),
+                                        MyCard(
+                                            child: BarChartWidget1(rawData, '3 Weeks Ago - Use',
+                                                const Duration(days: 7),
+                                                ending: const Duration(days: 21), prices: false)),
+                                        MyCard(
+                                            child: BarChartWidget1(rawData, '3 Weeks Ago - Cost',
+                                                const Duration(days: 7),
+                                                ending: const Duration(days: 21), prices: true)),
 
-                                      //MyCard(child: BarChartWidget2()),
-                                      //const MyCard(child: LineChartWidget1()),
-                                      //MyCard(child: LineChartWidget2()),
-                                    ],
+                                        //MyCard(child: BarChartWidget2()),
+                                        //const MyCard(child: LineChartWidget1()),
+                                        //MyCard(child: LineChartWidget2()),
+                                      ],
+                          ),
                         ),
-                      ),
-                      Container(
-                        color: themeModel.isDark() ? const Color(0xFF20202A) : Colors.white,
-                        width: double.infinity,
-                        height: 30,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextButton(
-                                onPressed: () {
-                                  Utils.launchURI(Uri(
-                                    scheme: 'https',
-                                    host: 'github.com',
-                                    path: '/bradrushworth/amber',
-                                  ));
-                                },
+                        Container(
+                          color: themeModel.isDark() ? const Color(0xFF20202A) : Colors.white,
+                          width: double.infinity,
+                          height: 30,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextButton(
+                                  onPressed: () {
+                                    Utils.launchURI(Uri(
+                                      scheme: 'https',
+                                      host: 'github.com',
+                                      path: '/bradrushworth/amber',
+                                    ));
+                                  },
+                                  // Constrains AutoSizeText to the width of the Row
+                                  child: AutoSizeText('Source Code',
+                                      maxLines: 1, softWrap: false, group: bottomButtonGroup),
+                                ),
+                              ),
+                              const MyDivider(),
+                              Expanded(
                                 // Constrains AutoSizeText to the width of the Row
-                                child: AutoSizeText('Source Code',
-                                    maxLines: 1, softWrap: false, group: bottomButtonGroup),
+                                child: TextButton(
+                                  onPressed: () {
+                                    Utils.launchURI(Uri(
+                                      scheme: 'https',
+                                      host: 'pub.dev',
+                                      path: '/packages/fl_chart',
+                                    ));
+                                  },
+                                  child: AutoSizeText('Chart Library',
+                                      maxLines: 1, softWrap: false, group: bottomButtonGroup),
+                                ),
                               ),
-                            ),
-                            const MyDivider(),
-                            Expanded(
-                              // Constrains AutoSizeText to the width of the Row
-                              child: TextButton(
-                                onPressed: () {
-                                  Utils.launchURI(Uri(
-                                    scheme: 'https',
-                                    host: 'pub.dev',
-                                    path: '/packages/fl_chart',
-                                  ));
-                                },
-                                child: AutoSizeText('Chart Library',
-                                    maxLines: 1, softWrap: false, group: bottomButtonGroup),
-                              ),
-                            ),
-                            const MyDivider(),
-                            kIsWeb && kReleaseMode
-                                ? Expanded(
-                                    // Constrains AutoSizeText to the width of the Row
-                                    child: TextButton(
-                                      onPressed: () {
-                                        Utils.launchURI(Uri(
-                                          scheme: 'https',
-                                          host: 'www.buymeacoffee.com',
-                                          path: '/bitbot',
-                                        ));
-                                      },
-                                      child: AutoSizeText('Buy Coffee',
-                                          maxLines: 1,
-                                          softWrap: true,
-                                          overflow: TextOverflow.visible,
-                                          group: bottomButtonGroup),
+                              const MyDivider(),
+                              kIsWeb && kReleaseMode
+                                  ? Expanded(
+                                      // Constrains AutoSizeText to the width of the Row
+                                      child: TextButton(
+                                        onPressed: () {
+                                          Utils.launchURI(Uri(
+                                            scheme: 'https',
+                                            host: 'www.buymeacoffee.com',
+                                            path: '/bitbot',
+                                          ));
+                                        },
+                                        child: AutoSizeText('Buy Coffee',
+                                            maxLines: 1,
+                                            softWrap: true,
+                                            overflow: TextOverflow.visible,
+                                            group: bottomButtonGroup),
+                                      ),
+                                    )
+                                  : Expanded(
+                                      // Constrains AutoSizeText to the width of the Row
+                                      child: TextButton(
+                                        onPressed: () {
+                                          Utils.launchURI(Uri(
+                                            scheme: 'https',
+                                            host: 'www.bitbot.com.au',
+                                            path: '/',
+                                          ));
+                                        },
+                                        child: AutoSizeText('Visit BitBot',
+                                            maxLines: 1,
+                                            softWrap: true,
+                                            overflow: TextOverflow.visible,
+                                            group: bottomButtonGroup),
+                                      ),
                                     ),
-                                  )
-                                : Expanded(
-                                    // Constrains AutoSizeText to the width of the Row
-                                    child: TextButton(
-                                      onPressed: () {
-                                        Utils.launchURI(Uri(
-                                          scheme: 'https',
-                                          host: 'www.bitbot.com.au',
-                                          path: '/',
-                                        ));
-                                      },
-                                      child: AutoSizeText('Visit BitBot',
-                                          maxLines: 1,
-                                          softWrap: true,
-                                          overflow: TextOverflow.visible,
-                                          group: bottomButtonGroup),
-                                    ),
-                                  ),
-                            const MyDivider(),
-                            Expanded(
-                              // Constrains AutoSizeText to the width of the Row
-                              child: TextButton(
-                                onPressed: () {
-                                  Utils.launchURI(Uri(
-                                    scheme: 'mailto',
-                                    path: 'bitbot@bitbot.com.au',
-                                    query: 'subject=Help with Amber Electric Dashboard',
-                                  ));
-                                },
-                                child: AutoSizeText('Report Issue',
-                                    maxLines: 1, softWrap: false, group: bottomButtonGroup),
+                              const MyDivider(),
+                              Expanded(
+                                // Constrains AutoSizeText to the width of the Row
+                                child: TextButton(
+                                  onPressed: () {
+                                    Utils.launchURI(Uri(
+                                      scheme: 'mailto',
+                                      path: 'bitbot@bitbot.com.au',
+                                      query: 'subject=Help with Amber Electric Dashboard',
+                                    ));
+                                  },
+                                  child: AutoSizeText('Report Issue',
+                                      maxLines: 1, softWrap: false, group: bottomButtonGroup),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   );
                 });
               }),
