@@ -264,8 +264,8 @@ class HomePageState extends State<HomePage> {
                 return LayoutBuilder(builder: (context, constraints) {
                   return SafeArea(
                     minimum: EdgeInsets.only(
-                        left: orientation == Orientation.portrait ? 6 : 0,
-                        right: orientation == Orientation.portrait ? 2 : 0,
+                        left: orientation == Orientation.portrait ? 6 : 4,
+                        right: orientation == Orientation.portrait ? 2 : 2,
                         top: 0,
                         bottom: 0),
                     bottom: false,

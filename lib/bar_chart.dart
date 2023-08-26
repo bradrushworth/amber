@@ -117,12 +117,12 @@ class BarChartState extends State<BarChartWidget1> {
                             title: _title,
                             legends: _prices
                                 ? [
+                                    Legend(title: 'Amber', color: colors[0]),
                                     Legend(title: 'Off', color: colors[2]),
                                     Legend(title: 'Shoulder', color: colors[3]),
                                     Legend(title: 'Peak', color: colors[4]),
                                     Legend(title: 'Control', color: colors[1]),
                                     Legend(title: 'Feed', color: colors[6]),
-                                    Legend(title: 'Amber', color: colors[0]),
                                   ]
                                 : [
                                     Legend(title: 'Off', color: colors[2]),
