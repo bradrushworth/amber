@@ -163,6 +163,7 @@ class HomePageState extends State<HomePage> {
     var date = DateTime.now();
     int numPeriodsBack = (2 * date.hour) + (date.minute ~/ 30);
     int numPeriodsForward = 24 * 60 ~/ METER_INTERVAL * 2 - numPeriodsBack - 1;
+    numPeriodsBack += 24 * 60 ~/ METER_INTERVAL;
     String uri =
         'https://api.amber.com.au/v1/sites/${_siteIdItemSelected!.value}/prices/current?next=$numPeriodsForward&previous=$numPeriodsBack&resolution=$METER_INTERVAL';
     print(uri);
@@ -174,8 +175,11 @@ class HomePageState extends State<HomePage> {
     if (response.statusCode == 200) {
       // If the server did return a 200 OK response,
       // then parse the JSON.
-      List<Usage> prices =
-          (jsonDecode(response.body) as List).map((json) => Usage.fromJson(json)).toList().reversed.toList();
+      List<Usage> prices = (jsonDecode(response.body) as List)
+          .map((json) => Usage.fromJson(json))
+          .toList()
+          .reversed
+          .toList();
       // final myData = await File('assets/feedin.json').readAsString();
       // usage = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
@@ -413,13 +417,23 @@ class HomePageState extends State<HomePage> {
                             children: _dropdownItemSelected.value == _dropdownItems[0].value
                                 ? [
                                     MyCard(
-                                        child: BarChartWidget1(forecastData, 'Today - Forecast',
+                                        child: BarChartWidget1(forecastData, 'Yesterday - Prices',
                                             const Duration(days: 1),
-                                            ending: const Duration(days: 0), prices: false, forecast: true)),
+                                            ending: const Duration(days: 0),
+                                            prices: false,
+                                            forecast: true)),
                                     MyCard(
-                                        child: BarChartWidget1(forecastData, 'Tomorrow - Forecast',
+                                        child: BarChartWidget1(forecastData, 'Today - Prices',
                                             const Duration(days: 1),
-                                            ending: const Duration(days: -1), prices: false, forecast: true)),
+                                            ending: const Duration(days: -1),
+                                            prices: false,
+                                            forecast: true)),
+                                    MyCard(
+                                        child: BarChartWidget1(forecastData, 'Tomorrow - Prices',
+                                            const Duration(days: 1),
+                                            ending: const Duration(days: -2),
+                                            prices: false,
+                                            forecast: true)),
                                   ]
                                 : _dropdownItemSelected.value == _dropdownItems[1].value
                                     ? [

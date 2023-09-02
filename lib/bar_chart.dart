@@ -268,12 +268,14 @@ class DataAggregator {
     //numMeters = 1;
     //print('numMeters=$numMeters');
 
-    //print('data.first.date=${data.first.date}');
+    //print('data.first.date=${data.last.date}');
     //print('data.first.nemTime=${data.first.endTime}');
-    DateTime latest = DateTime.parse(data.last.date!)
-        .subtract(_ending)
-        .add(const Duration(days: 1))
-        .add(const Duration(hours: 10));
+    DateTime latest = DateTime.parse('${data.last.date!}T00:00:00+10:00')
+            .subtract(_ending)
+            .add(const Duration(days: 1))
+            .toLocal()
+        //.add(const Duration(hours: 10))
+        ;
     DateTime earliest = latest.subtract(_duration);
     //print('latest=$latest earliest=$earliest');
 
@@ -286,10 +288,13 @@ class DataAggregator {
 
     for (int n = 0; n < data.length ~/ numMeters; n++) {
       Usage record = data[n];
-      //print("adding record=" + record.startTime!.substring(0, 18) + "0");
-      DateTime date = DateTime.parse(record.endTime!)
-          .add(const Duration(hours: 10))
-          .subtract(const Duration(minutes: METER_INTERVAL));
+
+      //print("adding record=" + record.nemTime!);
+      DateTime date = DateTime.parse(record.nemTime!)
+          //.add(const Duration(hours: 10))
+          .subtract(const Duration(minutes: METER_INTERVAL))
+          .toLocal();
+
       if (date.isBefore(earliest)) {
         continue; // Skip data outside of range
       }
@@ -318,6 +323,7 @@ class DataAggregator {
                     ? 0
                     : throw Exception('Unknown channel type!');
         if (channelType == 1 && _forecast) {
+          // Skip the controlled load when forecasting
           continue;
         } else if (channelType != 2) {
           // Ignore feed in tariff here
@@ -341,6 +347,7 @@ class DataAggregator {
       }
 
       if (_prices) {
+        // Add the supply charges as required
         double dailySupplyChargePerInterval = DAILY / 24 / (60 / METER_INTERVAL);
         double dailySupplyChargePer30Mins = DAILY / 24 / 2;
         stackedValue[graphPos] = stackedValue[graphPos]! + dailySupplyChargePerInterval;
@@ -350,8 +357,22 @@ class DataAggregator {
 
     //print('beforeRange=$beforeRange afterRange=$afterRange');
     if (!beforeRange || !afterRange) {
-      // If there wasn't enough data to answer the questions
-      throw NotEnoughDataException();
+      if (!_forecast) {
+        // If there wasn't enough data to answer the questions
+        throw NotEnoughDataException();
+      }
+
+      // Fill in any missing graph positions with zeros
+      for (int graphPos = stackedValue.length;
+          graphPos < (24 * (60 / METER_INTERVAL));
+          graphPos++) {
+        //print('graphPos=$graphPos');
+        stackedValue[graphPos] = 0.0;
+        stackedValues[graphPos] =
+            (stackedValues[graphPos] ?? List<double>.generate(1, (index) => 0.0));
+        stackedValues[graphPos]![0] = 0.0;
+        newTitles[graphPos] = newTitles[graphPos] ?? '';
+      }
     }
 
     for (int graphPos in stackedValue.keys) {
@@ -383,8 +404,10 @@ class DataAggregator {
       width: 6, // / _duration.inDays,
       //borderRadius: BorderRadius.circular(2),
       rodStackItems: stackedValues
-          .map((e) => BarChartRodStackItem(rodCumulative,
-              rodCumulative += roundDouble(e, _prices || _forecast ? 2 : 3), _getCostColor(i++, graphPos)))
+          .map((e) => BarChartRodStackItem(
+              rodCumulative,
+              rodCumulative += roundDouble(e, _prices || _forecast ? 2 : 3),
+              _getCostColor(i++, graphPos)))
           .toList(),
       backDrawRodData: BackgroundBarChartRodData(
         show: true,
