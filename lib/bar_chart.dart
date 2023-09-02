@@ -29,9 +29,10 @@ class BarChartWidget1 extends StatefulWidget {
   late final Duration duration;
   late final Duration ending;
   bool prices;
+  bool forecast;
 
   BarChartWidget1(this.rawData, this.title, this.duration,
-      {Key? key, this.ending = const Duration(days: 0), this.prices = false})
+      {Key? key, this.ending = const Duration(days: 0), this.prices = false, this.forecast = false})
       : super(key: key);
 
   @override
@@ -44,6 +45,7 @@ class BarChartState extends State<BarChartWidget1> {
   late final Duration _duration;
   late final Duration _ending;
   late final bool _prices;
+  late final bool _forecast;
   List<BarChartGroupData> _barChartData = [];
   Map<int, String> _barChartTitles = {};
   bool _loading = true;
@@ -58,6 +60,7 @@ class BarChartState extends State<BarChartWidget1> {
     _duration = widget.duration;
     _ending = widget.ending;
     _prices = widget.prices;
+    _forecast = widget.forecast;
     parseFile();
   }
 
@@ -222,7 +225,7 @@ class BarChartState extends State<BarChartWidget1> {
 
     //final rawData = await rootBundle.loadString(filepath);
     List<Usage> data = _rawData!;
-    DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices);
+    DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices, _forecast);
     try {
       dataAggregator.aggregateData(data);
 
@@ -255,17 +258,22 @@ class DataAggregator {
 
   late final Duration _duration, _ending;
   late final bool _prices;
+  late final bool _forecast;
 
-  DataAggregator(this._duration, this._ending, this._prices);
+  DataAggregator(this._duration, this._ending, this._prices, this._forecast);
 
   aggregateData(List<Usage> data) {
-    int numMeters =
-        data.map((u) => u.channelIdentifier!).reduce((value, element) => element).length;
-    //int numMeters = 3;
+    //print(data.map((u) => u.channelType!).toSet());
+    int numMeters = data.map((u) => u.channelType!).toSet().length;
+    //numMeters = 1;
     //print('numMeters=$numMeters');
 
-    DateTime latest =
-        DateTime.parse(data.last.date!).subtract(_ending).add(const Duration(days: 1));
+    //print('data.first.date=${data.first.date}');
+    //print('data.first.nemTime=${data.first.endTime}');
+    DateTime latest = DateTime.parse(data.last.date!)
+        .subtract(_ending)
+        .add(const Duration(days: 1))
+        .add(const Duration(hours: 10));
     DateTime earliest = latest.subtract(_duration);
     //print('latest=$latest earliest=$earliest');
 
@@ -279,7 +287,7 @@ class DataAggregator {
     for (int n = 0; n < data.length ~/ numMeters; n++) {
       Usage record = data[n];
       //print("adding record=" + record.startTime!.substring(0, 18) + "0");
-      DateTime date = DateTime.parse(record.nemTime!)
+      DateTime date = DateTime.parse(record.endTime!)
           .add(const Duration(hours: 10))
           .subtract(const Duration(minutes: METER_INTERVAL));
       if (date.isBefore(earliest)) {
@@ -301,24 +309,34 @@ class DataAggregator {
 
       for (int meterNum = 0; meterNum < numMeters; meterNum++) {
         record = data[n + meterNum * data.length ~/ numMeters];
-        //print("adding date=$date record=${record.kwh}");
+        //print("adding date=$date record=${record.channelType}");
         int channelType = record.channelType == "controlledLoad"
             ? 1
             : record.channelType == "feedIn"
                 ? 2
-                : 0;
-        if (channelType != 2) {
+                : record.channelType == "general"
+                    ? 0
+                    : throw Exception('Unknown channel type!');
+        if (channelType == 1 && _forecast) {
+          continue;
+        } else if (channelType != 2) {
           // Ignore feed in tariff here
-          stackedValue[graphPos] =
-              (stackedValue[graphPos] ?? 0.0) + (_prices ? record.cost! / 100 : record.kwh!);
+          stackedValue[graphPos] = (stackedValue[graphPos] ?? 0.0) +
+              (_prices
+                  ? (record.cost ?? record.perKwh!) / 100
+                  : record.kwh ?? record.perKwh! / 100);
           stackedValues[graphPos] = (stackedValues[graphPos] ??
               List<double>.generate(numMeters + (_prices ? 1 : 0), (index) => 0.0));
           stackedValues[graphPos]![channelType] = (stackedValues[graphPos]![channelType]) +
-              (_prices ? record.cost! / 100 : record.kwh!);
+              (_prices
+                  ? (record.cost ?? record.perKwh!) / 100
+                  : record.kwh ?? record.perKwh! / 100);
         } else {
-          // Calculate feed in tarrif
-          feedInValue[graphPos] =
-              (feedInValue[graphPos] ?? 0.0) + (_prices ? record.cost! / 100 : record.kwh!);
+          // Calculate feed in tariff
+          feedInValue[graphPos] = (feedInValue[graphPos] ?? 0.0) +
+              (_prices
+                  ? (record.cost ?? record.perKwh!) / 100
+                  : record.kwh ?? record.perKwh! / 100);
         }
       }
 
@@ -357,7 +375,7 @@ class DataAggregator {
     int i = 0;
     //print("meterNum=$meterNum");
     return BarChartRodData(
-      toY: roundDouble(value, _prices ? 2 : 3),
+      toY: roundDouble(value, _prices || _forecast ? 2 : 3),
       // colors: [
       //   const Color(0xFFFFAB5E),
       //   const Color(0xFFFFD336),
@@ -366,7 +384,7 @@ class DataAggregator {
       //borderRadius: BorderRadius.circular(2),
       rodStackItems: stackedValues
           .map((e) => BarChartRodStackItem(rodCumulative,
-              rodCumulative += roundDouble(e, _prices ? 2 : 3), _getCostColor(i++, graphPos)))
+              rodCumulative += roundDouble(e, _prices || _forecast ? 2 : 3), _getCostColor(i++, graphPos)))
           .toList(),
       backDrawRodData: BackgroundBarChartRodData(
         show: true,
