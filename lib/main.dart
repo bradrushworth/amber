@@ -180,8 +180,6 @@ class HomePageState extends State<HomePage> {
           .toList()
           .reversed
           .toList();
-      // final myData = await File('assets/feedin.json').readAsString();
-      // usage = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       setState(() {
         forecastData = prices;
@@ -423,8 +421,8 @@ class HomePageState extends State<HomePage> {
                                             prices: false,
                                             forecast: true)),
                                     MyCard(
-                                        child: BarChartWidget1(forecastData, 'Today - Prices',
-                                            const Duration(days: 1),
+                                        child: BarChartWidget1(
+                                            forecastData, 'Today - Prices', const Duration(days: 1),
                                             ending: const Duration(days: -1),
                                             prices: false,
                                             forecast: true)),

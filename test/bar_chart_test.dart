@@ -37,7 +37,7 @@ void main() {
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.00, 0.001));
       expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.00, 0.001));
+          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.06, 0.001));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.06, 0.001));
     });
 
@@ -57,7 +57,7 @@ void main() {
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.02, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY,
-          closeTo(0.01 + dailySupplyChargePer30mins, 0.01));
+          closeTo(0.03 + dailySupplyChargePer30mins, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY,
           closeTo(0.03 + dailySupplyChargePer30mins, 0.01));
     });
@@ -88,7 +88,7 @@ void main() {
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.0, 0.001));
       expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.0, 0.001));
+          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.125, 0.001));
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.125, 0.001));
     });
@@ -121,7 +121,7 @@ void main() {
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.00, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.02, 0.01));
       expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.02, 0.01));
+          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.04, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.04, 0.01));
     });
 
@@ -155,7 +155,7 @@ void main() {
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.00, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.02, 0.01));
       expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.02, 0.01));
+          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.04, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.04, 0.01));
     });
 
@@ -187,7 +187,7 @@ void main() {
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.00, 0.001));
       expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.00, 0.001));
+          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.06, 0.001));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.06, 0.001));
     });
 
@@ -207,7 +207,7 @@ void main() {
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.02, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY,
-          closeTo(0.01 + dailySupplyChargePer30mins, 0.01));
+          closeTo(0.03 + dailySupplyChargePer30mins, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY,
           closeTo(0.03 + dailySupplyChargePer30mins, 0.01));
     });
