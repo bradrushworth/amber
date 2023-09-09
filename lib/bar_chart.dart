@@ -444,7 +444,7 @@ class CustomRodElement {
     } else if (tariffInformation == 'shoulder') {
       return colors[3]; // Shoulder
     } else {
-      throw Exception('Unknown cost color! {$channelType} {$tariffInformation}');
+      return colors[5]; // Unknown
     }
   }
 
