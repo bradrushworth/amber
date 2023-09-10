@@ -9,9 +9,18 @@ import 'package:vector_math/vector_math.dart' as math;
 
 import 'model/Usage.dart';
 import 'top_section.dart';
+import 'utils.dart';
 
 const int METER_INTERVAL = 30; // minutes
 const double DAILY = 19.00 * 12 / 365; // Daily charge
+
+const String controlledLoad = 'controlledLoad';
+const String general = 'general';
+const String feedIn = 'feedIn';
+const String supply = 'supply';
+const String peak = 'peak';
+const String shoulder = 'shoulder';
+const String offPeak = 'offPeak';
 
 final List<Color> colors = [
   const Color(0xFF5974FF),
@@ -259,6 +268,8 @@ class DataAggregator {
   late final Duration _duration, _ending;
   late final bool _prices;
   late final bool _forecast;
+  late final bool _today;
+  late final DateTime _nowLocal;
 
   DataAggregator(this._duration, this._ending, this._prices, this._forecast);
 
@@ -270,13 +281,14 @@ class DataAggregator {
 
     //print('data.last.date=${data.last.date}');
     //print('data.first.date=${data.first.date}');
-    DateTime latest = DateTime.parse('${data.last.date!}T00:00:00+10:00')
+    DateTime latest = Utils.toLocal(DateTime.parse('${data.last.date!}T00:00:00+10:00')
         .subtract(_ending)
-        .add(const Duration(days: 1))
-        //.add(const Duration(hours: 10))
-        .toLocal();
+        .add(const Duration(days: 1)));
     DateTime earliest = latest.subtract(_duration);
     //print('latest=$latest earliest=$earliest');
+
+    _nowLocal = Utils.toLocal(DateTime.now());
+    _today = _nowLocal.isAfter(earliest) && _nowLocal.isBefore(latest);
 
     Map<int, double> stackedValue = {};
     Map<int, CustomRodGroup> stackedValues = {};
@@ -289,10 +301,8 @@ class DataAggregator {
       Usage record = data[n];
 
       //print("adding record=" + record.nemTime!);
-      DateTime date = DateTime.parse(record.nemTime!)
-          .subtract(const Duration(minutes: METER_INTERVAL))
-          //.add(const Duration(hours: 10))
-          .toLocal();
+      DateTime date = Utils.toLocal(
+          DateTime.parse(record.nemTime!).subtract(const Duration(minutes: METER_INTERVAL)));
 
       if (date.isBefore(earliest)) {
         continue; // Skip data outside of range
@@ -314,17 +324,17 @@ class DataAggregator {
       for (int meterNum = 0; meterNum < numMeters; meterNum++) {
         record = data[n + meterNum * data.length ~/ numMeters];
         //print("adding date=$date record=${record.channelType}");
-        // int channelType = record.channelType == "controlledLoad"
+        // int channelType = record.channelType == controlledLoad
         //     ? 1
-        //     : record.channelType == "feedIn"
+        //     : record.channelType == feedIn
         //         ? 0
-        //         : record.channelType == "general"
+        //         : record.channelType == general
         //             ? 2
         //             : throw Exception('Unknown channel type!');
-        if (record.channelType == "controlledLoad" && _forecast) {
+        if (record.channelType == controlledLoad && _forecast) {
           // Skip the controlled load when forecasting
           continue;
-        } else if (record.channelType != "feedIn") {
+        } else if (record.channelType != feedIn) {
           // Ignore feed in tariff here
           stackedValue[graphPos] = (stackedValue[graphPos] ?? 0.0) +
               (_prices
@@ -395,7 +405,8 @@ class DataAggregator {
   BarChartRodData makeRodData(
       int graphPos, double value, CustomRodGroup stackedValues, double feedInValue) {
     double rodCumulative = 0.0;
-    int i = 0;
+    //int i = 0;
+    int nowIndex = _nowLocal.hour * 2 + _nowLocal.minute ~/ 30;
     //print("meterNum=$meterNum");
     return BarChartRodData(
       toY: roundDouble(value, _prices || _forecast ? 2 : 3),
@@ -410,7 +421,9 @@ class DataAggregator {
           .map((e) => BarChartRodStackItem(
               rodCumulative,
               rodCumulative += roundDouble(e.amount, _prices || _forecast ? 2 : 3),
-              e.getCostColor()))
+              _today && graphPos == nowIndex
+                  ? Utils.lighten(e.getCostColor(), 50)
+                  : e.getCostColor()))
           .toList(),
       backDrawRodData: BackgroundBarChartRodData(
         show: true,
@@ -431,17 +444,17 @@ class CustomRodElement {
   CustomRodElement(this.channelType);
 
   Color getCostColor() {
-    if (channelType == 'controlledLoad') {
+    if (channelType == controlledLoad) {
       return colors[1]; // Controlled
-    } else if (channelType == 'feedIn') {
+    } else if (channelType == feedIn) {
       return colors[6]; // Feed In
-    } else if (channelType == 'supply') {
+    } else if (channelType == supply) {
       return colors[0]; // Supply
-    } else if (tariffInformation == 'offPeak') {
+    } else if (tariffInformation == offPeak) {
       return colors[2]; // Off peak
-    } else if (tariffInformation == 'peak') {
+    } else if (tariffInformation == peak) {
       return colors[4]; // Peak
-    } else if (tariffInformation == 'shoulder') {
+    } else if (tariffInformation == shoulder) {
       return colors[3]; // Shoulder
     } else {
       return colors[5]; // Unknown
@@ -458,29 +471,29 @@ class CustomRodElement {
 }
 
 class CustomRodGroup {
-  CustomRodElement supply = CustomRodElement('supply');
-  CustomRodElement controlled = CustomRodElement('controlledLoad');
-  CustomRodElement general = CustomRodElement('general');
-  CustomRodElement feedIn = CustomRodElement('feedIn');
+  CustomRodElement supplyElement = CustomRodElement(supply);
+  CustomRodElement controlledElement = CustomRodElement(controlledLoad);
+  CustomRodElement generalElement = CustomRodElement(general);
+  CustomRodElement feedInElement = CustomRodElement(feedIn);
 
   CustomRodGroup();
 
   void add(String channelType, String? tariffInformation, num num) {
-    if (channelType == 'controlledLoad') {
-      controlled.add(num);
-    } else if (channelType == 'feedIn') {
-      feedIn.add(num);
-    } else if (channelType == 'supply') {
-      supply.add(num);
-    } else if (channelType == 'general') {
-      general.setTariffInformation(tariffInformation);
-      general.add(num);
+    if (channelType == controlledLoad) {
+      controlledElement.add(num);
+    } else if (channelType == feedIn) {
+      feedInElement.add(num);
+    } else if (channelType == supply) {
+      supplyElement.add(num);
+    } else if (channelType == general) {
+      generalElement.setTariffInformation(tariffInformation);
+      generalElement.add(num);
     } else {
       throw Exception('Unknown channel type! {$channelType}');
     }
   }
 
   List<CustomRodElement> toList() {
-    return [supply, general, controlled, feedIn];
+    return [supplyElement, generalElement, controlledElement, feedInElement];
   }
 }
