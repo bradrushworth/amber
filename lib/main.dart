@@ -415,23 +415,47 @@ class HomePageState extends State<HomePage> {
                             children: _dropdownItemSelected.value == _dropdownItems[0].value
                                 ? [
                                     MyCard(
-                                        child: BarChartWidget1(forecastData, 'Yesterday - Prices',
+                                        child: BarChartWidget1(forecastData, 'Yesterday - Price',
                                             const Duration(days: 1),
                                             ending: const Duration(days: 0),
                                             prices: false,
-                                            forecast: true)),
+                                            forecast: true,
+                                            feedIn: false)),
+                                    MyCard(
+                                        child: BarChartWidget1(forecastData, 'Yesterday - Other',
+                                            const Duration(days: 1),
+                                            ending: const Duration(days: 0),
+                                            prices: false,
+                                            forecast: true,
+                                            feedIn: true)),
                                     MyCard(
                                         child: BarChartWidget1(
-                                            forecastData, 'Today - Prices', const Duration(days: 1),
+                                            forecastData, 'Today - Price', const Duration(days: 1),
                                             ending: const Duration(days: -1),
                                             prices: false,
-                                            forecast: true)),
+                                            forecast: true,
+                                            feedIn: false)),
                                     MyCard(
-                                        child: BarChartWidget1(forecastData, 'Tomorrow - Prices',
+                                        child: BarChartWidget1(
+                                            forecastData, 'Today - Other', const Duration(days: 1),
+                                            ending: const Duration(days: -1),
+                                            prices: false,
+                                            forecast: true,
+                                            feedIn: true)),
+                                    MyCard(
+                                        child: BarChartWidget1(forecastData, 'Tomorrow - Price',
                                             const Duration(days: 1),
                                             ending: const Duration(days: -2),
                                             prices: false,
-                                            forecast: true)),
+                                            forecast: true,
+                                            feedIn: false)),
+                                    MyCard(
+                                        child: BarChartWidget1(forecastData, 'Tomorrow - Other',
+                                            const Duration(days: 1),
+                                            ending: const Duration(days: -2),
+                                            prices: false,
+                                            forecast: true,
+                                            feedIn: true)),
                                   ]
                                 : _dropdownItemSelected.value == _dropdownItems[1].value
                                     ? [

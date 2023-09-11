@@ -14,7 +14,7 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-          DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false);
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false, false);
       dataAggregator.aggregateData(data);
 
       expect(dataAggregator.newTitles.length, 48);
@@ -46,7 +46,7 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-          DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false);
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false, false);
       dataAggregator.aggregateData(data);
 
       expect(dailySupplyChargePer30mins, closeTo(0.013013698630136987, 0.001));
@@ -57,9 +57,9 @@ void main() {
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.02, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY,
-          closeTo(0.03 + dailySupplyChargePer30mins, 0.01));
+          closeTo(0.02 + dailySupplyChargePer30mins, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY,
-          closeTo(0.03 + dailySupplyChargePer30mins, 0.01));
+          closeTo(0.02 + dailySupplyChargePer30mins, 0.01));
     });
 
     test('2 Days', () async {
@@ -67,7 +67,7 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-          DataAggregator(const Duration(days: 2), const Duration(days: 0), false, false);
+          DataAggregator(const Duration(days: 2), const Duration(days: 0), false, false, false);
       dataAggregator.aggregateData(data);
 
       expect(dataAggregator.newTitles.length, 48);
@@ -98,7 +98,7 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-          DataAggregator(const Duration(days: 1), const Duration(days: 1), true, false);
+          DataAggregator(const Duration(days: 1), const Duration(days: 1), true, false, false);
       dataAggregator.aggregateData(data);
 
       expect(dataAggregator.newTitles.length, 48);
@@ -121,8 +121,8 @@ void main() {
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.00, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.02, 0.01));
       expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.04, 0.01));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.04, 0.01));
+          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.03, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.03, 0.01));
     });
 
     test('1 Day Costs 2 Day Prior', () async {
@@ -130,7 +130,7 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-          DataAggregator(const Duration(days: 1), const Duration(days: 2), true, false);
+          DataAggregator(const Duration(days: 1), const Duration(days: 2), true, false, false);
       dataAggregator.aggregateData(data);
 
       expect(dataAggregator.newTitles.length, 48);
@@ -155,8 +155,8 @@ void main() {
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.00, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.02, 0.01));
       expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.04, 0.01));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.04, 0.01));
+          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.03, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.03, 0.01));
     });
 
     test('1 Day FeedIn', () async {
@@ -164,7 +164,7 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-      DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false);
+      DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false, false);
       dataAggregator.aggregateData(data);
 
       expect(dataAggregator.newTitles.length, 48);
@@ -196,7 +196,7 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-      DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false);
+      DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false, false);
       dataAggregator.aggregateData(data);
 
       expect(dailySupplyChargePer30mins, closeTo(0.013013698630136987, 0.001));
@@ -205,11 +205,11 @@ void main() {
 
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.01));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.02, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.01, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY,
-          closeTo(0.03 + dailySupplyChargePer30mins, 0.01));
+          closeTo(0.01 + dailySupplyChargePer30mins, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY,
-          closeTo(0.03 + dailySupplyChargePer30mins, 0.01));
+          closeTo(0.01 + dailySupplyChargePer30mins, 0.01));
     });
   });
 }

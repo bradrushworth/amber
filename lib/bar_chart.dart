@@ -21,6 +21,7 @@ const String supply = 'supply';
 const String peak = 'peak';
 const String shoulder = 'shoulder';
 const String offPeak = 'offPeak';
+const String solarSponge = 'solarSponge';
 
 final List<Color> colors = [
   const Color(0xFF5974FF),
@@ -39,9 +40,14 @@ class BarChartWidget1 extends StatefulWidget {
   late final Duration ending;
   bool prices;
   bool forecast;
+  bool feedIn;
 
   BarChartWidget1(this.rawData, this.title, this.duration,
-      {Key? key, this.ending = const Duration(days: 0), this.prices = false, this.forecast = false})
+      {Key? key,
+      this.ending = const Duration(days: 0),
+      this.prices = false,
+      this.forecast = false,
+      this.feedIn = false})
       : super(key: key);
 
   @override
@@ -55,6 +61,7 @@ class BarChartState extends State<BarChartWidget1> {
   late final Duration _ending;
   late final bool _prices;
   late final bool _forecast;
+  late final bool _feedIn;
   List<BarChartGroupData> _barChartData = [];
   Map<int, String> _barChartTitles = {};
   bool _loading = true;
@@ -70,6 +77,7 @@ class BarChartState extends State<BarChartWidget1> {
     _ending = widget.ending;
     _prices = widget.prices;
     _forecast = widget.forecast;
+    _feedIn = widget.feedIn;
     parseFile();
   }
 
@@ -151,7 +159,6 @@ class BarChartState extends State<BarChartWidget1> {
                               child: BarChart(
                                 BarChartData(
                                   barGroups: _barChartData,
-                                  //[BarChartGroupData(x: 0, barRods: [makeRodData(80)]),],
                                   titlesData: FlTitlesData(
                                     rightTitles:
                                         const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -166,7 +173,7 @@ class BarChartState extends State<BarChartWidget1> {
                                         return SideTitleWidget(
                                           axisSide: AxisSide.bottom,
                                           angle: math.radians(-90),
-                                          space: 11,
+                                          space: 9,
                                           child: Text(
                                             xValue.toInt() % 2 == 0
                                                 ? _barChartTitles[xValue.toInt()]!
@@ -181,16 +188,21 @@ class BarChartState extends State<BarChartWidget1> {
                                         sideTitles: SideTitles(
                                             showTitles: true,
                                             //interval: 1,
-                                            reservedSize: 25,
+                                            reservedSize: 40,
                                             getTitlesWidget: (xValue, titleMeta) {
-                                              String formattedNumber =
-                                                  xValue.toStringAsPrecision(1);
+                                              String formattedNumber;
+                                              if (xValue < 1) {
+                                                formattedNumber = xValue.toStringAsFixed(2);
+                                              } else {
+                                                formattedNumber = xValue.toStringAsFixed(0);
+                                              }
                                               return SideTitleWidget(
                                                 axisSide: AxisSide.left,
                                                 //child: Text(xValue == xValue.roundToDouble() ? "$xValue" : ''),
                                                 child: Text(
-                                                  formattedNumber,
-                                                  style: const TextStyle(fontSize: 8),
+                                                  (_prices || _forecast ? '\$' : '') +
+                                                      formattedNumber,
+                                                  style: const TextStyle(fontSize: 9),
                                                 ),
                                               );
                                             })),
@@ -234,7 +246,7 @@ class BarChartState extends State<BarChartWidget1> {
 
     //final rawData = await rootBundle.loadString(filepath);
     List<Usage> data = _rawData!;
-    DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices, _forecast);
+    DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices, _forecast, _feedIn);
     try {
       dataAggregator.aggregateData(data);
 
@@ -268,10 +280,11 @@ class DataAggregator {
   late final Duration _duration, _ending;
   late final bool _prices;
   late final bool _forecast;
+  late final bool _feedIn;
   late final bool _today;
   late final DateTime _nowLocal;
 
-  DataAggregator(this._duration, this._ending, this._prices, this._forecast);
+  DataAggregator(this._duration, this._ending, this._prices, this._forecast, this._feedIn);
 
   aggregateData(List<Usage> data) {
     //print(data.map((u) => u.channelType!).toSet());
@@ -331,11 +344,17 @@ class DataAggregator {
         //         : record.channelType == general
         //             ? 2
         //             : throw Exception('Unknown channel type!');
-        if (record.channelType == controlledLoad && _forecast) {
+        if (record.channelType == controlledLoad && _forecast && !_feedIn) {
           // Skip the controlled load when forecasting
           continue;
-        } else if (record.channelType != feedIn) {
-          // Ignore feed in tariff here
+        } else if (record.channelType == general && _forecast && _feedIn) {
+          // Skip the general load when forecasting the feedIn graph
+          continue;
+        } else if (record.channelType != feedIn &&
+            ((_forecast && record.perKwh != null && record.perKwh! >= 0.0) ||
+                (_prices && record.cost != null && record.cost! >= 0.0) ||
+                (!_prices && record.kwh != null && record.kwh! >= 0.0))) {
+          // Ignore feed in tariff here or negative costs
           stackedValue[graphPos] = (stackedValue[graphPos] ?? 0.0) +
               (_prices
                   ? (record.cost ?? record.perKwh!) / 100
@@ -347,7 +366,10 @@ class DataAggregator {
           stackedValues[graphPos] ??= CustomRodGroup();
           stackedValues[graphPos]!.add(record.channelType!, record.tariffInformation?.period,
               _prices ? (record.cost ?? record.perKwh!) / 100 : record.kwh ?? record.perKwh! / 100);
-        } else {
+        } else if ((_feedIn && record.channelType == feedIn) ||
+            (_feedIn && _forecast && record.perKwh != null && record.perKwh! < 0.0) ||
+            (_prices && record.cost != null && record.cost! < 0.0) ||
+            (!_prices && record.kwh != null && record.kwh! < 0.0)) {
           // Calculate feed in tariff
           feedInValue[graphPos] = (feedInValue[graphPos] ?? 0.0) +
               (_prices
@@ -399,7 +421,7 @@ class DataAggregator {
 
   static double roundDouble(double value, int places) {
     num mod = pow(10.0, places);
-    return ((value * mod).ceilToDouble() / mod);
+    return ((value * mod).floorToDouble() / mod);
   }
 
   BarChartRodData makeRodData(
@@ -410,17 +432,17 @@ class DataAggregator {
     //print("meterNum=$meterNum");
     return BarChartRodData(
       toY: roundDouble(value, _prices || _forecast ? 2 : 3),
-      // colors: [
-      //   const Color(0xFFFFAB5E),
-      //   const Color(0xFFFFD336),
-      // ],
+      //toY: double.parse(value.toStringAsFixed(_prices || _forecast ? 2 : 3)),
+      color: Colors.white70,
       width: 6, // / _duration.inDays,
       //borderRadius: BorderRadius.circular(2),
       rodStackItems: stackedValues
           .toList()
           .map((e) => BarChartRodStackItem(
               rodCumulative,
-              rodCumulative += roundDouble(e.amount, _prices || _forecast ? 2 : 3),
+              //rodCumulative += roundDouble(e.amount, _prices || _forecast ? 2 : 3),
+              //rodCumulative += double.parse(e.amount.toStringAsFixed(_prices || _forecast ? 2 : 3)),
+              rodCumulative += e.amount,
               _today && graphPos == nowIndex
                   ? Utils.lighten(e.getCostColor(), 50)
                   : e.getCostColor()))
@@ -450,7 +472,7 @@ class CustomRodElement {
       return colors[6]; // Feed In
     } else if (channelType == supply) {
       return colors[0]; // Supply
-    } else if (tariffInformation == offPeak) {
+    } else if (tariffInformation == offPeak || tariffInformation == solarSponge) {
       return colors[2]; // Off peak
     } else if (tariffInformation == peak) {
       return colors[4]; // Peak
