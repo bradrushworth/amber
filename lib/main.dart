@@ -108,8 +108,7 @@ class HomePageState extends State<HomePage> {
   List<DropdownMenuItem<ListItem>> _siteIdMenuItems = [];
   late List<Site> _sites;
   ListItem? _siteIdItemSelected;
-  final Cron _cron = Cron();
-  Timer? _timerUsage;
+  Timer? _timerForecast, _timerUsage;
 
   @override
   initState() {
@@ -118,13 +117,13 @@ class HomePageState extends State<HomePage> {
     _dropdownItemSelected = _dropdownMenuItems[0].value!;
     _loadData();
 
-    _cron.schedule(Schedule.parse('*/15 * * * *'), () => _getForecast());
+    _timerForecast = Timer.periodic(const Duration(minutes: 1), (Timer t) => _getForecast());
     _timerUsage = Timer.periodic(const Duration(hours: 1), (Timer t) => _getUsage());
   }
 
   @override
   void dispose() {
-    _cron.close();
+    _timerForecast?.cancel();
     _timerUsage?.cancel();
     super.dispose();
   }
