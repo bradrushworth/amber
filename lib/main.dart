@@ -45,7 +45,6 @@ class MyApp extends StatefulWidget {
 }
 
 class MyAppState extends State<MyApp> {
-
   @override
   initState() {
     super.initState();
@@ -110,6 +109,7 @@ class HomePageState extends State<HomePage> {
   late List<Site> _sites;
   ListItem? _siteIdItemSelected;
   final Cron _cron = Cron();
+  Timer? _timerUsage;
 
   @override
   initState() {
@@ -118,17 +118,14 @@ class HomePageState extends State<HomePage> {
     _dropdownItemSelected = _dropdownMenuItems[0].value!;
     _loadData();
 
-    _cron.schedule(Schedule.parse('*/5 * * * *'), () async {
-      _getForecast();
-    });
-    _cron.schedule(Schedule.parse('00 * * * *'), () async {
-      _getUsage();
-    });
+    _cron.schedule(Schedule.parse('*/15 * * * *'), () => _getForecast());
+    _timerUsage = Timer.periodic(const Duration(hours: 1), (Timer t) => _getUsage());
   }
 
   @override
   void dispose() {
     _cron.close();
+    _timerUsage?.cancel();
     super.dispose();
   }
 
@@ -443,8 +440,8 @@ class HomePageState extends State<HomePage> {
                                             forecast: true,
                                             feedIn: false)),
                                     MyCard(
-                                        child: BarChartWidget1(forecastData,
-                                            'Yesterday\'s Prices', const Duration(days: 1),
+                                        child: BarChartWidget1(forecastData, 'Yesterday\'s Prices',
+                                            const Duration(days: 1),
                                             ending: const Duration(days: 0),
                                             prices: false,
                                             forecast: true,
@@ -457,8 +454,8 @@ class HomePageState extends State<HomePage> {
                                             forecast: true,
                                             feedIn: false)),
                                     MyCard(
-                                        child: BarChartWidget1(forecastData,
-                                            'Today\'s Prices', const Duration(days: 1),
+                                        child: BarChartWidget1(forecastData, 'Today\'s Prices',
+                                            const Duration(days: 1),
                                             ending: const Duration(days: -1),
                                             prices: false,
                                             forecast: true,
@@ -471,8 +468,8 @@ class HomePageState extends State<HomePage> {
                                             forecast: true,
                                             feedIn: false)),
                                     MyCard(
-                                        child: BarChartWidget1(forecastData,
-                                            'Tomorrow\'s Prices', const Duration(days: 1),
+                                        child: BarChartWidget1(forecastData, 'Tomorrow\'s Prices',
+                                            const Duration(days: 1),
                                             ending: const Duration(days: -2),
                                             prices: false,
                                             forecast: true,
