@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:cron/cron.dart';
 import 'package:device_preview/device_preview.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -108,7 +109,7 @@ class HomePageState extends State<HomePage> {
   List<DropdownMenuItem<ListItem>> _siteIdMenuItems = [];
   late List<Site> _sites;
   ListItem? _siteIdItemSelected;
-  Timer? _timerForecast, _timerUsage;
+  final Cron _cron = Cron();
 
   @override
   initState() {
@@ -116,14 +117,18 @@ class HomePageState extends State<HomePage> {
     _dropdownMenuItems = buildDropDownMenuItems(_dropdownItems);
     _dropdownItemSelected = _dropdownMenuItems[0].value!;
     _loadData();
-    _timerForecast = Timer.periodic(const Duration(minutes: 5), (Timer t) => _getForecast());
-    _timerUsage = Timer.periodic(const Duration(hours: 1), (Timer t) => _getUsage());
+
+    _cron.schedule(Schedule.parse('*/5 * * * *'), () async {
+      _getForecast();
+    });
+    _cron.schedule(Schedule.parse('00 * * * *'), () async {
+      _getUsage();
+    });
   }
 
   @override
   void dispose() {
-    _timerForecast?.cancel();
-    _timerUsage?.cancel();
+    _cron.close();
     super.dispose();
   }
 
