@@ -242,6 +242,7 @@ class HomePageState extends State<HomePage> {
             title: const Text('Amber API Token'),
             content: TextField(
               onChanged: (value) async {
+                value = value.trim();
                 if (value.length != 36) {
                   return;
                 }
@@ -667,16 +668,31 @@ class HomePageState extends State<HomePage> {
                           child: Row(
                             children: [
                               Expanded(
+                                // Constrains AutoSizeText to the width of the Row
+                                child: TextButton(
+                                  onPressed: () {
+                                    Utils.launchURI(Uri(
+                                      scheme: 'mailto',
+                                      path: 'bitbot@bitbot.com.au',
+                                      query: 'subject=Help with Amber Electric Dashboard',
+                                    ));
+                                  },
+                                  child: AutoSizeText('Support',
+                                      maxLines: 1, softWrap: false, group: bottomButtonGroup),
+                                ),
+                              ),
+                              const MyDivider(),
+                              Expanded(
                                 child: TextButton(
                                   onPressed: () {
                                     Utils.launchURI(Uri(
                                       scheme: 'https',
                                       host: 'github.com',
-                                      path: '/bradrushworth/amber',
+                                      path: '/bradrushworth/amber/issues',
                                     ));
                                   },
                                   // Constrains AutoSizeText to the width of the Row
-                                  child: AutoSizeText('Source Code',
+                                  child: AutoSizeText('Improvements',
                                       maxLines: 1, softWrap: false, group: bottomButtonGroup),
                                 ),
                               ),
@@ -687,11 +703,11 @@ class HomePageState extends State<HomePage> {
                                   onPressed: () {
                                     Utils.launchURI(Uri(
                                       scheme: 'https',
-                                      host: 'pub.dev',
-                                      path: '/packages/fl_chart',
+                                      host: 'github.com',
+                                      path: '/bradrushworth/amber',
                                     ));
                                   },
-                                  child: AutoSizeText('Chart Library',
+                                  child: AutoSizeText('Source Code',
                                       maxLines: 1, softWrap: false, group: bottomButtonGroup),
                                 ),
                               ),
@@ -731,21 +747,6 @@ class HomePageState extends State<HomePage> {
                                             group: bottomButtonGroup),
                                       ),
                                     ),
-                              const MyDivider(),
-                              Expanded(
-                                // Constrains AutoSizeText to the width of the Row
-                                child: TextButton(
-                                  onPressed: () {
-                                    Utils.launchURI(Uri(
-                                      scheme: 'mailto',
-                                      path: 'bitbot@bitbot.com.au',
-                                      query: 'subject=Help with Amber Electric Dashboard',
-                                    ));
-                                  },
-                                  child: AutoSizeText('Report Issue',
-                                      maxLines: 1, softWrap: false, group: bottomButtonGroup),
-                                ),
-                              ),
                             ],
                           ),
                         ),
