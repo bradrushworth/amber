@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:auto_size_text/auto_size_text.dart';
@@ -43,6 +44,7 @@ class MyApp extends StatefulWidget {
 }
 
 class MyAppState extends State<MyApp> {
+
   @override
   initState() {
     super.initState();
@@ -106,17 +108,27 @@ class HomePageState extends State<HomePage> {
   List<DropdownMenuItem<ListItem>> _siteIdMenuItems = [];
   late List<Site> _sites;
   ListItem? _siteIdItemSelected;
+  Timer? _timerForecast, _timerUsage;
 
   @override
   initState() {
     super.initState();
     _dropdownMenuItems = buildDropDownMenuItems(_dropdownItems);
     _dropdownItemSelected = _dropdownMenuItems[0].value!;
-    _loadDefaultFile();
+    _loadData();
+    _timerForecast = Timer.periodic(const Duration(minutes: 5), (Timer t) => _getForecast());
+    _timerUsage = Timer.periodic(const Duration(hours: 1), (Timer t) => _getUsage());
   }
 
-  void _loadDefaultFile() async {
-    //print('_loadDefaultFile');
+  @override
+  void dispose() {
+    _timerForecast?.cancel();
+    _timerUsage?.cancel();
+    super.dispose();
+  }
+
+  void _loadData() async {
+    //print('_loadData');
 
     // obtain shared preferences
     prefs = await SharedPreferences.getInstance();
@@ -260,7 +272,7 @@ class HomePageState extends State<HomePage> {
                 textColor: Colors.white,
                 child: const Text('OK'),
                 onPressed: () {
-                  _loadDefaultFile();
+                  _loadData();
                   setState(() {
                     Navigator.pop(context);
                   });
