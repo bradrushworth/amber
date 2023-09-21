@@ -57,8 +57,8 @@ class MyAppState extends State<MyApp> {
       builder: (context, themeModel, child) {
         return MaterialApp(
           title: 'Amber Electric Dashboard',
-          // Create space for camera cut-outs etc
-          useInheritedMediaQuery: true,
+          color: Colors.white,
+
           // Hide the dev banner
           debugShowCheckedModeBanner: false,
           // For DevicePreview
@@ -66,11 +66,13 @@ class MyAppState extends State<MyApp> {
           builder: DevicePreview.appBuilder,
 
           theme: ThemeData.light().copyWith(
+            primaryColor: Colors.white,
             textTheme: const TextTheme(
               bodyText2: TextStyle(color: Color(0xFFA7A7A7), fontSize: 13),
             ),
           ),
           darkTheme: ThemeData.dark().copyWith(
+            primaryColor: Colors.white,
             textTheme: const TextTheme(
               bodyText2: TextStyle(color: Color(0xFFA7A7A7), fontSize: 13),
             ),
@@ -118,9 +120,11 @@ class HomePageState extends State<HomePage> {
     _dropdownItemSelected = _dropdownMenuItems[0].value!;
     _loadData();
 
-    if (Platform.isAndroid || Platform.isIOS) {
-      // Keep the screen on
-      KeepScreenOn.turnOn();
+    if (!kIsWeb) {
+      if (Platform.isAndroid || Platform.isIOS) {
+        // Keep the screen on
+        KeepScreenOn.turnOn();
+      }
     }
 
     _timerForecast = Timer.periodic(const Duration(minutes: 1), (Timer t) => _getForecast());
@@ -131,8 +135,10 @@ class HomePageState extends State<HomePage> {
   void dispose() {
     _timerForecast?.cancel();
     _timerUsage?.cancel();
-    if (Platform.isAndroid || Platform.isIOS) {
-      KeepScreenOn.turnOff();
+    if (!kIsWeb) {
+      if (Platform.isAndroid || Platform.isIOS) {
+        KeepScreenOn.turnOff();
+      }
     }
     super.dispose();
   }
