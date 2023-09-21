@@ -444,7 +444,7 @@ class DataAggregator {
               //rodCumulative += double.parse(e.amount.toStringAsFixed(_prices || _forecast ? 2 : 3)),
               rodCumulative += e.amount,
               _today && graphPos == nowIndex
-                  ? Utils.lighten(e.getCostColor(), 50)
+                  ? Utils.lighten(e.getCostColor(), 75)
                   : e.getCostColor()))
           .toList(),
       backDrawRodData: BackgroundBarChartRodData(

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:device_preview/device_preview.dart';
@@ -14,6 +15,7 @@ import 'package:amber/screenshots_mobile.dart'
     if (dart.library.js) 'package:amber/screenshots_other.dart';
 import 'package:amber/utils.dart';
 import 'package:intl/intl.dart';
+import 'package:keep_screen_on/keep_screen_on.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -116,6 +118,11 @@ class HomePageState extends State<HomePage> {
     _dropdownItemSelected = _dropdownMenuItems[0].value!;
     _loadData();
 
+    if (Platform.isAndroid || Platform.isIOS) {
+      // Keep the screen on
+      KeepScreenOn.turnOn();
+    }
+
     _timerForecast = Timer.periodic(const Duration(minutes: 1), (Timer t) => _getForecast());
     _timerUsage = Timer.periodic(const Duration(hours: 1), (Timer t) => _getUsage());
   }
@@ -124,6 +131,9 @@ class HomePageState extends State<HomePage> {
   void dispose() {
     _timerForecast?.cancel();
     _timerUsage?.cancel();
+    if (Platform.isAndroid || Platform.isIOS) {
+      KeepScreenOn.turnOff();
+    }
     super.dispose();
   }
 
