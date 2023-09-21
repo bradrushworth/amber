@@ -12,7 +12,7 @@ import 'top_section.dart';
 import 'utils.dart';
 
 const int METER_INTERVAL = 30; // minutes
-const double DAILY = 19.00 * 12 / 365; // Daily charge
+const double DAILY = 0.5677 + 1.57; // Daily charge
 
 const String controlledLoad = 'controlledLoad';
 const String general = 'general';

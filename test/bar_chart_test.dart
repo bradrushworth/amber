@@ -36,9 +36,10 @@ void main() {
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.001));
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.00, 0.001));
-      expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.06, 0.001));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.06, 0.001));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY,
+          closeTo(0.02 + dailySupplyChargePer30mins, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY,
+          closeTo(0.02 + dailySupplyChargePer30mins, 0.01));
     });
 
     test('1 Day Costs', () async {
@@ -49,13 +50,14 @@ void main() {
           DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false, false);
       dataAggregator.aggregateData(data);
 
-      expect(dailySupplyChargePer30mins, closeTo(0.013013698630136987, 0.001));
-      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(0.03, 0.01));
-      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.03, 0.01));
+      expect(dailySupplyChargePer30mins, closeTo(0.04453541666666667, 0.001));
+      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(0.05, 0.01));
+      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.05, 0.01));
 
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.01));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.02, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY,
+          closeTo(0.00 + dailySupplyChargePer30mins, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY,
           closeTo(0.02 + dailySupplyChargePer30mins, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY,
@@ -85,8 +87,7 @@ void main() {
 
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.001));
-      expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.0, 0.001));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.0, 0.001));
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.125, 0.001));
       expect(
@@ -113,16 +114,18 @@ void main() {
       expect(dataAggregator.newData[46]!.x, 46);
       expect(dataAggregator.newData[47]!.x, 47);
 
-      expect(dailySupplyChargePer30mins, closeTo(0.013013698630136987, 0.001));
-      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(0.03, 0.01));
-      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.03, 0.01));
+      expect(dailySupplyChargePer30mins, closeTo(0.04453541666666667, 0.001));
+      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(0.05, 0.01));
+      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.05, 0.01));
 
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.00, 0.01));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.02, 0.01));
-      expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.03, 0.01));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.03, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY,
+          closeTo(0.00 + dailySupplyChargePer30mins, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY,
+          closeTo(0.01 + dailySupplyChargePer30mins, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY,
+          closeTo(0.01 + dailySupplyChargePer30mins, 0.01));
     });
 
     test('1 Day Costs 2 Day Prior', () async {
@@ -147,16 +150,19 @@ void main() {
       expect(dataAggregator.newData[46]!.x, 46);
       expect(dataAggregator.newData[47]!.x, 47);
 
-      expect(dailySupplyChargePer30mins, closeTo(0.013013698630136987, 0.001));
-      expect(dataAggregator.newData[7]!.barRods.first.toY, closeTo(1.4835 / 100 + dailySupplyChargePer30mins, 0.01));
-      expect(dataAggregator.newData[8]!.barRods.first.toY, closeTo(2.8617 / 100 + dailySupplyChargePer30mins, 0.01));
+      expect(dailySupplyChargePer30mins, closeTo(0.04453541666666667, 0.001));
+      expect(dataAggregator.newData[7]!.barRods.first.toY,
+          closeTo(1.4835 / 100 + dailySupplyChargePer30mins, 0.01));
+      expect(dataAggregator.newData[8]!.barRods.first.toY,
+          closeTo(2.8617 / 100 + dailySupplyChargePer30mins, 0.01));
 
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.00, 0.01));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.02, 0.01));
-      expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.03, 0.01));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.03, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.04, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY,
+          closeTo(0.02 + dailySupplyChargePer30mins, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY,
+          closeTo(0.02 + dailySupplyChargePer30mins, 0.01));
     });
 
     test('1 Day FeedIn', () async {
@@ -164,7 +170,7 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-      DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false, false);
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false, false);
       dataAggregator.aggregateData(data);
 
       expect(dataAggregator.newTitles.length, 48);
@@ -186,9 +192,10 @@ void main() {
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.001));
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.00, 0.001));
-      expect(
-          dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY, closeTo(0.06, 0.001));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY, closeTo(0.06, 0.001));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY,
+          closeTo(0.02 + dailySupplyChargePer30mins, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY,
+          closeTo(0.02 + dailySupplyChargePer30mins, 0.01));
     });
 
     test('1 Day FeedIn Costs', () async {
@@ -196,16 +203,17 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-      DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false, false);
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false, false);
       dataAggregator.aggregateData(data);
 
-      expect(dailySupplyChargePer30mins, closeTo(0.013013698630136987, 0.001));
-      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(0.03, 0.01));
-      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.03, 0.01));
+      expect(dailySupplyChargePer30mins, closeTo(0.04453541666666667, 0.001));
+      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(0.05, 0.01));
+      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(0.05, 0.01));
 
       expect(
           dataAggregator.newData[0]!.barRods.first.rodStackItems.first.fromY, closeTo(0.0, 0.01));
-      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY, closeTo(0.01, 0.01));
+      expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.first.toY,
+          closeTo(0.00 + dailySupplyChargePer30mins, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.fromY,
           closeTo(0.01 + dailySupplyChargePer30mins, 0.01));
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY,
