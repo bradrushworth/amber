@@ -192,6 +192,24 @@ class HomePageState extends State<HomePage> {
     int numPeriodsBack = (2 * date.hour) + (date.minute ~/ 30);
     int numPeriodsForward = 24 * 60 ~/ METER_INTERVAL * 2 - numPeriodsBack - 1;
     numPeriodsBack += 24 * 60 ~/ METER_INTERVAL;
+
+    var utc = date.toUtc();
+    var today = DateTime.utc(utc.year, utc.month, utc.day, utc.hour, utc.minute, utc.second).toLocal();
+    var yesterday = DateTime.utc(utc.year, utc.month, utc.day - 1, utc.hour, utc.minute, utc.second).toLocal();
+    //print('today=$today yesterday=$yesterday difference=${today.difference(yesterday).inHours}');
+    if (today.hour > yesterday.hour) {
+      // If the day that daylight savings starts
+      numPeriodsBack -= 60 ~/ METER_INTERVAL;
+      numPeriodsForward += 60 ~/ METER_INTERVAL;
+      print('numPeriodsBack');
+    }
+    if (today.hour < yesterday.hour) {
+      // If the day that daylight savings ends
+      numPeriodsBack -= 60 ~/ METER_INTERVAL;
+      numPeriodsForward += 60 ~/ METER_INTERVAL;
+      print('numPeriodsForward');
+    }
+
     String uri =
         'https://api.amber.com.au/v1/sites/${_siteIdItemSelected!.value}/prices/current?next=$numPeriodsForward&previous=$numPeriodsBack&resolution=$METER_INTERVAL';
     print(uri);
