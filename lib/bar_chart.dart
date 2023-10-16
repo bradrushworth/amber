@@ -371,6 +371,9 @@ class DataAggregator {
             (_prices && record.cost != null && record.cost! < 0.0) ||
             (!_prices && record.kwh != null && record.kwh! < 0.0)) {
           // Calculate feed in tariff
+          // print('date=$date record.perKwh!=${record.perKwh!}');
+          stackedValue[graphPos] = (stackedValue[graphPos] ?? 0.0);
+          stackedValues[graphPos] ??= CustomRodGroup();
           feedInValue[graphPos] = (feedInValue[graphPos] ?? 0.0) +
               (_prices
                   ? (record.cost ?? record.perKwh!) / 100
