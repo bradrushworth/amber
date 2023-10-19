@@ -85,16 +85,25 @@ class Usage {
 
 class TariffInformation {
   String? period;
+  String? season;
+  num? block;
+  bool? demandWindow;
 
-  TariffInformation({this.period});
+  TariffInformation({this.period, this.season, this.block, this.demandWindow});
 
   TariffInformation.fromJson(Map<String, dynamic> json) {
     period = json['period'];
+    season = json['season'];
+    block = json['block'];
+    demandWindow = json['demandWindow'];
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['period'] = this.period;
+    data['season'] = this.season;
+    data['block'] = this.block;
+    data['demandWindow'] = this.demandWindow;
     return data;
   }
 }

@@ -201,12 +201,13 @@ class HomePageState extends State<HomePage> {
       // If the day that daylight savings starts
       numPeriodsBack -= 60 ~/ METER_INTERVAL;
       numPeriodsForward += 60 ~/ METER_INTERVAL;
+      //print('numPeriodsBack');
     }
     if (today.hour < yesterday.hour) {
       // If the day that daylight savings ends
       numPeriodsBack += 60 ~/ METER_INTERVAL;
       numPeriodsForward -= 60 ~/ METER_INTERVAL;
-      print('numPeriodsForward');
+      //print('numPeriodsForward');
     }
 
     String uri =

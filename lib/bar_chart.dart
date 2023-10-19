@@ -23,6 +23,14 @@ const String shoulder = 'shoulder';
 const String offPeak = 'offPeak';
 const String solarSponge = 'solarSponge';
 
+const String negative = 'negative';
+const String extremelyLow = 'extremelyLow';
+const String veryLow = 'veryLow';
+const String low = 'low';
+const String neutral = 'neutral';
+const String high = 'high';
+const String spike = 'spike';
+
 final List<Color> colors = [
   const Color(0xFF5974FF),
   const Color(0xFFFF3E8D),
@@ -347,7 +355,9 @@ class DataAggregator {
           stackedValues[graphPos] ??= CustomRodGroup();
           stackedValues[graphPos]!.add(
               record.channelType!,
+              record.tariffInformation?.demandWindow,
               record.tariffInformation?.period,
+              record.descriptor,
               roundDouble(
                   _prices
                       ? (record.cost ?? record.perKwh!) / 100
@@ -363,7 +373,9 @@ class DataAggregator {
           if (_forecast && _prices && !hasControlled) {
             stackedValues[graphPos]!.add(
                 record.channelType!,
+                record.tariffInformation?.demandWindow,
                 record.tariffInformation?.period,
+                record.descriptor,
                 roundDouble(
                     -(_prices
                         ? (record.cost ?? record.perKwh!) / 100
@@ -385,7 +397,7 @@ class DataAggregator {
       if (_prices && !_forecast) {
         // Add the supply charges as required
         double dailySupplyChargePer30Mins = roundDouble(DAILY / 24 / 2, _prices);
-        stackedValues[graphPos]!.add('supply', null, dailySupplyChargePer30Mins);
+        stackedValues[graphPos]!.add('supply', null, null, null, dailySupplyChargePer30Mins);
       }
     }
 
@@ -457,7 +469,9 @@ class NotEnoughDataException implements Exception {}
 class CustomRodElement {
   double amount = 0.0;
   String channelType;
+  bool demandWindow = false;
   String? tariffInformation;
+  String? descriptor;
 
   CustomRodElement(this.channelType);
 
@@ -468,19 +482,47 @@ class CustomRodElement {
       return colors[6]; // Feed In
     } else if (channelType == supply) {
       return colors[0]; // Supply
-    } else if (tariffInformation == offPeak || tariffInformation == solarSponge) {
-      return colors[2]; // Off peak
-    } else if (tariffInformation == peak) {
-      return colors[4]; // Peak
-    } else if (tariffInformation == shoulder || tariffInformation == null) {
-      return colors[3]; // Shoulder
+    } else if (tariffInformation != null) {
+      if (tariffInformation == peak || demandWindow) {
+        return colors[4]; // Peak
+      } else if (tariffInformation == shoulder || tariffInformation == null) {
+        return colors[3]; // Shoulder
+      } else if (tariffInformation == offPeak || tariffInformation == solarSponge) {
+        return colors[2]; // Off peak
+      } else {
+        return colors[5]; // Unknown
+      }
     } else {
-      return colors[5]; // Unknown
+      if (descriptor == spike) {
+        return Utils.darken(colors[4], 20); // Peak
+      } else if (descriptor == high) {
+        return Utils.darken(colors[4], 10); // Peak
+      } else if (descriptor == neutral) {
+        return colors[4]; // Peak
+      } else if (descriptor == low) {
+        return colors[3]; // Shoulder
+      } else if (descriptor == veryLow) {
+        return colors[2]; // Off peak
+      } else if (descriptor == extremelyLow) {
+        return Utils.lighten(colors[2], 10); // Off peak
+      } else if (descriptor == negative) {
+        return Utils.lighten(colors[2], 20); // Off peak
+      } else {
+        return colors[5]; // Unknown
+      }
     }
+  }
+
+  void setDemandWindow(bool? demandWindow) {
+    if (demandWindow != null) this.demandWindow = demandWindow;
   }
 
   void setTariffInformation(String? tariffInformation) {
     if (tariffInformation != null) this.tariffInformation = tariffInformation;
+  }
+
+  void setDescriptor(String? descriptor) {
+    if (descriptor != null) this.descriptor = descriptor;
   }
 
   void add(num num) {
@@ -496,7 +538,8 @@ class CustomRodGroup {
 
   CustomRodGroup();
 
-  void add(String channelType, String? tariffInformation, num num) {
+  void add(String channelType, bool? demandWindow, String? tariffInformation, String? descriptor,
+      num num) {
     if (channelType == controlledLoad) {
       controlledElement.add(num);
     } else if (channelType == feedIn) {
@@ -504,7 +547,9 @@ class CustomRodGroup {
     } else if (channelType == supply) {
       supplyElement.add(num);
     } else if (channelType == general) {
+      generalElement.setDemandWindow(demandWindow);
       generalElement.setTariffInformation(tariffInformation);
+      generalElement.setDescriptor(descriptor);
       generalElement.add(num);
     } else {
       throw Exception('Unknown channel type! {$channelType}');
