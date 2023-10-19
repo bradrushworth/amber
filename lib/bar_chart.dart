@@ -40,14 +40,9 @@ class BarChartWidget1 extends StatefulWidget {
   late final Duration ending;
   bool prices;
   bool forecast;
-  bool feedIn;
 
   BarChartWidget1(this.rawData, this.title, this.duration,
-      {Key? key,
-      this.ending = const Duration(days: 0),
-      this.prices = false,
-      this.forecast = false,
-      this.feedIn = false})
+      {Key? key, this.ending = const Duration(days: 0), this.prices = false, this.forecast = false})
       : super(key: key);
 
   @override
@@ -61,7 +56,6 @@ class BarChartState extends State<BarChartWidget1> {
   late final Duration _ending;
   late final bool _prices;
   late final bool _forecast;
-  late final bool _feedIn;
   List<BarChartGroupData> _barChartData = [];
   Map<int, String> _barChartTitles = {};
   bool _loading = true;
@@ -77,7 +71,6 @@ class BarChartState extends State<BarChartWidget1> {
     _ending = widget.ending;
     _prices = widget.prices;
     _forecast = widget.forecast;
-    _feedIn = widget.feedIn;
     parseFile();
   }
 
@@ -200,8 +193,7 @@ class BarChartState extends State<BarChartWidget1> {
                                                 axisSide: AxisSide.left,
                                                 //child: Text(xValue == xValue.roundToDouble() ? "$xValue" : ''),
                                                 child: Text(
-                                                  (_prices || _forecast ? '\$' : '') +
-                                                      formattedNumber,
+                                                  (_prices ? '\$' : '') + formattedNumber,
                                                   style: const TextStyle(fontSize: 9),
                                                 ),
                                               );
@@ -246,7 +238,7 @@ class BarChartState extends State<BarChartWidget1> {
 
     //final rawData = await rootBundle.loadString(filepath);
     List<Usage> data = _rawData!;
-    DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices, _forecast, _feedIn);
+    DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices, _forecast);
     try {
       dataAggregator.aggregateData(data);
 
@@ -280,11 +272,10 @@ class DataAggregator {
   late final Duration _duration, _ending;
   late final bool _prices;
   late final bool _forecast;
-  late final bool _feedIn;
   late final bool _today;
   late final DateTime _nowLocal;
 
-  DataAggregator(this._duration, this._ending, this._prices, this._forecast, this._feedIn);
+  DataAggregator(this._duration, this._ending, this._prices, this._forecast);
 
   aggregateData(List<Usage> data) {
     //print(data.map((u) => u.channelType!).toSet());
@@ -337,10 +328,10 @@ class DataAggregator {
       for (int meterNum = 0; meterNum < numMeters; meterNum++) {
         record = data[n + meterNum * data.length ~/ numMeters];
         //print("adding date=$date record=${record.channelType}");
-        if (record.channelType == controlledLoad && _forecast && !_feedIn) {
+        if (record.channelType == controlledLoad && _forecast && !_prices) {
           // Skip the controlled load when forecasting
           continue;
-        } else if (record.channelType == general && _forecast && _feedIn) {
+        } else if (record.channelType == general && _forecast && _prices) {
           // Skip the general load when forecasting the feedIn graph
           continue;
         } else if (record.channelType != feedIn &&
@@ -361,47 +352,39 @@ class DataAggregator {
                   _prices
                       ? (record.cost ?? record.perKwh!) / 100
                       : record.kwh ?? record.perKwh! / 100,
-                  _prices,
-                  _forecast));
-        } else if ((_feedIn && record.channelType == feedIn) ||
-            (_feedIn && _forecast && record.perKwh != null && record.perKwh! < 0.0) ||
-            (_prices && record.cost != null && record.cost! < 0.0) ||
-            (!_prices && record.kwh != null && record.kwh! < 0.0)) {
+                  _prices));
+        } else if ((_prices && record.channelType == feedIn) ||
+            (_forecast && record.perKwh != null && record.perKwh! <= 0.0) ||
+            (_prices && record.cost != null && record.cost! <= 0.0) ||
+            (!_prices && record.kwh != null && record.kwh! >= 0.0)) {
           // Calculate feed in tariff
           // print('date=$date record.perKwh!=${record.perKwh!}');
           stackedValues[graphPos] ??= CustomRodGroup();
-          if (_forecast && !hasControlled) {
-            //stackedValue[graphPos] = (stackedValue[graphPos] ?? 0.0) +
-            roundDouble(
-                -(_prices
-                    ? (record.cost ?? record.perKwh!) / 100
-                    : record.kwh ?? record.perKwh! / 100),
-                _prices,
-                _forecast);
+          if (_forecast && _prices && !hasControlled) {
             stackedValues[graphPos]!.add(
                 record.channelType!,
                 record.tariffInformation?.period,
                 roundDouble(
                     -(_prices
                         ? (record.cost ?? record.perKwh!) / 100
-                        : record.kwh ?? record.perKwh! / 100),
-                    _prices,
-                    _forecast));
+                        : (record.kwh ?? record.perKwh! / 100)),
+                    _prices));
           } else {
             feedInValue[graphPos] = (feedInValue[graphPos] ?? 0.0) +
                 roundDouble(
                     _prices
                         ? (record.cost ?? record.perKwh!) / 100
-                        : record.kwh ?? record.perKwh! / 100,
-                    _prices,
-                    _forecast);
+                        : -(record.kwh ?? record.perKwh! / 100),
+                    _prices);
           }
+        } else {
+          //print('else: record.channelType=${record.channelType} _forecast=$_forecast _prices=$_prices record.channelType=${record.channelType} record.kwh=${record.kwh} feedInValue=${record.cost}');
         }
       }
 
-      if (_prices) {
+      if (_prices && !_forecast) {
         // Add the supply charges as required
-        double dailySupplyChargePer30Mins = roundDouble(DAILY / 24 / 2, _prices, _forecast);
+        double dailySupplyChargePer30Mins = roundDouble(DAILY / 24 / 2, _prices);
         stackedValues[graphPos]!.add('supply', null, dailySupplyChargePer30Mins);
       }
     }
@@ -432,8 +415,8 @@ class DataAggregator {
     }
   }
 
-  static double roundDouble(num value, bool prices, bool forecast) {
-    int digits = prices || forecast ? 2 : 3;
+  static double roundDouble(num value, bool prices) {
+    int digits = prices ? 2 : 3;
     num mod = pow(10.0, digits);
     double result = ((value * mod).roundToDouble() / mod);
     return result;
@@ -447,7 +430,7 @@ class DataAggregator {
     double value =
         stackedValues.toList().map((e) => e.amount).reduce((value, element) => value += element);
     return BarChartRodData(
-      toY: roundDouble(value, _prices, _forecast),
+      toY: roundDouble(value, _prices),
       color: Colors.white70,
       width: 6, // / _duration.inDays,
       //borderRadius: BorderRadius.circular(2),
@@ -455,7 +438,7 @@ class DataAggregator {
           .toList()
           .map((e) => BarChartRodStackItem(
               rodCumulative,
-              rodCumulative += roundDouble(e.amount, _prices, _forecast),
+              rodCumulative += roundDouble(e.amount, _prices),
               _today && graphPos == nowIndex
                   ? Utils.lighten(e.getCostColor(), 75)
                   : e.getCostColor()))
@@ -485,13 +468,11 @@ class CustomRodElement {
       return colors[6]; // Feed In
     } else if (channelType == supply) {
       return colors[0]; // Supply
-    } else if (tariffInformation == offPeak ||
-        tariffInformation == solarSponge ||
-        tariffInformation == null) {
+    } else if (tariffInformation == offPeak || tariffInformation == solarSponge) {
       return colors[2]; // Off peak
     } else if (tariffInformation == peak) {
       return colors[4]; // Peak
-    } else if (tariffInformation == shoulder) {
+    } else if (tariffInformation == shoulder || tariffInformation == null) {
       return colors[3]; // Shoulder
     } else {
       return colors[5]; // Unknown

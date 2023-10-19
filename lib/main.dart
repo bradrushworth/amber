@@ -201,7 +201,6 @@ class HomePageState extends State<HomePage> {
       // If the day that daylight savings starts
       numPeriodsBack -= 60 ~/ METER_INTERVAL;
       numPeriodsForward += 60 ~/ METER_INTERVAL;
-      print('numPeriodsBack');
     }
     if (today.hour < yesterday.hour) {
       // If the day that daylight savings ends
@@ -469,43 +468,37 @@ class HomePageState extends State<HomePage> {
                                             const Duration(days: 1),
                                             ending: const Duration(days: 0),
                                             prices: false,
-                                            forecast: true,
-                                            feedIn: false)),
+                                            forecast: true)),
                                     MyCard(
                                         child: BarChartWidget1(forecastData, 'Yesterday\'s Prices',
                                             const Duration(days: 1),
                                             ending: const Duration(days: 0),
-                                            prices: false,
-                                            forecast: true,
-                                            feedIn: true)),
+                                            prices: true,
+                                            forecast: true)),
                                     MyCard(
                                         child: BarChartWidget1(
                                             forecastData, 'Today\'s Price', const Duration(days: 1),
                                             ending: const Duration(days: -1),
                                             prices: false,
-                                            forecast: true,
-                                            feedIn: false)),
+                                            forecast: true)),
                                     MyCard(
                                         child: BarChartWidget1(forecastData, 'Today\'s Prices',
                                             const Duration(days: 1),
                                             ending: const Duration(days: -1),
-                                            prices: false,
-                                            forecast: true,
-                                            feedIn: true)),
+                                            prices: true,
+                                            forecast: true)),
                                     MyCard(
                                         child: BarChartWidget1(forecastData, 'Tomorrow\'s Price',
                                             const Duration(days: 1),
                                             ending: const Duration(days: -2),
                                             prices: false,
-                                            forecast: true,
-                                            feedIn: false)),
+                                            forecast: true)),
                                     MyCard(
                                         child: BarChartWidget1(forecastData, 'Tomorrow\'s Prices',
                                             const Duration(days: 1),
                                             ending: const Duration(days: -2),
-                                            prices: false,
-                                            forecast: true,
-                                            feedIn: true)),
+                                            prices: true,
+                                            forecast: true)),
                                   ]
                                 : _dropdownItemSelected.value == _dropdownItems[1].value
                                     ? [
