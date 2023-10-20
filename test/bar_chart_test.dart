@@ -14,7 +14,7 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-          DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false);
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false, false);
       dataAggregator.aggregateData(data);
 
       expect(dataAggregator.newTitles.length, 48);
@@ -47,7 +47,7 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-          DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false);
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false, false);
       dataAggregator.aggregateData(data);
 
       expect(dailySupplyChargePer30mins, closeTo(0.04453541666666667, 0.001));
@@ -69,7 +69,7 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-          DataAggregator(const Duration(days: 2), const Duration(days: 0), false, false);
+          DataAggregator(const Duration(days: 2), const Duration(days: 0), false, false, false);
       dataAggregator.aggregateData(data);
 
       expect(dataAggregator.newTitles.length, 48);
@@ -99,7 +99,7 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-          DataAggregator(const Duration(days: 1), const Duration(days: 1), true, false);
+          DataAggregator(const Duration(days: 1), const Duration(days: 1), true, false, false);
       dataAggregator.aggregateData(data);
 
       expect(dataAggregator.newTitles.length, 48);
@@ -133,7 +133,7 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-          DataAggregator(const Duration(days: 1), const Duration(days: 2), true, false);
+          DataAggregator(const Duration(days: 1), const Duration(days: 2), true, false, false);
       dataAggregator.aggregateData(data);
 
       expect(dataAggregator.newTitles.length, 48);
@@ -170,7 +170,7 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-          DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false);
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false, false);
       dataAggregator.aggregateData(data);
 
       expect(dataAggregator.newTitles.length, 48);
@@ -203,7 +203,7 @@ void main() {
       List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
 
       DataAggregator dataAggregator =
-          DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false);
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false, false);
       dataAggregator.aggregateData(data);
 
       expect(dailySupplyChargePer30mins, closeTo(0.04453541666666667, 0.001));
