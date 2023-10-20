@@ -48,9 +48,14 @@ class BarChartWidget1 extends StatefulWidget {
   late final Duration ending;
   bool prices;
   bool forecast;
+  bool feedIn;
 
   BarChartWidget1(this.rawData, this.title, this.duration,
-      {Key? key, this.ending = const Duration(days: 0), this.prices = false, this.forecast = false})
+      {Key? key,
+      this.ending = const Duration(days: 0),
+      this.prices = false,
+      this.forecast = false,
+      this.feedIn = false})
       : super(key: key);
 
   @override
@@ -64,6 +69,7 @@ class BarChartState extends State<BarChartWidget1> {
   late final Duration _ending;
   late final bool _prices;
   late final bool _forecast;
+  late final bool _feedIn;
   List<BarChartGroupData> _barChartData = [];
   Map<int, String> _barChartTitles = {};
   bool _loading = true;
@@ -79,6 +85,7 @@ class BarChartState extends State<BarChartWidget1> {
     _ending = widget.ending;
     _prices = widget.prices;
     _forecast = widget.forecast;
+    _feedIn = widget.feedIn;
     parseFile();
   }
 
@@ -201,7 +208,8 @@ class BarChartState extends State<BarChartWidget1> {
                                                 axisSide: AxisSide.left,
                                                 //child: Text(xValue == xValue.roundToDouble() ? "$xValue" : ''),
                                                 child: Text(
-                                                  (_prices ? '\$' : '') + formattedNumber,
+                                                  (_prices || _forecast ? '\$' : '') +
+                                                      formattedNumber,
                                                   style: const TextStyle(fontSize: 9),
                                                 ),
                                               );
@@ -246,7 +254,7 @@ class BarChartState extends State<BarChartWidget1> {
 
     //final rawData = await rootBundle.loadString(filepath);
     List<Usage> data = _rawData!;
-    DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices, _forecast);
+    DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices, _forecast, _feedIn);
     try {
       dataAggregator.aggregateData(data);
 
@@ -280,10 +288,11 @@ class DataAggregator {
   late final Duration _duration, _ending;
   late final bool _prices;
   late final bool _forecast;
+  late final bool _feedIn;
   late final bool _today;
   late final DateTime _nowLocal;
 
-  DataAggregator(this._duration, this._ending, this._prices, this._forecast);
+  DataAggregator(this._duration, this._ending, this._prices, this._forecast, this._feedIn);
 
   aggregateData(List<Usage> data) {
     //print(data.map((u) => u.channelType!).toSet());
@@ -336,10 +345,10 @@ class DataAggregator {
       for (int meterNum = 0; meterNum < numMeters; meterNum++) {
         record = data[n + meterNum * data.length ~/ numMeters];
         //print("adding date=$date record=${record.channelType}");
-        if (record.channelType == controlledLoad && _forecast && !_prices) {
+        if (record.channelType == controlledLoad && _forecast && !_feedIn) {
           // Skip the controlled load when forecasting
           continue;
-        } else if (record.channelType == general && _forecast && _prices) {
+        } else if (record.channelType == general && _forecast && _feedIn) {
           // Skip the general load when forecasting the feedIn graph
           continue;
         } else if (record.channelType != feedIn &&
@@ -359,12 +368,12 @@ class DataAggregator {
               record.tariffInformation?.period,
               record.descriptor,
               roundDouble(
-                  _prices
+                  _prices || _forecast
                       ? (record.cost ?? record.perKwh!) / 100
                       : record.kwh ?? record.perKwh! / 100,
-                  _prices));
-        } else if ((_prices && record.channelType == feedIn) ||
-            (_forecast && record.perKwh != null && record.perKwh! <= 0.0) ||
+                  _prices || _forecast));
+        } else if ((_feedIn && record.channelType == feedIn) ||
+            (_feedIn && record.perKwh != null && record.perKwh! <= 0.0) ||
             (_prices && record.cost != null && record.cost! <= 0.0) ||
             (!_prices && record.kwh != null && record.kwh! >= 0.0)) {
           // Calculate feed in tariff
@@ -377,17 +386,17 @@ class DataAggregator {
                 record.tariffInformation?.period,
                 record.descriptor,
                 roundDouble(
-                    -(_prices
+                    -(_prices || _forecast
                         ? (record.cost ?? record.perKwh!) / 100
                         : (record.kwh ?? record.perKwh! / 100)),
-                    _prices));
+                    _prices || _forecast));
           } else {
             feedInValue[graphPos] = (feedInValue[graphPos] ?? 0.0) +
                 roundDouble(
-                    _prices
+                    _prices || _forecast
                         ? (record.cost ?? record.perKwh!) / 100
                         : -(record.kwh ?? record.perKwh! / 100),
-                    _prices);
+                    _prices || _forecast);
           }
         } else {
           //print('else: record.channelType=${record.channelType} _forecast=$_forecast _prices=$_prices record.channelType=${record.channelType} record.kwh=${record.kwh} feedInValue=${record.cost}');
