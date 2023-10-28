@@ -352,11 +352,12 @@ class DataAggregator {
           // Skip the general load when forecasting the feedIn graph
           continue;
         } else if (record.channelType != feedIn &&
-            ((_forecast && record.perKwh != null && record.perKwh! >= 0.0) ||
+            ((_forecast && record.perKwh != null) ||
                 (_prices && record.cost != null && record.cost! >= 0.0) ||
                 (!_prices && record.kwh != null && record.kwh! >= 0.0))) {
           // Record if a controlledLoad exists, and reverse the cost chart
           // positivity/negativity for usability if there isn't one
+          //print('3record.channelType=${record.channelType} date=$date record.perKwh!=${record.perKwh!}');
           if (record.channelType == controlledLoad) {
             hasControlled = true;
           }
@@ -373,11 +374,11 @@ class DataAggregator {
                       : record.kwh ?? record.perKwh! / 100,
                   _prices || _forecast));
         } else if ((_feedIn && record.channelType == feedIn) ||
-            (_feedIn && record.perKwh != null && record.perKwh! <= 0.0) ||
-            (_prices && record.cost != null && record.cost! <= 0.0) ||
-            (!_prices && record.kwh != null && record.kwh! >= 0.0)) {
+            (_feedIn && record.perKwh != null) ||
+            (_prices && record.cost != null) ||
+            (!_prices && record.kwh != null)) {
           // Calculate feed in tariff
-          // print('date=$date record.perKwh!=${record.perKwh!}');
+          //print('4record.channelType=${record.channelType} date=$date record.perKwh!=${record.perKwh!}');
           stackedValues[graphPos] ??= CustomRodGroup();
           if (_forecast && _prices && !hasControlled) {
             stackedValues[graphPos]!.add(
@@ -399,7 +400,7 @@ class DataAggregator {
                     _prices || _forecast);
           }
         } else {
-          //print('else: record.channelType=${record.channelType} _forecast=$_forecast _prices=$_prices record.channelType=${record.channelType} record.kwh=${record.kwh} feedInValue=${record.cost}');
+          //print('else: record.channelType=${record.channelType} date=$date _forecast=$_forecast _prices=$_prices record.kwh=${record.kwh} record.cost=${record.cost}');
         }
       }
 
