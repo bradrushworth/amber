@@ -5,10 +5,10 @@ packages:
     dependency: transitive
     description:
       name: archive
-      sha256: "7e0d52067d05f2e0324268097ba723b71cb41ac8a6a2b24d1edf9c536b987b03"
+      sha256: "7b875fd4a20b165a3084bd2d210439b22ebc653f21cea4842729c0c30c82596b"
       url: "https://pub.dev"
     source: hosted
-    version: "3.4.6"
+    version: "3.4.9"
   args:
     dependency: transitive
     description:
@@ -158,11 +158,12 @@ packages:
   fl_chart:
     dependency: "direct main"
     description:
-      name: fl_chart
-      sha256: c1e26c7e48496be85104c16c040950b0436674cdf0737f3f6e95511b2529b592
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.63.0"
+      path: "."
+      ref: "bugfix/bar-chart-negative-issue"
+      resolved-ref: "2df57345f0faef10a30c4ed9dd173bd0080daf30"
+      url: "https://github.com/imaNNeo/fl_chart.git"
+    source: git
+    version: "0.64.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -379,10 +380,10 @@ packages:
     dependency: "direct main"
     description:
       name: provider
-      sha256: cdbe7530b12ecd9eb455bdaa2fcb8d4dad22e80b8afb4798b41479d5ce26847f
+      sha256: "9a96a0a19b594dbc5bf0f1f27d2bc67d5f95957359b461cd9feb44ed6ae75096"
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.5"
+    version: "6.1.1"
   screenshot_modes:
     dependency: "direct dev"
     description:
