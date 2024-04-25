@@ -196,12 +196,12 @@ class HomePageState extends State<HomePage> {
     var utc = date.toUtc();
     var today = DateTime.utc(utc.year, utc.month, utc.day, utc.hour, utc.minute, utc.second).toLocal();
     var yesterday = DateTime.utc(utc.year, utc.month - 6, utc.day, utc.hour, utc.minute, utc.second).toLocal();
-    print('today=$today yesterday=$yesterday difference=${today.difference(yesterday).inHours}');
+    //print('today=$today yesterday=$yesterday difference=${today.difference(yesterday).inHours}');
     if (today.hour > yesterday.hour) {
       // If the day that daylight savings starts
       numPeriodsBack -= 60 ~/ METER_INTERVAL;
       numPeriodsForward += 60 ~/ METER_INTERVAL;
-      print('numPeriodsBack');
+      //print('numPeriodsBack');
     }
     // if (today.hour < yesterday.hour) {
     //   // If the day that daylight savings ends
