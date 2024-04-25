@@ -158,12 +158,11 @@ packages:
   fl_chart:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "bugfix/bar-chart-negative-issue"
-      resolved-ref: "2df57345f0faef10a30c4ed9dd173bd0080daf30"
-      url: "https://github.com/imaNNeo/fl_chart.git"
-    source: git
-    version: "0.64.0"
+      name: fl_chart
+      sha256: "2b7c1f5d867da9a054661641c8f499c55c47c39acccb97b3bc673f5fa9a39e74"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.67.0"
   flutter:
     dependency: "direct main"
     description: flutter
