@@ -15,7 +15,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 0.3.4+34
+version: 0.4.0+35
 
 environment:
   sdk: ">=2.18.4 <3.0.0"
@@ -33,7 +33,7 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
-  fl_chart: ^0.67.0 # https://github.com/imaNNeo/fl_chart/issues/1470
+  fl_chart: ^0.69.2 # https://github.com/imaNNeo/fl_chart/issues/1470
 #    git:
 #      url: https://github.com/imaNNeo/fl_chart.git
 #      ref: bugfix/bar-chart-negative-issue
@@ -45,7 +45,7 @@ dependencies:
   vector_math: any
   shared_preferences: ^2.2.0
   http: ^1.1.0
-  intl: ^0.18.0
+  intl: ^0.19.0
   #cron: ^0.5.1
   keep_screen_on: ^2.1.0 # 3.0.0 requires later Android
 

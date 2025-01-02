@@ -7,7 +7,6 @@ import 'package:device_preview/device_preview.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:amber/bar_chart.dart';
 import 'package:amber/my_theme_model.dart';
 import 'package:amber/screenshots_mobile.dart'
@@ -68,13 +67,13 @@ class MyAppState extends State<MyApp> {
           theme: ThemeData.light().copyWith(
             primaryColor: Colors.white,
             textTheme: const TextTheme(
-              bodyText2: TextStyle(color: Color(0xFFA7A7A7), fontSize: 13),
+              bodyMedium: TextStyle(color: Color(0xFFA7A7A7), fontSize: 13),
             ),
           ),
           darkTheme: ThemeData.dark().copyWith(
             primaryColor: Colors.white,
             textTheme: const TextTheme(
-              bodyText2: TextStyle(color: Color(0xFFA7A7A7), fontSize: 13),
+              bodyMedium: TextStyle(color: Color(0xFFA7A7A7), fontSize: 13),
             ),
           ),
           themeMode: themeModel.currentTheme(),
@@ -93,8 +92,11 @@ class HomePage extends StatefulWidget {
 }
 
 class HomePageState extends State<HomePage> {
-  List<Usage>? forecastData = [];
-  List<Usage>? rawData = [];
+  List<Usage>? forecastData;
+  List<Usage>? rawData1;
+  List<Usage>? rawData2;
+  List<Usage>? rawData3;
+  List<Usage>? rawData4;
   late SharedPreferences prefs;
 
   final List<ListItem> _dropdownItems = [
@@ -128,7 +130,7 @@ class HomePageState extends State<HomePage> {
     }
 
     _timerForecast = Timer.periodic(const Duration(minutes: 1), (Timer t) => _getForecast());
-    _timerUsage = Timer.periodic(const Duration(hours: 1), (Timer t) => _getUsage());
+    _timerUsage = Timer.periodic(const Duration(hours: 1), (Timer t) => _getHistoricalUsage());
   }
 
   @override
@@ -149,7 +151,7 @@ class HomePageState extends State<HomePage> {
     // obtain shared preferences
     prefs = await SharedPreferences.getInstance();
     amberToken = prefs.getString('amberToken');
-    List<Usage>? data;
+    //List<Usage>? data;
     if (amberToken != null) {
       _amberTokenController.text = amberToken!;
 
@@ -158,11 +160,14 @@ class HomePageState extends State<HomePage> {
       _siteIdItemSelected = _siteIdMenuItems[0].value!;
 
       _getForecast();
-      _getUsage();
+      _getHistoricalUsage();
     } else {
       setState(() {
         forecastData = null;
-        rawData = null;
+        rawData1 = null;
+        rawData2 = null;
+        rawData3 = null;
+        rawData4 = null;
       });
     }
   }
@@ -177,7 +182,7 @@ class HomePageState extends State<HomePage> {
       // If the server did return a 200 OK response,
       // then parse the JSON.
       _sites = (jsonDecode(response.body) as List).map((json) => Site.fromJson(json)).toList();
-      int i = 1;
+      //int i = 1;
       return _sites.map((site) => ListItem(site.id!, "${site.network}\n${site.nmi}")).toList();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.body)));
@@ -188,6 +193,11 @@ class HomePageState extends State<HomePage> {
   }
 
   Future<void> _getForecast() async {
+    if (amberToken == null || _siteIdItemSelected == null) {
+      print('API key not set or site not selected');
+      return;
+    }
+
     var date = DateTime.now();
     int numPeriodsBack = (2 * date.hour) + (date.minute ~/ 30);
     int numPeriodsForward = 24 * 60 ~/ METER_INTERVAL * 2 - numPeriodsBack - 1;
@@ -243,40 +253,58 @@ class HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _getUsage() async {
-    String startDate =
-        DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 32)));
-    String endDate =
-        DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(const Duration(days: 1)));
-    String uri =
-        'https://api.amber.com.au/v1/sites/${_siteIdItemSelected!.value}/usage?startDate=$startDate&endDate=$endDate&resolution=$METER_INTERVAL';
-    print(uri);
-    final response = await http.get(Uri.parse(uri), headers: {
-      "accept": "application/json",
-      "Authorization": "Bearer ${amberToken!}",
-    });
-
-    if (response.statusCode == 200) {
-      // If the server did return a 200 OK response,
-      // then parse the JSON.
-      List<Usage> usage =
-          (jsonDecode(response.body) as List).map((json) => Usage.fromJson(json)).toList();
-      // final myData = await File('assets/feedin.json').readAsString();
-      // usage = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
-
-      setState(() {
-        rawData = usage;
+  Future<void> _getHistoricalUsage() async {
+    for (int period = 0; period <= 3; period++) {
+      //print('period=$period');
+      String startDate = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(Duration(days: period * 7 + 7)));
+      String endDate = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(Duration(days: period * 7 + 1)));
+      String uri = 'https://api.amber.com.au/v1/sites/${_siteIdItemSelected!.value}/usage?startDate=$startDate&endDate=$endDate';
+      print(uri);
+      final response = await http.get(Uri.parse(uri), headers: {
+        "accept": "application/json",
+        "Authorization": "Bearer ${amberToken!}",
       });
-    } else {
-      setState(() {
-        rawData = null;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.body)));
 
-      // If the server did not return a 200 OK response,
-      // then throw an exception.
-      throw Exception(
-          'Failed to load usage for site ${_siteIdItemSelected!.value}! code=${response.statusCode}\n${response.body}');
+      if (response.statusCode == 200) {
+        // If the server did return a 200 OK response,
+        // then parse the JSON.
+        List<Usage> usage = (jsonDecode(response.body) as List)
+            .map((json) => Usage.fromJson(json))
+            .toList(growable: false);
+
+        // final myData = await File('assets/feedin.json').readAsString();
+        // usage = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
+
+        setState(() {
+          switch (period) {
+            case 0:
+              rawData1 = usage;
+              break;
+            case 1:
+              rawData2 = usage;
+              break;
+            case 2:
+              rawData3 = usage;
+              break;
+            case 3:
+              rawData4 = usage;
+              break;
+          }
+        });
+      } else {
+        setState(() {
+          rawData1 = null;
+          rawData2 = null;
+          rawData3 = null;
+          rawData4 = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.body)));
+
+        // If the server did not return a 200 OK response,
+        // then throw an exception.
+        throw Exception(
+            'Failed to load usage for site ${_siteIdItemSelected!.value}! code=${response.statusCode}\n${response.body}');
+      }
     }
   }
 
@@ -386,8 +414,9 @@ class HomePageState extends State<HomePage> {
                                         TextSpan(
                                           text: '\'For Developers\'',
                                           style: TextStyle(
-                                              color: Theme.of(context).textTheme.button?.color ??
-                                                  Colors.blueAccent,
+                                              color:
+                                                  Theme.of(context).textTheme.labelLarge?.color ??
+                                                      Colors.blueAccent,
                                               height: 1.5),
                                           recognizer: TapGestureRecognizer()
                                             ..onTap = () {
@@ -405,8 +434,9 @@ class HomePageState extends State<HomePage> {
                                         TextSpan(
                                           text: '\'Generate a new Token\'',
                                           style: TextStyle(
-                                              color: Theme.of(context).textTheme.button?.color ??
-                                                  Colors.blueAccent),
+                                              color:
+                                                  Theme.of(context).textTheme.labelLarge?.color ??
+                                                      Colors.blueAccent),
                                           recognizer: TapGestureRecognizer()
                                             ..onTap = () {
                                               _displayTextInputDialog(context);
@@ -435,7 +465,7 @@ class HomePageState extends State<HomePage> {
                                       _siteIdItemSelected = value!;
                                     });
                                     _getForecast();
-                                    _getUsage();
+                                    _getHistoricalUsage();
                                   }),
                             ),
                             const Spacer(),
@@ -512,7 +542,7 @@ class HomePageState extends State<HomePage> {
                                     ? [
                                         MyCard(
                                           child: BarChartWidget1(
-                                            rawData,
+                                            rawData1,
                                             '${weekdayDayMonth.format(now.subtract(const Duration(days: 0)))} Use',
                                             const Duration(days: 1),
                                             ending: const Duration(days: 0),
@@ -521,91 +551,91 @@ class HomePageState extends State<HomePage> {
                                         ),
                                         MyCard(
                                             child: BarChartWidget1(
-                                                rawData,
+                                                rawData1,
                                                 '${weekdayDayMonth.format(now.subtract(const Duration(days: 0)))} Cost',
                                                 const Duration(days: 1),
                                                 ending: const Duration(days: 0),
                                                 prices: true)),
                                         MyCard(
                                             child: BarChartWidget1(
-                                                rawData,
+                                                rawData1,
                                                 '${weekdayDayMonth.format(now.subtract(const Duration(days: 1)))} Use',
                                                 const Duration(days: 1),
                                                 ending: const Duration(days: 1),
                                                 prices: false)),
                                         MyCard(
                                             child: BarChartWidget1(
-                                                rawData,
+                                                rawData1,
                                                 '${weekdayDayMonth.format(now.subtract(const Duration(days: 1)))} Cost',
                                                 const Duration(days: 1),
                                                 ending: const Duration(days: 1),
                                                 prices: true)),
                                         MyCard(
                                             child: BarChartWidget1(
-                                                rawData,
+                                                rawData1,
                                                 '${weekdayDayMonth.format(now.subtract(const Duration(days: 2)))} Use',
                                                 const Duration(days: 1),
                                                 ending: const Duration(days: 2),
                                                 prices: false)),
                                         MyCard(
                                             child: BarChartWidget1(
-                                                rawData,
+                                                rawData1,
                                                 '${weekdayDayMonth.format(now.subtract(const Duration(days: 2)))} Cost',
                                                 const Duration(days: 1),
                                                 ending: const Duration(days: 2),
                                                 prices: true)),
                                         MyCard(
                                             child: BarChartWidget1(
-                                                rawData,
+                                                rawData1,
                                                 '${weekdayDayMonth.format(now.subtract(const Duration(days: 3)))} Use',
                                                 const Duration(days: 1),
                                                 ending: const Duration(days: 3),
                                                 prices: false)),
                                         MyCard(
                                             child: BarChartWidget1(
-                                                rawData,
+                                                rawData1,
                                                 '${weekdayDayMonth.format(now.subtract(const Duration(days: 3)))} Cost',
                                                 const Duration(days: 1),
                                                 ending: const Duration(days: 3),
                                                 prices: true)),
                                         MyCard(
                                             child: BarChartWidget1(
-                                                rawData,
+                                                rawData1,
                                                 '${weekdayDayMonth.format(now.subtract(const Duration(days: 4)))} Use',
                                                 const Duration(days: 1),
                                                 ending: const Duration(days: 4),
                                                 prices: false)),
                                         MyCard(
                                             child: BarChartWidget1(
-                                                rawData,
+                                                rawData1,
                                                 '${weekdayDayMonth.format(now.subtract(const Duration(days: 4)))} Cost',
                                                 const Duration(days: 1),
                                                 ending: const Duration(days: 4),
                                                 prices: true)),
                                         MyCard(
                                             child: BarChartWidget1(
-                                                rawData,
+                                                rawData1,
                                                 '${weekdayDayMonth.format(now.subtract(const Duration(days: 5)))} Use',
                                                 const Duration(days: 1),
                                                 ending: const Duration(days: 5),
                                                 prices: false)),
                                         MyCard(
                                             child: BarChartWidget1(
-                                                rawData,
+                                                rawData1,
                                                 '${weekdayDayMonth.format(now.subtract(const Duration(days: 5)))} Cost',
                                                 const Duration(days: 1),
                                                 ending: const Duration(days: 5),
                                                 prices: true)),
                                         MyCard(
                                             child: BarChartWidget1(
-                                                rawData,
+                                                rawData1,
                                                 '${weekdayDayMonth.format(now.subtract(const Duration(days: 6)))} Use',
                                                 const Duration(days: 1),
                                                 ending: const Duration(days: 6),
                                                 prices: false)),
                                         MyCard(
                                             child: BarChartWidget1(
-                                                rawData,
+                                                rawData1,
                                                 '${weekdayDayMonth.format(now.subtract(const Duration(days: 6)))} Cost',
                                                 const Duration(days: 1),
                                                 ending: const Duration(days: 6),
@@ -615,91 +645,83 @@ class HomePageState extends State<HomePage> {
                                         ? [
                                             MyCard(
                                                 child: BarChartWidget1(
-                                                    rawData, '1 Days Use', const Duration(days: 1),
+                                                    rawData1, '1 Days Use', const Duration(days: 1),
                                                     prices: false)),
                                             MyCard(
                                                 child: BarChartWidget1(
-                                                    rawData, '1 Days Cost', const Duration(days: 1),
+                                                    rawData1, '1 Days Cost', const Duration(days: 1),
                                                     prices: true)),
                                             MyCard(
                                                 child: BarChartWidget1(
-                                                    rawData, '2 Days Use', const Duration(days: 2),
+                                                    rawData1, '2 Days Use', const Duration(days: 2),
                                                     prices: false)),
                                             MyCard(
                                                 child: BarChartWidget1(
-                                                    rawData, '2 Days Cost', const Duration(days: 2),
+                                                    rawData1, '2 Days Cost', const Duration(days: 2),
                                                     prices: true)),
                                             MyCard(
                                                 child: BarChartWidget1(
-                                                    rawData, '7 Days Use', const Duration(days: 7),
+                                                    rawData1, '3 Days Use', const Duration(days: 3),
                                                     prices: false)),
                                             MyCard(
                                                 child: BarChartWidget1(
-                                                    rawData, '7 Days Cost', const Duration(days: 7),
+                                                    rawData1, '3 Days Cost', const Duration(days: 3),
                                                     prices: true)),
                                             MyCard(
-                                                child: BarChartWidget1(rawData, '14 Days Use',
-                                                    const Duration(days: 14),
+                                                child: BarChartWidget1(
+                                                    rawData1, '5 Days Use', const Duration(days: 5),
                                                     prices: false)),
                                             MyCard(
-                                                child: BarChartWidget1(rawData, '14 Days Cost',
-                                                    const Duration(days: 14),
+                                                child: BarChartWidget1(
+                                                    rawData1, '5 Days Cost', const Duration(days: 5),
                                                     prices: true)),
                                             MyCard(
-                                                child: BarChartWidget1(rawData, '21 Days Use',
-                                                    const Duration(days: 21),
+                                                child: BarChartWidget1(
+                                                    rawData1, '7 Days Use', const Duration(days: 7),
                                                     prices: false)),
                                             MyCard(
-                                                child: BarChartWidget1(rawData, '21 Days Cost',
-                                                    const Duration(days: 21),
-                                                    prices: true)),
-                                            MyCard(
-                                                child: BarChartWidget1(rawData, '28 Days Use',
-                                                    const Duration(days: 28),
-                                                    prices: false)),
-                                            MyCard(
-                                                child: BarChartWidget1(rawData, '28 Days Cost',
-                                                    const Duration(days: 28),
+                                                child: BarChartWidget1(
+                                                    rawData1, '7 Days Cost', const Duration(days: 7),
                                                     prices: true)),
                                           ]
                                         : [
                                             MyCard(
-                                                child: BarChartWidget1(rawData, 'This Week Use',
+                                                child: BarChartWidget1(rawData1, 'This Week Use',
                                                     const Duration(days: 7),
                                                     ending: const Duration(days: 0),
                                                     prices: false)),
                                             MyCard(
-                                                child: BarChartWidget1(rawData, 'This Week Cost',
+                                                child: BarChartWidget1(rawData1, 'This Week Cost',
                                                     const Duration(days: 7),
                                                     ending: const Duration(days: 0), prices: true)),
                                             MyCard(
-                                                child: BarChartWidget1(rawData, '1 Week Ago Use',
+                                                child: BarChartWidget1(rawData2, '1 Week Ago Use',
                                                     const Duration(days: 7),
-                                                    ending: const Duration(days: 7),
+                                                    ending: const Duration(days: 0),
                                                     prices: false)),
                                             MyCard(
-                                                child: BarChartWidget1(rawData, '1 Week Ago Cost',
+                                                child: BarChartWidget1(rawData2, '1 Week Ago Cost',
                                                     const Duration(days: 7),
-                                                    ending: const Duration(days: 7), prices: true)),
+                                                    ending: const Duration(days: 0), prices: true)),
                                             MyCard(
-                                                child: BarChartWidget1(rawData, '2 Weeks Ago Use',
+                                                child: BarChartWidget1(rawData3, '2 Weeks Ago Use',
                                                     const Duration(days: 7),
-                                                    ending: const Duration(days: 14),
+                                                    ending: const Duration(days: 0),
                                                     prices: false)),
                                             MyCard(
-                                                child: BarChartWidget1(rawData, '2 Weeks Ago Cost',
+                                                child: BarChartWidget1(rawData3, '2 Weeks Ago Cost',
                                                     const Duration(days: 7),
-                                                    ending: const Duration(days: 14),
+                                                    ending: const Duration(days: 0),
                                                     prices: true)),
                                             MyCard(
-                                                child: BarChartWidget1(rawData, '3 Weeks Ago Use',
+                                                child: BarChartWidget1(rawData4, '3 Weeks Ago Use',
                                                     const Duration(days: 7),
-                                                    ending: const Duration(days: 21),
+                                                    ending: const Duration(days: 0),
                                                     prices: false)),
                                             MyCard(
-                                                child: BarChartWidget1(rawData, '3 Weeks Ago Cost',
+                                                child: BarChartWidget1(rawData4, '3 Weeks Ago Cost',
                                                     const Duration(days: 7),
-                                                    ending: const Duration(days: 21),
+                                                    ending: const Duration(days: 0),
                                                     prices: true)),
 
                                             //MyCard(child: BarChartWidget2()),

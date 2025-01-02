@@ -44,11 +44,11 @@ final List<Color> colors = [
 class BarChartWidget1 extends StatefulWidget {
   late List<Usage>? rawData;
   late String title;
-  late final Duration duration;
-  late final Duration ending;
-  bool prices;
-  bool forecast;
-  bool feedIn;
+  late Duration duration;
+  late Duration ending;
+  final bool prices;
+  final bool forecast;
+  final bool feedIn;
 
   BarChartWidget1(this.rawData, this.title, this.duration,
       {Key? key,
