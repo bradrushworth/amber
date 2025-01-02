@@ -115,6 +115,14 @@ packages:
       url: "https://github.com/bradrushworth/flutter_device_preview.git"
     source: git
     version: "1.1.0"
+  device_preview_plus:
+    dependency: transitive
+    description:
+      name: device_preview_plus
+      sha256: e9486ec4f85940a25cd04f12c2d835ebc11e29ba02e362caf8b9633d1d936ad0
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.2"
   equatable:
     dependency: transitive
     description:
@@ -394,11 +402,12 @@ packages:
   screenshot_modes:
     dependency: "direct dev"
     description:
-      name: screenshot_modes
-      sha256: "023348c40f5c1ad9c81c0954b048a56f7519196ea3a7286d82c17e41baec9738"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.1"
+      path: "."
+      ref: HEAD
+      resolved-ref: "3cbcd645f130336b1aeb8b381983f40f87a102ae"
+      url: "https://github.com/bradintheusa/screenshot_modes.git"
+    source: git
+    version: "1.0.2"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -629,5 +638,5 @@ packages:
     source: hosted
     version: "3.1.3"
 sdks:
-  dart: ">=3.5.0 <4.0.0"
-  flutter: ">=3.24.0"
+  dart: ">=3.6.0 <4.0.0"
+  flutter: ">=3.27.1"

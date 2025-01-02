@@ -54,7 +54,9 @@ dev_dependencies:
     sdk: flutter
   flutter_launcher_icons: ^0.13.1 # Causes some dependency conflicts
   device_preview: ^1.1.0
-  screenshot_modes: ^1.0.0
+  screenshot_modes: #^1.0.0
+    git:
+      url: https://github.com/bradintheusa/screenshot_modes.git
 
 dependency_overrides:
   device_preview:
