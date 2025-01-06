@@ -49,8 +49,9 @@ class BarChartWidget1 extends StatefulWidget {
   final bool prices;
   final bool forecast;
   final bool feedIn;
+  final int interval;
 
-  BarChartWidget1(this.rawData, this.title, this.duration,
+  BarChartWidget1(this.rawData, this.title, this.interval, this.duration,
       {Key? key,
       this.ending = const Duration(days: 0),
       this.prices = false,
@@ -70,6 +71,7 @@ class BarChartState extends State<BarChartWidget1> {
   late final bool _prices;
   late final bool _forecast;
   late final bool _feedIn;
+  late final int _interval;
   List<BarChartGroupData> _barChartData = [];
   Map<int, String> _barChartTitles = {};
   bool _loading = true;
@@ -86,6 +88,7 @@ class BarChartState extends State<BarChartWidget1> {
     _prices = widget.prices;
     _forecast = widget.forecast;
     _feedIn = widget.feedIn;
+    _interval = widget.interval;
     parseFile();
   }
 
@@ -254,7 +257,7 @@ class BarChartState extends State<BarChartWidget1> {
 
     //final rawData = await rootBundle.loadString(filepath);
     List<Usage> data = _rawData!;
-    DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices, _forecast, _feedIn);
+    DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices, _forecast, _feedIn, _interval);
     try {
       dataAggregator.aggregateData(data);
 
@@ -289,10 +292,12 @@ class DataAggregator {
   late final bool _prices;
   late final bool _forecast;
   late final bool _feedIn;
+  late final int _interval;
+
   late final bool _today;
   late final DateTime _nowLocal;
 
-  DataAggregator(this._duration, this._ending, this._prices, this._forecast, this._feedIn);
+  DataAggregator(this._duration, this._ending, this._prices, this._forecast, this._feedIn, this._interval);
 
   aggregateData(List<Usage> data) {
     //print(data.map((u) => u.channelType!).toSet());
@@ -323,7 +328,7 @@ class DataAggregator {
 
       //print("adding record=" + record.nemTime!);
       DateTime date = Utils.toLocal(
-          DateTime.parse(record.nemTime!).subtract(const Duration(minutes: METER_INTERVAL)));
+          DateTime.parse(record.nemTime!).subtract(Duration(minutes: _interval)));
 
       if (date.isBefore(earliest)) {
         continue; // Skip data outside of range
@@ -331,7 +336,7 @@ class DataAggregator {
       if (date.isAtSameMomentAs(earliest)) {
         beforeRange = true;
       }
-      if (date.isAtSameMomentAs(latest.subtract(const Duration(minutes: 30)))) {
+      if (date.isAtSameMomentAs(latest.subtract(Duration(minutes: _interval)))) {
         afterRange = true;
       }
       if (date.isAfter(latest) || date.isAtSameMomentAs(latest)) {
@@ -339,7 +344,7 @@ class DataAggregator {
       }
       //print('Allowed date=$date');
 
-      int graphPos = date.hour * 2 + date.minute ~/ 30;
+      int graphPos = date.hour * 2 + date.minute ~/ _interval;
       newTitles[graphPos] = newTitles[graphPos] ?? date.toString().substring(11, 16);
 
       for (int meterNum = 0; meterNum < numMeters; meterNum++) {
@@ -406,8 +411,8 @@ class DataAggregator {
 
       if (_prices && !_forecast) {
         // Add the supply charges as required
-        double dailySupplyChargePer30Mins = roundDouble(DAILY / 24 / 2, _prices);
-        stackedValues[graphPos]!.add('supply', null, null, null, dailySupplyChargePer30Mins);
+        double dailySupplyChargePerPeriod = roundDouble(DAILY / 24 / 2, _prices);
+        stackedValues[graphPos]!.add('supply', null, null, null, dailySupplyChargePerPeriod);
       }
     }
 
@@ -420,7 +425,7 @@ class DataAggregator {
 
       // Fill in any missing graph positions with zeros
       for (int graphPos = stackedValues.length;
-          graphPos < (24 * (60 / METER_INTERVAL));
+          graphPos < (24 * (60 / _interval));
           graphPos++) {
         //print('graphPos=$graphPos');
         stackedValues[graphPos] ??= CustomRodGroup();
@@ -447,14 +452,14 @@ class DataAggregator {
   BarChartRodData makeRodData(int graphPos, CustomRodGroup stackedValues, double feedInValue) {
     double rodCumulative = 0.0;
     //int i = 0;
-    int nowIndex = _nowLocal.hour * 2 + _nowLocal.minute ~/ 30;
+    int nowIndex = _nowLocal.hour * 2 + _nowLocal.minute ~/ _interval;
     //print("meterNum=$meterNum");
     double value =
         stackedValues.toList().map((e) => e.amount).reduce((value, element) => value += element);
     return BarChartRodData(
       toY: roundDouble(value, _prices),
       color: Colors.white70,
-      width: 6, // / _duration.inDays,
+      width: _interval == 30 ? 6 : 3, // Width of the drawn columns
       //borderRadius: BorderRadius.circular(2),
       rodStackItems: stackedValues
           .toList()

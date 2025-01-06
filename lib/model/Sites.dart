@@ -1,10 +1,16 @@
+import 'package:intl/intl.dart';
+
 class Site {
   String? id;
   String? nmi;
   List<Channels>? channels;
   String? network;
   String? status;
-  String? activeFrom;
+  DateTime? activeFrom;
+  DateTime? closedOn;
+  int? intervalLength;
+
+  DateFormat dateFormat = DateFormat("yyyy-MM-dd");
 
   Site(
       {this.id,
@@ -12,7 +18,9 @@ class Site {
         this.channels,
         this.network,
         this.status,
-        this.activeFrom});
+        this.activeFrom,
+        this.closedOn,
+        this.intervalLength});
 
   Site.fromJson(Map<String, dynamic> json) {
     id = json['id'];
@@ -25,7 +33,9 @@ class Site {
     }
     network = json['network'];
     status = json['status'];
-    activeFrom = json['activeFrom'];
+    activeFrom = json['activeFrom'] != null ? dateFormat.tryParse(json['activeFrom']) : null;
+    closedOn = json['closedOn'] != null ? dateFormat.tryParse(json['closedOn']) : null;
+    intervalLength = json['intervalLength'];
   }
 
   Map<String, dynamic> toJson() {
@@ -37,7 +47,9 @@ class Site {
     }
     data['network'] = this.network;
     data['status'] = this.status;
-    data['activeFrom'] = this.activeFrom;
+    data['activeFrom'] = dateFormat.format(this.activeFrom!);
+    data['closedOn'] = dateFormat.format(this.closedOn!);
+    data['intervalLength'] = this.intervalLength;
     return data;
   }
 }
