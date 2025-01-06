@@ -222,7 +222,7 @@ class BarChartState extends State<BarChartWidget1> {
                                   gridData: const FlGridData(show: false),
                                   borderData: FlBorderData(show: false),
                                 ),
-                                swapAnimationDuration:
+                                duration:
                                     Duration.zero, // Duration(milliseconds: 1500)
                               ),
                             ),
@@ -323,6 +323,16 @@ class DataAggregator {
     bool afterRange = false;
     bool hasControlled = false;
 
+    // Have a look if the controlled load is in the data somewhere
+    for (int n = 0; n < data.length; n++) {
+      Usage record = data[n];
+      if (record.channelType == controlledLoad) {
+        hasControlled = true;
+        break;
+      }
+    }
+
+    // Start drawing the data
     for (int n = 0; n < data.length ~/ numMeters; n++) {
       Usage record = data[n];
 
