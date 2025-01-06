@@ -37,6 +37,9 @@ to be an Amber customer, and you need to get an API token.
 But that's pretty easy.
 [Start here](https://help.amber.com.au/hc/en-us/articles/360038985552-Do-you-have-an-API-).
 
+Amber has started to support 5 minute billing periods now for some customers.
+The app should be able to automatically detect and support all users regardless of whether
+they are on 30 minute or 5 minute billing periods.
 
 ### Affiliations
 
