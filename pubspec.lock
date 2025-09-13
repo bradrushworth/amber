@@ -241,18 +241,18 @@ packages:
     dependency: "direct main"
     description:
       name: keep_screen_on
-      sha256: "66e484936decb976e88b95551de9290550c5fcec744dbfa48093ad3909a40432"
+      sha256: "558408ddacc34eabf82d8e9f8317d3560521f767a93db9f19ddceba8fb123235"
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.0"
+    version: "5.0.0"
   keep_screen_on_platform_interface:
     dependency: transitive
     description:
       name: keep_screen_on_platform_interface
-      sha256: b56558be746f0bb136b13138d94de278c06bfffb33923adf148cc8a4b06e886e
+      sha256: "065a0811407a970027c7530f9b8f36d11c89f36aab85b4b5acdacfe2cf3a8568"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.0+1"
+    version: "3.0.0"
   leak_tracker:
     dependency: transitive
     description:

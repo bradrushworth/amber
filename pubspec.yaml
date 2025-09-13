@@ -47,7 +47,7 @@ dependencies:
   http: ^1.1.0
   intl: ^0.20.2
   #cron: ^0.5.1
-  keep_screen_on: ^2.1.0 # 3.0.0 requires later Android
+  keep_screen_on: ^5.0.0
 
 dev_dependencies:
   flutter_test:
