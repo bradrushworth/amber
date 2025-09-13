@@ -46,6 +46,16 @@ android {
         main.kotlin.srcDirs += 'src/main/kotlin'
     }
 
+    kotlin {
+        jvmToolchain(21)
+    }
+
+    java {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(21))
+        }
+    }
+
     defaultConfig {
         applicationId "au.com.bitbot.amber"
         minSdkVersion flutter.minSdkVersion
