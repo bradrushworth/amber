@@ -15,10 +15,10 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 0.4.1+36
+version: 0.5.0+37
 
 environment:
-  sdk: ">=2.18.4 <3.0.0"
+  sdk: '>=3.9.2 <4.0.0'
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -45,30 +45,31 @@ dependencies:
   vector_math: any
   shared_preferences: ^2.2.0
   http: ^1.1.0
-  intl: ^0.19.0
+  intl: ^0.20.2
   #cron: ^0.5.1
   keep_screen_on: ^2.1.0 # 3.0.0 requires later Android
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: ^0.13.1 # Causes some dependency conflicts
-  device_preview: ^1.1.0
-  screenshot_modes: #^1.0.0
-    git:
-      url: https://github.com/bradintheusa/screenshot_modes.git
+  flutter_launcher_icons: ^0.14.3 # Causes some dependency conflicts
+  #  device_preview: ^1.1.0
+  device_preview_plus: ^2.5.0
+  screenshot_modes: ^1.0.1
+#    git:
+#      url: https://github.com/bradintheusa/screenshot_modes.git
 
-dependency_overrides:
-  device_preview:
-    git:
-      url: https://github.com/bradrushworth/flutter_device_preview.git
-      path: device_preview
-  #    path: ../flutter_device_preview/device_preview
-  device_frame:
-    git:
-      url: https://github.com/bradrushworth/flutter_device_preview.git
-      path: device_frame
-  #    path: ../flutter_device_preview/device_frame
+#dependency_overrides:
+#  device_preview:
+#    git:
+#      url: https://github.com/bradrushworth/flutter_device_preview.git
+#      path: device_preview
+#  #    path: ../flutter_device_preview/device_preview
+#  device_frame:
+#    git:
+#      url: https://github.com/bradrushworth/flutter_device_preview.git
+#      path: device_frame
+#  #    path: ../flutter_device_preview/device_frame
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
