@@ -1,6 +1,6 @@
 import 'dart:html' as html;
 
-import 'package:device_preview/device_preview.dart';
+import 'package:device_preview_plus/device_preview_plus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:screenshot_modes/screenshot_modes.dart';
 
