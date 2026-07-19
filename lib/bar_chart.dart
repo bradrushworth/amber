@@ -354,7 +354,9 @@ class DataAggregator {
       }
       //print('Allowed date=$date');
 
-      int graphPos = date.hour * (60 ~/ _interval) + date.minute ~/ _interval;
+      // Bars are fixed half-hour buckets (2 per hour); 5-minute data sums
+      // its 6 intervals into each bar.
+      int graphPos = date.hour * 2 + date.minute ~/ 30;
       newTitles[graphPos] = newTitles[graphPos] ?? date.toString().substring(11, 16);
 
       for (int meterNum = 0; meterNum < numMeters; meterNum++) {
@@ -435,7 +437,7 @@ class DataAggregator {
 
       // Fill in any missing graph positions with zeros
       for (int graphPos = stackedValues.length;
-          graphPos < (24 * (60 / _interval));
+          graphPos < (24 * (60 ~/ 30));
           graphPos++) {
         //print('graphPos=$graphPos');
         stackedValues[graphPos] ??= CustomRodGroup();
@@ -462,7 +464,7 @@ class DataAggregator {
   BarChartRodData makeRodData(int graphPos, CustomRodGroup stackedValues, double feedInValue) {
     double rodCumulative = 0.0;
     //int i = 0;
-    int nowIndex = _nowLocal.hour * (60 ~/ _interval) + _nowLocal.minute ~/ _interval;
+    int nowIndex = _nowLocal.hour * 2 + _nowLocal.minute ~/ 30;
     //print("meterNum=$meterNum");
     double value =
         stackedValues.toList().map((e) => e.amount).reduce((value, element) => value += element);

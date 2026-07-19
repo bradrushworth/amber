@@ -222,10 +222,8 @@ void main() {
 
     test('1 Day 5-minute intervals', () {
       // Build one full day of 5-minute 'general' usage, each interval = 1.0 kWh.
-      // With the (buggy) 30-minute-only position formula, distinct 5-minute
-      // intervals collide into the same bar, corrupting both the time-range
-      // labels and the aggregated values. The fix gives each interval its own
-      // position: 24 * 60 / 5 = 288 bars.
+      // Bars are fixed half-hour buckets, so the 288 five-minute intervals are
+      // aggregated into 48 bars (6 intervals summed per half-hour bar).
       List<Usage> data = [];
       for (int i = 0; i < 288; i++) {
         final nemTime = DateTime.utc(2023, 8, 11, 14, 5)
@@ -250,13 +248,14 @@ void main() {
           DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false, false, 5);
       dataAggregator.aggregateData(data);
 
-      expect(dataAggregator.newData.length, 288);
-      expect(dataAggregator.newTitles.length, 288);
+      expect(dataAggregator.newData.length, 48);
+      expect(dataAggregator.newTitles.length, 48);
       expect(dataAggregator.newTitles[0], '00:00');
-      expect(dataAggregator.newTitles[2], '00:10');
-      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(1.0, 0.001));
-      // Position 2 must represent only the 00:10 interval, NOT 00:10 + 01:00 etc.
-      expect(dataAggregator.newData[2]!.barRods.first.toY, closeTo(1.0, 0.001));
+      expect(dataAggregator.newTitles[1], '00:30');
+      expect(dataAggregator.newTitles[2], '01:00');
+      // Each half-hour bar sums 6 five-minute intervals of 1.0 kWh = 6.0.
+      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(6.0, 0.001));
+      expect(dataAggregator.newData[2]!.barRods.first.toY, closeTo(6.0, 0.001));
     });
 
 
