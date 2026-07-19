@@ -201,7 +201,7 @@ class HomePageState extends State<HomePage> {
 
     int intervalLength = _siteIdItemSelected!.intervalLength;
     var date = DateTime.now();
-    int numPeriodsBack = (2 * date.hour) + (date.minute ~/ intervalLength);
+    int numPeriodsBack = ((60 ~/ intervalLength) * date.hour) + (date.minute ~/ intervalLength);
     int numPeriodsForward = 24 * 60 ~/ intervalLength * 2 - numPeriodsBack - 1;
     numPeriodsBack += 24 * 60 ~/ intervalLength;
 

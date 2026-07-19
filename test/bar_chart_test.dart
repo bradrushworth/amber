@@ -219,5 +219,46 @@ void main() {
       expect(dataAggregator.newData[0]!.barRods.first.rodStackItems.last.toY,
           closeTo(0.01 + dailySupplyChargePer30mins, 0.01));
     });
+
+    test('1 Day 5-minute intervals', () {
+      // Build one full day of 5-minute 'general' usage, each interval = 1.0 kWh.
+      // With the (buggy) 30-minute-only position formula, distinct 5-minute
+      // intervals collide into the same bar, corrupting both the time-range
+      // labels and the aggregated values. The fix gives each interval its own
+      // position: 24 * 60 / 5 = 288 bars.
+      List<Usage> data = [];
+      for (int i = 0; i < 288; i++) {
+        final nemTime = DateTime.utc(2023, 8, 11, 14, 5)
+            .add(Duration(minutes: i * 5))
+            .toIso8601String();
+        data.add(Usage(
+          type: 'Usage',
+          duration: 5,
+          date: '2023-08-12',
+          endTime: nemTime,
+          quality: 'billable',
+          kwh: 1.0,
+          nemTime: nemTime,
+          perKwh: 0.0,
+          channelType: 'general',
+          channelIdentifier: 'E1',
+          cost: 0.0,
+        ));
+      }
+
+      final dataAggregator =
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false, false, 5);
+      dataAggregator.aggregateData(data);
+
+      expect(dataAggregator.newData.length, 288);
+      expect(dataAggregator.newTitles.length, 288);
+      expect(dataAggregator.newTitles[0], '00:00');
+      expect(dataAggregator.newTitles[2], '00:10');
+      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(1.0, 0.001));
+      // Position 2 must represent only the 00:10 interval, NOT 00:10 + 01:00 etc.
+      expect(dataAggregator.newData[2]!.barRods.first.toY, closeTo(1.0, 0.001));
+    });
+
+
   });
 }
