@@ -19,8 +19,23 @@ Amber Electric (Australia) electricity usage and prices.
 - Graph bars are FIXED **half-hour buckets**: 2 bars/hour = 48 bars/day. This
   is intentional and must NOT be changed to one-bar-per-interval.
 - 30-minute billing: one interval per bar.
-- 5-minute billing: **6 five-minute intervals are summed into each half-hour
-  bar** (value = sum of 6 x 5-min kWh or cost).
+- 5-minute billing: the six 5-minute intervals in a bar are aggregated per
+  half-hour bar. **Usage (kWh) and cost ($) are SUMMED** (extensive: energy
+  adds up -> value = sum of 6 x 5-min kWh/cost). **Prices (perKwh on the
+  Forecast tab) are AVERAGED**, because price is intensive - summing 6 x
+  5-min prices made past/current prices ~6x too high while the 30-minute
+  forecast bars looked correct. `CustomRodElement.displayAmount(forecast)`
+  returns `amount/count` when `_forecast`, else the summed `amount`.
+- Forecast price value uses `perKwh` only (never `cost`): the past/current
+  price intervals can carry a `cost` field which is a $ total, not a price,
+  so `cost ?? perKwh` inflated them. Use
+  `_forecast ? perKwh : (cost ?? perKwh)`.
+- `aggregateData` iterates **every record once** and buckets each on its own
+  `nemTime`/channel. Do NOT reintroduce the old fixed meter-stride
+  (`data[n + meterNum * data.length ~/ numMeters]`); the live Amber API
+  interleaves channels/days, so the stride mis-attributed feed-in values and
+  dropped records. Supply charge is added once per interval time-slot via a
+  `supplyAdded` Set keyed on `nemTime`.
 - In `lib/bar_chart.dart`, `graphPos` and `nowIndex` use
   `date.hour * 2 + date.minute ~/ 30` (half-hour width); the fill loop is
   bounded to `24 * (60 ~/ 30)` = 48 bars.

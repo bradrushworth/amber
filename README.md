@@ -43,10 +43,14 @@ they are on 30 minute or 5 minute billing periods.
 
 Regardless of the billing period, the dashboard charts are drawn as **fixed
 half-hour bars** (2 bars per hour, 48 bars per day). For a site on a 5 minute
-billing period, its six 5-minute intervals are **summed into each half-hour
-bar**, so one bar shows the total of 6 x 5-minute kWh (or cost) values.
-30 minute sites contribute one interval per bar. This aggregation is
-implemented in `DataAggregator.aggregateData` in `lib/bar_chart.dart`.
+billing period, its six 5-minute intervals are aggregated into each half-hour
+bar: **usage (kWh) and cost ($) are summed** (so one bar shows the total of
+6 x 5-minute values), while **prices on the Forecast tab are averaged**
+(price is a rate, not a total, so summing would overstate it). 30 minute
+sites contribute one interval per bar. Each record is bucketed on its own
+timestamp/channel, so interleaved multi-channel API responses land in the
+correct bar. This aggregation is implemented in
+`DataAggregator.aggregateData` in `lib/bar_chart.dart`.
 
 ### Affiliations
 

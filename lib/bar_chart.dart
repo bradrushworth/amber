@@ -301,9 +301,6 @@ class DataAggregator {
 
   void aggregateData(List<Usage> data) {
     //print(data.map((u) => u.channelType!).toSet());
-    int numMeters = data.map((u) => u.channelType!).toSet().length;
-    //numMeters = 1;
-    //print('numMeters=$numMeters');
 
     //print('data.last.date=${data.last.date}');
     //print('data.first.date=${data.first.date}');
@@ -318,6 +315,8 @@ class DataAggregator {
 
     Map<int, CustomRodGroup> stackedValues = {};
     Map<int, double> feedInValue = {};
+    Map<int, int> feedInCount = {};
+    Set<String> supplyAdded = {};
 
     bool beforeRange = false;
     bool afterRange = false;
@@ -333,7 +332,7 @@ class DataAggregator {
     }
 
     // Start drawing the data
-    for (int n = 0; n < data.length ~/ numMeters; n++) {
+    for (int n = 0; n < data.length; n++) {
       Usage record = data[n];
 
       //print("adding record=" + record.nemTime!);
@@ -359,71 +358,69 @@ class DataAggregator {
       int graphPos = date.hour * 2 + date.minute ~/ 30;
       newTitles[graphPos] = newTitles[graphPos] ?? date.toString().substring(11, 16);
 
-      for (int meterNum = 0; meterNum < numMeters; meterNum++) {
-        record = data[n + meterNum * data.length ~/ numMeters];
-        //print("adding date=$date record=${record.channelType}");
-        if (record.channelType == controlledLoad && _forecast && !_feedIn) {
-          // Skip the controlled load when forecasting
-          continue;
-        } else if (record.channelType == general && _forecast && _feedIn) {
-          // Skip the general load when forecasting the feedIn graph
-          continue;
-        } else if (record.channelType != feedIn &&
-            ((_forecast && record.perKwh != null) ||
-                (_prices && record.cost != null && record.cost! >= 0.0) ||
-                (!_prices && record.kwh != null && record.kwh! >= 0.0))) {
-          // Record if a controlledLoad exists, and reverse the cost chart
-          // positivity/negativity for usability if there isn't one
-          //print('3record.channelType=${record.channelType} date=$date record.perKwh!=${record.perKwh!}');
-          if (record.channelType == controlledLoad) {
-            hasControlled = true;
-          }
-          // Ignore feed in tariff here or negative costs
-          stackedValues[graphPos] ??= CustomRodGroup();
+      //print("adding record channel");
+      if (record.channelType == controlledLoad && _forecast && !_feedIn) {
+        // Skip the controlled load when forecasting
+        continue;
+      } else if (record.channelType == general && _forecast && _feedIn) {
+        // Skip the general load when forecasting the feedIn graph
+        continue;
+      } else if (record.channelType != feedIn &&
+          ((_forecast && record.perKwh != null) ||
+              (_prices && record.cost != null && record.cost! >= 0.0) ||
+              (!_prices && record.kwh != null && record.kwh! >= 0.0))) {
+        // Record if a controlledLoad exists, and reverse the cost chart
+        // positivity/negativity for usability if there is not one
+        if (record.channelType == controlledLoad) {
+          hasControlled = true;
+        }
+        // Ignore feed in tariff here or negative costs. Forecast charts show
+        // the price (perKwh); usage/cost charts sum kwh/cost.
+        stackedValues[graphPos] ??= CustomRodGroup();
+        stackedValues[graphPos]!.add(
+            record.channelType!,
+            record.tariffInformation?.demandWindow,
+            record.tariffInformation?.period,
+            record.descriptor,
+            roundDouble(
+                _prices || _forecast
+                    ? (_forecast ? record.perKwh! : (record.cost ?? record.perKwh!)) / 100
+                    : record.kwh ?? record.perKwh! / 100,
+                _prices || _forecast));
+      } else if ((_feedIn && record.channelType == feedIn) ||
+          (_feedIn && record.perKwh != null) ||
+          (_prices && record.cost != null) ||
+          (!_prices && record.kwh != null)) {
+        // Calculate feed in tariff
+        stackedValues[graphPos] ??= CustomRodGroup();
+        if (_forecast && _prices && !hasControlled) {
           stackedValues[graphPos]!.add(
               record.channelType!,
               record.tariffInformation?.demandWindow,
               record.tariffInformation?.period,
               record.descriptor,
               roundDouble(
-                  _prices || _forecast
-                      ? (record.cost ?? record.perKwh!) / 100
-                      : record.kwh ?? record.perKwh! / 100,
+                  -(_prices || _forecast
+                      ? (_forecast ? record.perKwh! : (record.cost ?? record.perKwh!)) / 100
+                      : (record.kwh ?? record.perKwh! / 100)),
                   _prices || _forecast));
-        } else if ((_feedIn && record.channelType == feedIn) ||
-            (_feedIn && record.perKwh != null) ||
-            (_prices && record.cost != null) ||
-            (!_prices && record.kwh != null)) {
-          // Calculate feed in tariff
-          //print('4record.channelType=${record.channelType} date=$date record.perKwh!=${record.perKwh!}');
-          stackedValues[graphPos] ??= CustomRodGroup();
-          if (_forecast && _prices && !hasControlled) {
-            stackedValues[graphPos]!.add(
-                record.channelType!,
-                record.tariffInformation?.demandWindow,
-                record.tariffInformation?.period,
-                record.descriptor,
-                roundDouble(
-                    -(_prices || _forecast
-                        ? (record.cost ?? record.perKwh!) / 100
-                        : (record.kwh ?? record.perKwh! / 100)),
-                    _prices || _forecast));
-          } else {
-            feedInValue[graphPos] = (feedInValue[graphPos] ?? 0.0) +
-                roundDouble(
-                    _prices || _forecast
-                        ? (record.cost ?? record.perKwh!) / 100
-                        : -(record.kwh ?? record.perKwh! / 100),
-                    _prices || _forecast);
-          }
         } else {
-          //print('else: record.channelType=${record.channelType} date=$date _forecast=$_forecast _prices=$_prices record.kwh=${record.kwh} record.cost=${record.cost}');
+          feedInValue[graphPos] = (feedInValue[graphPos] ?? 0.0) +
+              roundDouble(
+                  _prices || _forecast
+                      ? (_forecast ? record.perKwh! : (record.cost ?? record.perKwh!)) / 100
+                      : -(record.kwh ?? record.perKwh! / 100),
+                  _prices || _forecast);
+          feedInCount[graphPos] = (feedInCount[graphPos] ?? 0) + 1;
         }
+      } else {
+        //print("unmatched record");
       }
 
-      if (_prices && !_forecast) {
-        // Add the supply charges as required
+      if (_prices && !_forecast && supplyAdded.add(record.nemTime!)) {
+        // Add the supply charges once per interval time-slot
         double dailySupplyChargePerPeriod = roundDouble(daily / 24 / 2, _prices);
+        stackedValues[graphPos] ??= CustomRodGroup();
         stackedValues[graphPos]!.add('supply', null, null, null, dailySupplyChargePerPeriod);
       }
     }
@@ -450,7 +447,14 @@ class DataAggregator {
       //print("saving graphPos=$graphPos record[1]=${stackedValue[graphPos]}");
       newData[graphPos] = BarChartGroupData(
           x: graphPos,
-          barRods: [makeRodData(graphPos, stackedValues[graphPos]!, feedInValue[graphPos] ?? 0.0)]);
+          barRods: [
+            makeRodData(
+                graphPos,
+                stackedValues[graphPos]!,
+                _forecast && (feedInCount[graphPos] ?? 0) > 0
+                    ? (feedInValue[graphPos] ?? 0.0) / feedInCount[graphPos]!
+                    : (feedInValue[graphPos] ?? 0.0))
+          ]);
     }
   }
 
@@ -466,8 +470,10 @@ class DataAggregator {
     //int i = 0;
     int nowIndex = _nowLocal.hour * 2 + _nowLocal.minute ~/ 30;
     //print("meterNum=$meterNum");
-    double value =
-        stackedValues.toList().map((e) => e.amount).reduce((value, element) => value += element);
+    double value = stackedValues
+        .toList()
+        .map((e) => e.displayAmount(_forecast))
+        .reduce((value, element) => value += element);
     return BarChartRodData(
       toY: roundDouble(value, _prices),
       color: Colors.white70,
@@ -477,7 +483,7 @@ class DataAggregator {
           .toList()
           .map((e) => BarChartRodStackItem(
               rodCumulative,
-              rodCumulative += roundDouble(e.amount, _prices),
+              rodCumulative += roundDouble(e.displayAmount(_forecast), _prices),
               _today && graphPos == nowIndex
                   ? Utils.lighten(e.getCostColor(), 75)
                   : e.getCostColor()))
@@ -495,6 +501,7 @@ class NotEnoughDataException implements Exception {}
 
 class CustomRodElement {
   double amount = 0.0;
+  int count = 0;
   String channelType;
   bool demandWindow = false;
   String? tariffInformation;
@@ -554,7 +561,12 @@ class CustomRodElement {
 
   void add(num num) {
     amount += num;
+    count++;
   }
+
+  // Usage/cost values are summed per bar; forecast prices are intensive so
+  // the half-hour bar shows the average of the intervals aggregated into it.
+  double displayAmount(bool forecast) => forecast && count > 0 ? amount / count : amount;
 }
 
 class CustomRodGroup {

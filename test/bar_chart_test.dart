@@ -259,5 +259,73 @@ void main() {
     });
 
 
+
+    test('Forecast 5-minute prices are averaged not summed', () {
+      // Forecast/price charts show the price (perKwh), which is intensive:
+      // the 6 five-minute intervals in a half-hour bar must be AVERAGED, not
+      // summed (summing made past/current prices ~6x too high).
+      List<Usage> data = [];
+      for (int i = 0; i < 288; i++) {
+        final nemTime = DateTime.utc(2023, 8, 11, 14, 5)
+            .add(Duration(minutes: i * 5))
+            .toIso8601String();
+        data.add(Usage(
+          type: 'ForecastInterval',
+          duration: 5,
+          date: '2023-08-12',
+          nemTime: nemTime,
+          perKwh: 30.0,
+          channelType: 'general',
+          channelIdentifier: 'E1',
+        ));
+      }
+
+      final dataAggregator =
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), true, true, false, 5);
+      dataAggregator.aggregateData(data);
+
+      expect(dataAggregator.newData.length, 48);
+      // 30 c/kWh -> $0.30/kWh, averaged (not 6 x 0.30 = 1.80).
+      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(0.30, 0.001));
+      expect(dataAggregator.newData[2]!.barRods.first.toY, closeTo(0.30, 0.001));
+    });
+
+    test('Interleaved multi-channel data buckets by its own timestamp', () {
+      // The live Amber API interleaves channels (g, f, g, f, ...) rather than
+      // returning them in blocks. Each record must be bucketed on its own
+      // nemTime so feed-in values land in the right bar (and none are lost).
+      List<Usage> data = [];
+      for (int i = 0; i < 48; i++) {
+        final nemTime = DateTime.utc(2023, 8, 11, 14, 30)
+            .add(Duration(minutes: i * 30))
+            .toIso8601String();
+        data.add(Usage(
+          duration: 30,
+          date: '2023-08-12',
+          nemTime: nemTime,
+          kwh: 2.0,
+          channelType: 'general',
+          channelIdentifier: 'E1',
+        ));
+        data.add(Usage(
+          duration: 30,
+          date: '2023-08-12',
+          nemTime: nemTime,
+          kwh: 1.0,
+          channelType: 'feedIn',
+          channelIdentifier: 'E2',
+        ));
+      }
+
+      final dataAggregator =
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false, false, 30);
+      dataAggregator.aggregateData(data);
+
+      expect(dataAggregator.newData.length, 48);
+      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(2.0, 0.001));
+      expect(dataAggregator.newData[0]!.barRods.first.backDrawRodData.toY, closeTo(-1.0, 0.001));
+      expect(dataAggregator.newData[47]!.barRods.first.toY, closeTo(2.0, 0.001));
+      expect(dataAggregator.newData[47]!.barRods.first.backDrawRodData.toY, closeTo(-1.0, 0.001));
+    });
   });
 }
