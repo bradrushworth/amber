@@ -41,11 +41,44 @@ Amber has started to support 5 minute billing periods now for some customers.
 The app should be able to automatically detect and support all users regardless of whether
 they are on 30 minute or 5 minute billing periods.
 
+Regardless of the billing period, the dashboard charts are drawn as **fixed
+half-hour bars** (2 bars per hour, 48 bars per day). For a site on a 5 minute
+billing period, its six 5-minute intervals are **summed into each half-hour
+bar**, so one bar shows the total of 6 x 5-minute kWh (or cost) values.
+30 minute sites contribute one interval per bar. This aggregation is
+implemented in `DataAggregator.aggregateData` in `lib/bar_chart.dart`.
+
 ### Affiliations
 
 [Amber Electric Dashboard](https://amberelectric.codemagic.app/) is not affiliated
 with [Amber Electric](https://www.amber.com.au/) other than we are a customer of their
 electricity services. The name Amber Electric is their trademark.
+
+## Development
+
+This is a standard Flutter project.
+
+- Install dependencies: `flutter pub get`
+- Run the tests: `flutter test` (aggregation logic, including 30 and 5 minute
+  scenarios, is covered in `test/bar_chart_test.dart`)
+- Static analysis: `flutter analyze`
+
+The chart aggregation lives in `lib/bar_chart.dart` (`DataAggregator`) and the
+screens are assembled in `lib/main.dart`. The `Usage` data model is in
+`lib/model/Usage.dart`.
+
+## Building and deploying
+
+There is no local deploy script. Builds and releases are automated with
+[Codemagic](https://amberelectric.codemagic.app/). Pushing to the `master`
+branch triggers the Codemagic pipeline, which builds and publishes the web,
+Android and iOS versions.
+
+## Versioning
+
+The version is defined in `pubspec.yaml` as `version: x.y.z+build`
+(e.g. `0.5.2+41`). Minor version bumps and a sequentially increasing build
+number follow the existing commit history convention.
 
 ## Disclaimer and Licence
 

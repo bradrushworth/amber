@@ -1,0 +1,61 @@
+﻿# Cline Rules - Amber Electric Dashboard
+
+Project: Amber Electric Dashboard, a Flutter app that visualises a customer's
+Amber Electric (Australia) electricity usage and prices.
+
+## Commands
+- `flutter pub get` - install/refresh dependencies.
+- `flutter test` - run the test suite (aggregation logic + widget tests).
+- `flutter analyze` - static analysis. Pre-existing SDK deprecation/info
+  warnings are expected; treat any NEW error as a regression.
+
+## Tests
+- `test/bar_chart_test.dart` - `DataAggregator` aggregation tests covering
+  both 30-minute and 5-minute billing scenarios. The 5-minute test asserts
+  48 half-hour bars, each summing 6 x 1.0 kWh = 6.0.
+- `test/widget_test.dart` - basic widget smoke test.
+
+## Chart aggregation model (IMPORTANT)
+- Graph bars are FIXED **half-hour buckets**: 2 bars/hour = 48 bars/day. This
+  is intentional and must NOT be changed to one-bar-per-interval.
+- 30-minute billing: one interval per bar.
+- 5-minute billing: **6 five-minute intervals are summed into each half-hour
+  bar** (value = sum of 6 x 5-min kWh or cost).
+- In `lib/bar_chart.dart`, `graphPos` and `nowIndex` use
+  `date.hour * 2 + date.minute ~/ 30` (half-hour width); the fill loop is
+  bounded to `24 * (60 ~/ 30)` = 48 bars.
+- Do NOT "fix" this to 288 bars for 5-minute data - that was tried and
+  reverted because it produced wrong time ranges and values.
+- The data fetch in `lib/main.dart` (`_getForecast`) correctly uses
+  `60 ~/ intervalLength` periods/hour so enough 5-minute periods are fetched;
+  keep that behaviour.
+
+## Key constants (lib/bar_chart.dart)
+- `meterInterval` = 30 (default meter interval and the half-hour bar width).
+- `daily` = daily supply charge, spread across bars.
+- `intervalLength` (lib/main.dart) comes from the selected site and defaults
+  to `meterInterval`; 5-minute sites report 5.
+
+## Versioning
+- `pubspec.yaml`: `version: x.y.z+build` (e.g. `0.5.2+41`).
+- Minor version bumps and a sequentially increasing build number follow the
+  existing commit history convention.
+
+## Deployment
+- No local deploy script. CI is Codemagic. **Push to `origin/master`** to
+  trigger the build/deploy (web, Android, iOS). There is no `codemagic.yaml`
+  in the repo - it is configured via the Codemagic dashboard.
+
+## Gotchas
+- Test runs can fail with "Flutter failed to delete a directory at
+  build\unit_test_assets" (a locked build dir). Fix by deleting the build
+  folder (`Remove-Item -Recurse -Force build`) and re-running `flutter test`.
+- Repo files are **CRLF**. Multi-line edits via the editor tool using `\n`
+  fail to match; prefer single-line edits or include `\r\n`.
+- When pushing, avoid piping `git push` output through PowerShell
+  `Select-Object` (it can close the pipe early and falsely report
+  "Everything up-to-date"). Run `git push origin master` and check
+  `$LASTEXITCODE` / `git status` to confirm.
+- `lib/utils.dart` `darken`/`lighten` still use the deprecated
+  `Color.red/green/blue/alpha` getters; left intentionally (SDK deprecation,
+  not a logic bug).
