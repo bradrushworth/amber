@@ -59,26 +59,26 @@ class Usage {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['type'] = this.type;
-    data['duration'] = this.duration;
-    data['date'] = this.date;
-    data['endTime'] = this.endTime;
-    data['quality'] = this.quality;
-    data['kwh'] = this.kwh;
-    data['nemTime'] = this.nemTime;
-    data['perKwh'] = this.perKwh;
-    data['channelType'] = this.channelType;
-    data['channelIdentifier'] = this.channelIdentifier;
-    data['cost'] = this.cost;
-    data['renewables'] = this.renewables;
-    data['spotPerKwh'] = this.spotPerKwh;
-    data['startTime'] = this.startTime;
-    data['spikeStatus'] = this.spikeStatus;
-    if (this.tariffInformation != null) {
-      data['tariffInformation'] = this.tariffInformation!.toJson();
+    final Map<String, dynamic> data = {};
+    data['type'] = type;
+    data['duration'] = duration;
+    data['date'] = date;
+    data['endTime'] = endTime;
+    data['quality'] = quality;
+    data['kwh'] = kwh;
+    data['nemTime'] = nemTime;
+    data['perKwh'] = perKwh;
+    data['channelType'] = channelType;
+    data['channelIdentifier'] = channelIdentifier;
+    data['cost'] = cost;
+    data['renewables'] = renewables;
+    data['spotPerKwh'] = spotPerKwh;
+    data['startTime'] = startTime;
+    data['spikeStatus'] = spikeStatus;
+    if (tariffInformation != null) {
+      data['tariffInformation'] = tariffInformation!.toJson();
     }
-    data['descriptor'] = this.descriptor;
+    data['descriptor'] = descriptor;
     return data;
   }
 }
@@ -99,11 +99,11 @@ class TariffInformation {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['period'] = this.period;
-    data['season'] = this.season;
-    data['block'] = this.block;
-    data['demandWindow'] = this.demandWindow;
+    final Map<String, dynamic> data = {};
+    data['period'] = period;
+    data['season'] = season;
+    data['block'] = block;
+    data['demandWindow'] = demandWindow;
     return data;
   }
 }

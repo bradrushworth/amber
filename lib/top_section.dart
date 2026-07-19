@@ -34,7 +34,7 @@ class TopSectionWidget extends StatelessWidget {
                           : const Color(0xFF040420),
                       fontWeight: FontWeight.bold,
                       fontSize: 12)),
-              Expanded(child: Container(), flex: 1),
+              Expanded(flex: 1, child: Container()),
               ...legends
                   .map(
                     (e) => Row(
@@ -44,7 +44,7 @@ class TopSectionWidget extends StatelessWidget {
                       ],
                     ),
                   )
-                  .toList(),
+                  ,
               //Expanded(child: Container(), flex: 1),
               //const Text('', style: TextStyle(color: Color(0xFFA7A7B7))),
             ],

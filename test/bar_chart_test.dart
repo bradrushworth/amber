@@ -7,7 +7,7 @@ import 'package:amber/bar_chart.dart';
 
 void main() {
   group('Bar Chart', () {
-    double dailySupplyChargePer30mins = DAILY / 24 / 2;
+    double dailySupplyChargePer30mins = daily / 24 / 2;
 
     test('1 Day', () async {
       final myData = await File('assets/usage.json').readAsString();

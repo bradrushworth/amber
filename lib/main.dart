@@ -377,7 +377,7 @@ class HomePageState extends State<HomePage> {
     DateTime now = DateTime.now().subtract(const Duration(days: 1));
     final DateFormat weekdayDayMonth = DateFormat('E d LLL');
 
-    int intervalLength = _siteIdItemSelected?.intervalLength ?? METER_INTERVAL;
+    int intervalLength = _siteIdItemSelected?.intervalLength ?? meterInterval;
 
     return Consumer<MyThemeModel>(
       builder: (context, themeModel, child) {

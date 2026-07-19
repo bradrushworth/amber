@@ -11,8 +11,8 @@ import 'model/Usage.dart';
 import 'top_section.dart';
 import 'utils.dart';
 
-const int METER_INTERVAL = 30; // minutes
-const double DAILY = 0.5677 + 1.57; // Daily charge
+const int meterInterval = 30; // minutes
+const double daily = 0.5677 + 1.57; // Daily charge
 
 const String controlledLoad = 'controlledLoad';
 const String general = 'general';
@@ -269,7 +269,7 @@ class BarChartState extends State<BarChartWidget1> {
         _notEnoughData = false;
       });
       //print('Data updated successfully!');
-    } on NotEnoughDataException catch (e) {
+    } on NotEnoughDataException {
       // Data exists but not enough for this particular chart
       //print('NotEnoughDataException!');
 
@@ -299,7 +299,7 @@ class DataAggregator {
 
   DataAggregator(this._duration, this._ending, this._prices, this._forecast, this._feedIn, this._interval);
 
-  aggregateData(List<Usage> data) {
+  void aggregateData(List<Usage> data) {
     //print(data.map((u) => u.channelType!).toSet());
     int numMeters = data.map((u) => u.channelType!).toSet().length;
     //numMeters = 1;
@@ -421,7 +421,7 @@ class DataAggregator {
 
       if (_prices && !_forecast) {
         // Add the supply charges as required
-        double dailySupplyChargePerPeriod = roundDouble(DAILY / 24 / 2, _prices);
+        double dailySupplyChargePerPeriod = roundDouble(daily / 24 / 2, _prices);
         stackedValues[graphPos]!.add('supply', null, null, null, dailySupplyChargePerPeriod);
       }
     }
