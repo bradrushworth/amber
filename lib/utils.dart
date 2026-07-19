@@ -1,6 +1,3 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -39,13 +36,16 @@ class Utils {
     }
   }
 
-  static DateTime toLocal(DateTime dateTime) {
-    if (!kIsWeb && Platform.environment.containsKey('FLUTTER_TEST')) {
-      return dateTime.add(const Duration(hours: 10));
-    } else {
-      return dateTime.toLocal();
-    }
-  }
+  /// Pin a timestamp to AEST (+10), the timezone the Amber API uses for NSW.
+  ///
+  /// The Amber API is DST-blind: it always reports timestamps in AEST (+10),
+  /// never AEDT (+11) during daylight saving. Pinning to +10 means the
+  /// wall-clock hour is always AEST, independent of the offset embedded in the
+  /// source string, the device timezone, or whether the machine is on DST.
+  static DateTime pinToAest(DateTime dateTime) =>
+      dateTime.toUtc().add(const Duration(hours: 10));
+
+  static DateTime toLocal(DateTime dateTime) => pinToAest(dateTime);
 
   /// Darken a color by [percent] amount (100 = black)
   static Color darken(Color c, [int percent = 10]) {

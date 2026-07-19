@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:amber/bar_chart.dart';
+import 'package:amber/periods.dart';
 import 'package:amber/my_theme_model.dart';
 import 'package:amber/screenshots_mobile.dart'
     if (dart.library.io) 'package:amber/screenshots_mobile.dart'
@@ -200,27 +201,8 @@ class HomePageState extends State<HomePage> {
     }
 
     int intervalLength = _siteIdItemSelected!.intervalLength;
-    var date = DateTime.now();
-    int numPeriodsBack = ((60 ~/ intervalLength) * date.hour) + (date.minute ~/ intervalLength);
-    int numPeriodsForward = 24 * 60 ~/ intervalLength * 2 - numPeriodsBack - 1;
-    numPeriodsBack += 24 * 60 ~/ intervalLength;
-
-    var utc = date.toUtc();
-    var today = DateTime.utc(utc.year, utc.month, utc.day, utc.hour, utc.minute, utc.second).toLocal();
-    var yesterday = DateTime.utc(utc.year, utc.month - 6, utc.day, utc.hour, utc.minute, utc.second).toLocal();
-    //print('today=$today yesterday=$yesterday difference=${today.difference(yesterday).inHours}');
-    if (today.hour > yesterday.hour) {
-      // If the day that daylight savings starts
-      numPeriodsBack -= 60 ~/ intervalLength;
-      numPeriodsForward += 60 ~/ intervalLength;
-      //print('numPeriodsBack');
-    }
-    // if (today.hour < yesterday.hour) {
-    //   // If the day that daylight savings ends
-    //   numPeriodsBack += 60 ~/ meterInterval;
-    //   numPeriodsForward -= 60 ~/ meterInterval;
-    //   print('numPeriodsForward');
-    // }
+    final (numPeriodsBack, numPeriodsForward) =
+        computePeriods(DateTime.now(), intervalLength);
 
     String uri =
         'https://api.amber.com.au/v1/sites/${_siteIdItemSelected!.value}/prices/current?next=$numPeriodsForward&previous=$numPeriodsBack&resolution=$intervalLength';

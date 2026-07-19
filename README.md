@@ -52,6 +52,9 @@ timestamp/channel, so interleaved multi-channel API responses land in the
 correct bar. This aggregation is implemented in
 `DataAggregator.aggregateData` in `lib/bar_chart.dart`.
 
+Timestamps from the Amber API are DST-blind for NSW: they are always
+interpreted as AEST (+10), never AEDT (+11) during daylight saving, so the
+half-hour buckets stay fixed at 48 bars/day even across DST transitions.
 ### Affiliations
 
 [Amber Electric Dashboard](https://amberelectric.codemagic.app/) is not affiliated

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:amber/model/Usage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:amber/bar_chart.dart';
+import 'package:amber/utils.dart';
 
 void main() {
   group('Bar Chart', () {
@@ -406,5 +407,102 @@ void main() {
       // 25 c/kWh -> $0.25/kWh, not the 999 cost decoy.
       expect(agg.newData[0]!.barRods.first.toY, closeTo(0.25, 0.001));
     });
+    test('Utils.toLocal pins every timestamp to AEST +10 (DST-blind API)', () {
+      final d10 = Utils.toLocal(DateTime.parse('2023-08-12T00:30:00+10:00'));
+      expect(d10.hour, 0);
+      expect(d10.minute, 30);
+      final d11 = Utils.toLocal(DateTime.parse('2023-08-12T01:30:00+11:00'));
+      expect(d11.hour, 0);
+      expect(d11.minute, 30);
+      final dZ = Utils.toLocal(DateTime.parse('2023-08-11T14:30:00Z'));
+      expect(dZ.hour, 0);
+      expect(dZ.minute, 30);
+    });
+
+    test('Aggregation across the DST-start day (first Sun Oct, 23h)', () {
+      List<Usage> data = [];
+      for (int i = 0; i < 48; i++) {
+        final nemTime = DateTime.utc(2023, 9, 30, 14, 0)
+            .add(Duration(minutes: (i + 1) * 30))
+            .toIso8601String();
+        data.add(Usage(
+          duration: 30, date: '2023-10-01', nemTime: nemTime,
+          kwh: 1.0, channelType: 'general', channelIdentifier: 'E1',
+        ));
+      }
+      final agg =
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false, false, 30);
+      agg.aggregateData(data);
+      expect(agg.newData.length, 48);
+      expect(agg.newTitles.length, 48);
+      expect(agg.newTitles[0], '00:00');
+      expect(agg.newTitles[47], '23:30');
+      expect(agg.newData[0]!.barRods.first.toY, closeTo(1.0, 0.001));
+      expect(agg.newData[47]!.barRods.first.toY, closeTo(1.0, 0.001));
+    });
+
+    test('Aggregation across the DST-end day (first Sun Apr, 25h)', () {
+      List<Usage> data = [];
+      for (int i = 0; i < 48; i++) {
+        final nemTime = DateTime.utc(2023, 4, 1, 14, 0)
+            .add(Duration(minutes: (i + 1) * 30))
+            .toIso8601String();
+        data.add(Usage(
+          duration: 30, date: '2023-04-02', nemTime: nemTime,
+          kwh: 1.0, channelType: 'general', channelIdentifier: 'E1',
+        ));
+      }
+      final agg =
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false, false, 30);
+      agg.aggregateData(data);
+      expect(agg.newData.length, 48);
+      expect(agg.newTitles.length, 48);
+      expect(agg.newTitles[0], '00:00');
+      expect(agg.newTitles[47], '23:30');
+      expect(agg.newData[0]!.barRods.first.toY, closeTo(1.0, 0.001));
+      expect(agg.newData[47]!.barRods.first.toY, closeTo(1.0, 0.001));
+    });
+
+    test('Feed-in on multi-day tabs: interleaved channels, own day/half-hour', () {
+      const double gA = 2.0, fA = 1.0;
+      const double gB = 3.0, fB = 1.5;
+      List<Usage> data = [];
+      void addDay(String date, double g, double f, DateTime base) {
+        for (int i = 0; i < 48; i++) {
+          final nemTime = base.add(Duration(minutes: (i + 1) * 30)).toIso8601String();
+          data.add(Usage(
+            duration: 30, date: date, nemTime: nemTime,
+            kwh: g, channelType: 'general', channelIdentifier: 'E1',
+          ));
+          data.add(Usage(
+            duration: 30, date: date, nemTime: nemTime,
+            kwh: f, channelType: 'feedIn', channelIdentifier: 'E2',
+          ));
+        }
+      }
+      addDay('2023-08-12', gA, fA, DateTime.utc(2023, 8, 11, 14, 0));
+      addDay('2023-08-13', gB, fB, DateTime.utc(2023, 8, 12, 14, 0));
+
+      final oneDay =
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false, false, 30);
+      oneDay.aggregateData(data);
+      expect(oneDay.newData.length, 48);
+      expect(oneDay.newData[0]!.barRods.first.toY, closeTo(gB, 0.001));
+      expect(oneDay.newData[0]!.barRods.first.backDrawRodData.toY, closeTo(-fB, 0.001));
+      expect(oneDay.newData[0]!.barRods.first.toY, isNot(closeTo(gA, 0.001)));
+      expect(oneDay.newData[47]!.barRods.first.toY, closeTo(gB, 0.001));
+
+      final twoDay =
+          DataAggregator(const Duration(days: 2), const Duration(days: 0), false, false, false, 30);
+      twoDay.aggregateData(data);
+      expect(twoDay.newData.length, 48);
+      double totalFeedIn = 0.0;
+      for (final d in twoDay.newData.values) {
+        expect(d.barRods.first.toY, closeTo(gA + gB, 0.001));
+        totalFeedIn += d.barRods.first.backDrawRodData.toY;
+      }
+      expect(totalFeedIn, closeTo(-(48 * (fA + fB)), 0.01));
+    });
+
   });
 }

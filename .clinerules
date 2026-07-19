@@ -1,4 +1,4 @@
-﻿# Cline Rules - Amber Electric Dashboard
+# Cline Rules - Amber Electric Dashboard
 
 Project: Amber Electric Dashboard, a Flutter app that visualises a customer's
 Amber Electric (Australia) electricity usage and prices.
@@ -14,6 +14,28 @@ Amber Electric (Australia) electricity usage and prices.
   both 30-minute and 5-minute billing scenarios. The 5-minute test asserts
   48 half-hour bars, each summing 6 x 1.0 kWh = 6.0.
 - `test/widget_test.dart` - basic widget smoke test.
+
+## Timezone / DST rule (NSW) - DST-blind API (CRITICAL)
+- The Amber API is **DST-blind for NSW**: it always reports timestamps in
+  AEST (+10), NEVER AEDT (+11) during daylight saving. Treat every timestamp
+  as +10 regardless of DST.
+- `Utils.toLocal` (lib/utils.dart) ALWAYS pins to +10 via `pinToAest`
+  (`dateTime.toUtc().add(const Duration(hours: 10))`). It no longer branches
+  on `FLUTTER_TEST` or calls `DateTime.toLocal()` (which applies the device's
+  real DST and would shift an AEST +10 wall clock to +11 on an AEDT device).
+- `lib/periods.dart` holds the pure, testable period math:
+  - `pinToAest(DateTime)` - same +10 pin, no Flutter dependency.
+  - `dstAdjustmentHours(DateTime aestNow)` - returns +1 on the first Sunday of
+    October (DST start, 23h local day) and -1 on the first Sunday of April
+    (DST end, 25h local day), else 0. Computed from the AEST calendar so it
+    does NOT depend on the device timezone.
+  - `computePeriods(DateTime now, int intervalLength)` - returns
+    `(numPeriodsBack, numPeriodsForward)` for the `prices/current` fetch,
+    centred on `now` in AEST. Keeps the `60 ~/ intervalLength` periods/hour
+    behaviour (5-min sites fetch 12/hour, 30-min fetch 2/hour) and the
+    two-day fetch window. Unit-tested in `test/periods_test.dart`.
+- The chart aggregation buckets by AEST half-hour, so a DST transition day is
+  just another 48-bar AEST day - never 46 or 50 bars.
 
 ## Chart aggregation model (IMPORTANT)
 - Graph bars are FIXED **half-hour buckets**: 2 bars/hour = 48 bars/day. This
