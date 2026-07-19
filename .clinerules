@@ -52,10 +52,10 @@ Amber Electric (Australia) electricity usage and prices.
   folder (`Remove-Item -Recurse -Force build`) and re-running `flutter test`.
 - Repo files are **CRLF**. Multi-line edits via the editor tool using `\n`
   fail to match; prefer single-line edits or include `\r\n`.
-- When pushing, avoid piping `git push` output through PowerShell
-  `Select-Object` (it can close the pipe early and falsely report
-  "Everything up-to-date"). Run `git push origin master` and check
-  `$LASTEXITCODE` / `git status` to confirm.
+- When pushing, a plain `git push origin master` can falsely print
+  "Everything up-to-date" even when the commit is still local. Use
+  `git push origin master --verbose` to force a real push, then confirm
+  with `git log origin/master` (it must show your new commit on top).
 - `lib/utils.dart` `darken`/`lighten` still use the deprecated
   `Color.red/green/blue/alpha` getters; left intentionally (SDK deprecation,
   not a logic bug).
