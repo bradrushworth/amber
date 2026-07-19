@@ -417,8 +417,11 @@ class DataAggregator {
         //print("unmatched record");
       }
 
-      if (_prices && !_forecast && supplyAdded.add(record.nemTime!)) {
-        // Add the supply charges once per interval time-slot
+      // Add the daily supply charge once per half-hour bar per day. Keyed on
+      // the day + half-hour slot (not nemTime) so 5-minute sites do not add it
+      // six times per bar, while multi-day charts still accrue one per day.
+      String supplyKey = '${date.year}-${date.month}-${date.day}-$graphPos';
+      if (_prices && !_forecast && supplyAdded.add(supplyKey)) {
         double dailySupplyChargePerPeriod = roundDouble(daily / 24 / 2, _prices);
         stackedValues[graphPos] ??= CustomRodGroup();
         stackedValues[graphPos]!.add('supply', null, null, null, dailySupplyChargePerPeriod);

@@ -34,8 +34,10 @@ Amber Electric (Australia) electricity usage and prices.
   `nemTime`/channel. Do NOT reintroduce the old fixed meter-stride
   (`data[n + meterNum * data.length ~/ numMeters]`); the live Amber API
   interleaves channels/days, so the stride mis-attributed feed-in values and
-  dropped records. Supply charge is added once per interval time-slot via a
-  `supplyAdded` Set keyed on `nemTime`.
+  dropped records. Supply charge is added once per **half-hour bar per day**
+  via a `supplyAdded` Set keyed on `year-month-day-graphPos` (NOT `nemTime`):
+  keying on `nemTime` made 5-minute sites add the daily supply charge 6x per
+  bar. Multi-day charts still accrue one supply charge per day per slot.
 - In `lib/bar_chart.dart`, `graphPos` and `nowIndex` use
   `date.hour * 2 + date.minute ~/ 30` (half-hour width); the fill loop is
   bounded to `24 * (60 ~/ 30)` = 48 bars.
