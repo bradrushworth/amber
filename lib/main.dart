@@ -217,8 +217,8 @@ class HomePageState extends State<HomePage> {
     }
     // if (today.hour < yesterday.hour) {
     //   // If the day that daylight savings ends
-    //   numPeriodsBack += 60 ~/ METER_INTERVAL;
-    //   numPeriodsForward -= 60 ~/ METER_INTERVAL;
+    //   numPeriodsBack += 60 ~/ meterInterval;
+    //   numPeriodsForward -= 60 ~/ meterInterval;
     //   print('numPeriodsForward');
     // }
 
@@ -935,5 +935,5 @@ class ListItem {
   String name;
   int intervalLength; // billing period in minutes
 
-  ListItem(this.value, this.name, {this.intervalLength = METER_INTERVAL});
+  ListItem(this.value, this.name, {this.intervalLength = meterInterval});
 }
