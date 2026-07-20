@@ -223,8 +223,8 @@ void main() {
 
     test('1 Day 5-minute intervals', () {
       // Build one full day of 5-minute 'general' usage, each interval = 1.0 kWh.
-      // Bars are fixed half-hour buckets, so the 288 five-minute intervals are
-      // aggregated into 48 bars (6 intervals summed per half-hour bar).
+      // Q1: bars are per-interval buckets, so the 288 five-minute
+      // intervals become 288 bars (one interval per bar, not summed).
       List<Usage> data = [];
       for (int i = 0; i < 288; i++) {
         final nemTime = DateTime.utc(2023, 8, 11, 14, 5)
@@ -249,22 +249,22 @@ void main() {
           DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false, false, 5);
       dataAggregator.aggregateData(data);
 
-      expect(dataAggregator.newData.length, 48);
-      expect(dataAggregator.newTitles.length, 48);
+      expect(dataAggregator.newData.length, 288);
+      expect(dataAggregator.newTitles.length, 288);
       expect(dataAggregator.newTitles[0], '00:00');
-      expect(dataAggregator.newTitles[1], '00:30');
-      expect(dataAggregator.newTitles[2], '01:00');
-      // Each half-hour bar sums 6 five-minute intervals of 1.0 kWh = 6.0.
-      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(6.0, 0.001));
-      expect(dataAggregator.newData[2]!.barRods.first.toY, closeTo(6.0, 0.001));
+      expect(dataAggregator.newTitles[1], '00:05');
+      expect(dataAggregator.newTitles[2], '00:10');
+      // Each five-minute bar is one interval of 1.0 kWh = 1.0.
+      expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(1.0, 0.001));
+      expect(dataAggregator.newData[2]!.barRods.first.toY, closeTo(1.0, 0.001));
     });
 
 
 
     test('Forecast 5-minute prices are averaged not summed', () {
-      // Forecast/price charts show the price (perKwh), which is intensive:
-      // the 6 five-minute intervals in a half-hour bar must be AVERAGED, not
-      // summed (summing made past/current prices ~6x too high).
+      // Forecast/price charts show the price (perKwh), which is intensive.
+      // Under Q1 each five-minute interval is its own bar, so the price
+      // is simply per-interval (no summing, no averaging across a bucket).
       List<Usage> data = [];
       for (int i = 0; i < 288; i++) {
         final nemTime = DateTime.utc(2023, 8, 11, 14, 5)
@@ -285,8 +285,8 @@ void main() {
           DataAggregator(const Duration(days: 1), const Duration(days: 0), true, true, false, 5);
       dataAggregator.aggregateData(data);
 
-      expect(dataAggregator.newData.length, 48);
-      // 30 c/kWh -> $0.30/kWh, averaged (not 6 x 0.30 = 1.80).
+      expect(dataAggregator.newData.length, 288);
+      // 30 c/kWh -> $0.30/kWh per five-minute bar (no summing/averaging).
       expect(dataAggregator.newData[0]!.barRods.first.toY, closeTo(0.30, 0.001));
       expect(dataAggregator.newData[2]!.barRods.first.toY, closeTo(0.30, 0.001));
     });
@@ -330,9 +330,9 @@ void main() {
     });
 
     test('Supply charge added once per half-hour bar (30-min and 5-min)', () {
-      // The daily supply charge is spread across the 48 half-hour bars. On a
-      // 5-minute site the six intervals in a bar must NOT each add supply
-      // (that inflated cost bars ~6x on the supply component).
+      // The daily supply charge is spread across the bars (one charge per
+      // bar/day, keyed on graphPos). On a 5-minute site each bar is
+      // one interval, so it still gets exactly one supply charge.
       List<Usage> build(int interval) {
         final perDay = 24 * 60 ~/ interval;
         final data = <Usage>[];
@@ -360,12 +360,12 @@ void main() {
       final agg5 =
           DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false, false, 5);
       agg5.aggregateData(build(5));
-      // Six 5-min costs summed (0.60) + exactly ONE supply charge per bar.
-      expect(agg5.newData[0]!.barRods.first.toY, closeTo(0.60 + supplyPerBar, 0.001));
+      // One 5-min cost (0.10) + exactly ONE supply charge per bar.
+      expect(agg5.newData[0]!.barRods.first.toY, closeTo(0.10 + supplyPerBar, 0.001));
     });
 
     test('Usage aggregates correctly for 15-minute intervals', () {
-      // Intervals other than 5/30 that still divide 30 must also bucket right.
+      // Intervals other than 5/30 that still divide 60 must also bucket right.
       List<Usage> data = [];
       for (int i = 0; i < 96; i++) {
         final nemTime = DateTime.utc(2023, 8, 11, 14, 0)
@@ -379,10 +379,10 @@ void main() {
       final agg =
           DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false, false, 15);
       agg.aggregateData(data);
-      expect(agg.newData.length, 48);
-      // Two 15-min intervals summed per half-hour bar.
-      expect(agg.newData[0]!.barRods.first.toY, closeTo(2.0, 0.001));
-      expect(agg.newData[47]!.barRods.first.toY, closeTo(2.0, 0.001));
+      expect(agg.newData.length, 96);
+      // One 15-min interval per bar under Q1 (not two summed).
+      expect(agg.newData[0]!.barRods.first.toY, closeTo(1.0, 0.001));
+      expect(agg.newData[47]!.barRods.first.toY, closeTo(1.0, 0.001));
     });
 
     test('Forecast price ignores the cost field and uses perKwh', () {
@@ -504,7 +504,7 @@ void main() {
       expect(totalFeedIn, closeTo(-(48 * (fA + fB)), 0.01));
     });
 
-    test('5-minute sites show canonical half-hour labels (00:00/00:30), not 00:25', () async {
+    test('5-minute sites show canonical 5-minute labels (00:00/00:05/00:25)', () async {
       final List<Map<String, dynamic>> json = [];
       for (int m = 5; m <= 24 * 60; m += 5) {
         final t = DateTime.utc(2023, 8, 12).add(Duration(minutes: m));
@@ -524,11 +524,13 @@ void main() {
           const Duration(days: 1), const Duration(days: 0), true, true, false, 5);
       agg.aggregateData(data);
 
-      expect(agg.newTitles.length, 48);
+      expect(agg.newTitles.length, 288);
       expect(agg.newTitles[0], '00:00');
-      expect(agg.newTitles[1], '00:30');
-      expect(agg.newTitles[47], '23:30');
-      expect(agg.newTitles.values.where((t) => t.contains('25')).isEmpty, isTrue);
+      expect(agg.newTitles[1], '00:05');
+      expect(agg.newTitles[287], '23:55');
+      // Under Q1 each 5-minute interval is its own bar, so 00:25 is a
+      // correct, expected label (not the bug it was under the 48-bar model).
+      expect(agg.newTitles[5], '00:25');
     });
     test('Forecast Tomorrow tab shows partial data when API returns incomplete future', () {
       // now = 12:00 AEST on 2023-08-12 (a UTC instant that pins to +10).

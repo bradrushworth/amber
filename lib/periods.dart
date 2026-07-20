@@ -35,8 +35,8 @@ int dstAdjustmentHours(DateTime aestNow) {
 /// Behaviour preserved from the old inline math in `_getForecast`:
 ///  * `periodsPerHour = 60 ~/ intervalLength` (5-minute sites fetch 12
 ///    periods/hour, 30-minute sites fetch 2).
-///  * The fetched window is two days of periods (48 bars/day) with [now] in
-///    the middle.
+///  * The fetched window is two days of periods (periodsPerDay = 24 * periodsPerHour
+///    bars/day, i.e. 48 for 30-min or 288 for 5-min) with [now] in the middle.
 ///  * On a NSW DST transition day the window is shifted by one hour of periods
 ///    so the short/long local day is still fully covered.
 (int, int) computePeriods(DateTime now, int intervalLength) {

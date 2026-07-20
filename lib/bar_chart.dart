@@ -165,7 +165,7 @@ class BarChartState extends State<BarChartWidget1> {
                               child: BarChart(
                                 BarChartData(
                                   barGroups: _barChartData,
-                                  groupsSpace: 2, // Q2 tweak: smaller gaps (fl_chart default was 16)
+                                  groupsSpace: _interval == 30 ? 2 : (_interval == 5 ? 0.3 : 1), // Q2+Q1: smaller gaps; scales with bar count (fl_chart default was 16)
                                   titlesData: FlTitlesData(
                                     rightTitles:
                                         const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -175,14 +175,14 @@ class BarChartState extends State<BarChartWidget1> {
                                         sideTitles: SideTitles(
                                       reservedSize: 30,
                                       showTitles: true,
-                                      interval: 2, // Not working anymore for some reason
+                                      interval: (60 ~/ _interval).toDouble(), // one label per hour (2/4/12 bars for 30/15/5-min)
                                       getTitlesWidget: (xValue, titleMeta) {
                                         return SideTitleWidget(
                                           axisSide: AxisSide.bottom,
                                           angle: math.radians(-90),
                                           space: 9,
                                           child: Text(
-                                            xValue.toInt() % 2 == 0
+                                            xValue.toInt() % (60 ~/ _interval) == 0
                                                 ? _barChartTitles[xValue.toInt()]!
                                                 : '',
                                             // Workaround
@@ -254,7 +254,7 @@ class BarChartState extends State<BarChartWidget1> {
     // The selected site's meter interval can change after the first paint
     // (e.g. a different site is selected, or the default 30 is corrected to 5
     // once the site list loads / _getForecast runs). Bar width and the
-    // interval->half-hour bucketing both depend on it, so re-read the live
+    // interval->bar bucketing both depend on it, so re-read the live
     // widget.interval here on every aggregate. Otherwise the first paint can
     // keep a stale 30 while the data is 5-minute: bars draw too wide and
     // every record is bucketed 30 minutes off (the bug that made toggling
@@ -335,6 +335,14 @@ class DataAggregator {
           .add(const Duration(days: 1)));
     }
     DateTime earliest = latest.subtract(_duration);
+    // Q1: bars are per-interval buckets. A 30-min site still shows 48
+    // half-hour bars; a 5-min site shows 288 five-minute bars. graphPos
+    // identifies the interval slot (one bar per interval for a single day)
+    // while multi-day charts still collapse into one canonical day because
+    // graphPos ignores the calendar day. Bucketing (sum usage/cost, average
+    // forecast) is unchanged and is what makes Combined Days / Weekly Usage work.
+    final int periodsPerHour = 60 ~/ _interval;
+    final int barsPerDay = 24 * periodsPerHour;
     //print('latest=$latest earliest=$earliest');
 
     _nowLocal = Utils.toLocal(nowOverride ?? DateTime.now());
@@ -380,10 +388,10 @@ class DataAggregator {
       }
       //print('Allowed date=$date');
 
-      // Bars are fixed half-hour buckets (2 per hour); 5-minute data sums
-      // its 6 intervals into each bar.
-      int graphPos = date.hour * 2 + date.minute ~/ 30;
-      newTitles[graphPos] ??= _canonicalHalfHour(graphPos);
+      // Bars are fixed per-interval buckets (periodsPerHour per hour): a 30-min
+      // site shows 48 half-hour bars; a 5-min site shows 288 five-minute bars.
+      int graphPos = date.hour * periodsPerHour + date.minute ~/ _interval;
+      newTitles[graphPos] ??= _canonicalHalfHour(graphPos, _interval);
 
       //print("adding record channel");
       if (record.channelType == controlledLoad && _forecast && !_feedIn) {
@@ -444,9 +452,9 @@ class DataAggregator {
         //print("unmatched record");
       }
 
-      // Add the daily supply charge once per half-hour bar per day. Keyed on
-      // the day + half-hour slot (not nemTime) so 5-minute sites do not add it
-      // six times per bar, while multi-day charts still accrue one per day.
+      // Add the daily supply charge once per bar per day. Keyed on
+      // the day + slot (not nemTime) so multi-day charts accrue one charge per
+      // day per slot and a single-interval bar never double-counts.
       String supplyKey = '${date.year}-${date.month}-${date.day}-$graphPos';
       if (_prices && !_forecast && supplyAdded.add(supplyKey)) {
         double dailySupplyChargePerPeriod = roundDouble(daily / 24 / 2, _prices);
@@ -464,11 +472,11 @@ class DataAggregator {
 
       // Fill in any missing graph positions with zeros
       for (int graphPos = 0;
-          graphPos < (24 * (60 ~/ 30));
+          graphPos < barsPerDay;
           graphPos++) {
         //print('graphPos=$graphPos');
         stackedValues[graphPos] ??= CustomRodGroup();
-        newTitles[graphPos] ??= _canonicalHalfHour(graphPos);
+        newTitles[graphPos] ??= _canonicalHalfHour(graphPos, _interval);
       }
     }
 
@@ -495,21 +503,24 @@ class DataAggregator {
     return result;
   }
 
-  // Canonical half-hour label for a fixed 48-bar/day chart (00:00, 00:30, ...).
+  // Canonical per-interval label (00:00, 00:05, 00:30, ...), derived from
+  // the bar index so labels track the meter interval.
   // Derived from the bar index so labels are independent of the source
   // interval length and of the intra-half-hour offset used when mapping
   // interval-end times onto bar starts (which made 5-minute sites show
   // 00:25 etc instead of 00:00/00:30).
-  static String _canonicalHalfHour(int graphPos) {
-    final int h = graphPos ~/ 2;
-    final int m = (graphPos % 2) * 30;
+  static String _canonicalHalfHour(int graphPos, int interval) {
+    final int slotsPerHour = 60 ~/ interval;
+    final int h = graphPos ~/ slotsPerHour;
+    final int m = (graphPos % slotsPerHour) * interval;
     return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
   }
 
   BarChartRodData makeRodData(int graphPos, CustomRodGroup stackedValues, double feedInValue) {
     double rodCumulative = 0.0;
     //int i = 0;
-    int nowIndex = _nowLocal.hour * 2 + _nowLocal.minute ~/ 30;
+    final int periodsPerHour = 60 ~/ _interval;
+    int nowIndex = _nowLocal.hour * periodsPerHour + _nowLocal.minute ~/ _interval;
     //print("meterNum=$meterNum");
     double value = stackedValues
         .toList()
@@ -518,7 +529,7 @@ class DataAggregator {
     return BarChartRodData(
       toY: roundDouble(value, _prices),
       color: Colors.white70,
-      width: _interval == 30 ? 10 : 6, // Q2 tweak: wider bars (was 6/3)
+      width: _interval == 30 ? 10 : (_interval == 5 ? 2 : 6), // Q2+Q1: wider bars; scales with bar count (was 6/3)
       //borderRadius: BorderRadius.circular(2),
       rodStackItems: stackedValues
           .toList()
@@ -595,8 +606,8 @@ class CustomRodElement {
     count++;
   }
 
-  // Usage/cost values are summed per bar; forecast prices are intensive so
-  // the half-hour bar shows the average of the intervals aggregated into it.
+  // Usage/cost values are summed across the intervals in a bar; forecast prices
+  // are intensive, so a multi-interval bar shows their average (under Q1 each bar holds one interval).
   double displayAmount(bool forecast) => forecast && count > 0 ? amount / count : amount;
 }
 
