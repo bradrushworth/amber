@@ -559,5 +559,70 @@ void main() {
       expect(agg.newData[12]!.barRods.first.toY, closeTo(0.0, 0.001));
       expect(agg.newData[47]!.barRods.first.toY, closeTo(0.0, 0.001));
     });
+    // --- Colour / legend fixes ---
+
+    Usage buildRec(DateTime nemTime,
+        {double perKwh = 25.0, double cost = 0.25, double kwh = 1.0, String desc = 'veryLow'}) =>
+        Usage(
+          type: 'ActualInterval',
+          duration: 5,
+          date: '2023-08-12',
+          nemTime: '${nemTime.year}-${nemTime.month.toString().padLeft(2, '0')}-${nemTime.day.toString().padLeft(2, '0')}T${nemTime.hour.toString().padLeft(2, '0')}:${nemTime.minute.toString().padLeft(2, '0')}:00+10:00',
+          perKwh: perKwh,
+          cost: cost,
+          kwh: kwh,
+          channelType: 'general',
+          channelIdentifier: 'E1',
+          descriptor: desc,
+        );
+
+    List<Usage> daySpan() => [
+          buildRec(DateTime.utc(2023, 8, 12, 0, 5)),
+          buildRec(DateTime.utc(2023, 8, 12, 2, 0)),
+          buildRec(DateTime.utc(2023, 8, 13, 0, 0)),
+        ];
+
+    bool hasSupply(DataAggregator agg) {
+      for (final g in agg.newData.values) {
+        for (final rod in g.barRods) {
+          for (final item in rod.rodStackItems) {
+            if (item.color == colors[0] && item.toY > 0.001) return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    test('solarSponge period uses the distinct sponge colour (not off-peak green)', () {
+      final e = CustomRodElement(general)..tariffInformation = 'solarSponge';
+      expect(e.getCostColor(), colors[7]);
+    });
+
+    test('null tariffInformation falls back to descriptor (veryLow -> green, not orange)', () {
+      final e = CustomRodElement(general)
+        ..tariffInformation = null
+        ..descriptor = 'veryLow';
+      // Single-tariff sites return a null period; the bar must render green
+      // (off-peak), never the orange "shoulder" a forced null used to map to.
+      expect(e.getCostColor(), colors[2]);
+      expect(e.getCostColor(), isNot(colors[3]));
+    });
+
+    test('peak tariffInformation still maps to the red Peak colour', () {
+      final e = CustomRodElement(general)..tariffInformation = 'peak';
+      expect(e.getCostColor(), colors[4]);
+    });
+
+    test('Supply charge is excluded from price/forecast charts', () {
+      final agg = DataAggregator(const Duration(days: 1), const Duration(days: 0), true, true, false, 5);
+      agg.aggregateData(daySpan());
+      expect(hasSupply(agg), isFalse);
+    });
+
+    test('Supply charge is included on cost charts', () {
+      final agg = DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false, false, 5);
+      agg.aggregateData(daySpan());
+      expect(hasSupply(agg), isTrue);
+    });
   });
 }

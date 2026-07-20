@@ -39,6 +39,7 @@ final List<Color> colors = [
   Colors.red,
   Colors.blueAccent,
   Colors.yellowAccent,
+  Colors.cyan, // solarSponge (distinct from off-peak green)
 ];
 
 class BarChartWidget1 extends StatefulWidget {
@@ -71,7 +72,7 @@ class BarChartState extends State<BarChartWidget1> {
   late final bool _prices;
   late final bool _forecast;
   late final bool _feedIn;
-  late final int _interval;
+  int _interval = 0; // Re-synced from widget.interval on every aggregate (parseFile).
   List<BarChartGroupData> _barChartData = [];
   Map<int, String> _barChartTitles = {};
   bool _loading = true;
@@ -148,7 +149,7 @@ class BarChartState extends State<BarChartWidget1> {
                             title: _title,
                             legends: _prices
                                 ? [
-                                    Legend(title: 'Supply', color: colors[0]),
+                                    Legend(title: _forecast ? 'Sponge' : 'Supply', color: _forecast ? colors[7] : colors[0]),
                                     Legend(title: 'Off', color: colors[2]),
                                     Legend(title: 'Shoulder', color: colors[3]),
                                     Legend(title: 'Peak', color: colors[4]),
@@ -255,6 +256,16 @@ class BarChartState extends State<BarChartWidget1> {
       return;
     }
 
+    // The selected site's meter interval can change after the first paint
+    // (e.g. a different site is selected, or the default 30 is corrected to 5
+    // once the site list loads / _getForecast runs). Bar width and the
+    // interval->half-hour bucketing both depend on it, so re-read the live
+    // widget.interval here on every aggregate. Otherwise the first paint can
+    // keep a stale 30 while the data is 5-minute: bars draw too wide and
+    // every record is bucketed 30 minutes off (the bug that made toggling
+    // tabs appear to 'fix' the chart).
+    _interval = widget.interval;
+
     //final rawData = await rootBundle.loadString(filepath);
     List<Usage> data = _rawData!;
     DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices, _forecast, _feedIn, _interval,
@@ -293,7 +304,7 @@ class DataAggregator {
   late final bool _prices;
   late final bool _forecast;
   late final bool _feedIn;
-  late final int _interval;
+  int _interval = 0; // Re-synced from widget.interval on every aggregate (parseFile).
 
   late final bool _today;
   late final DateTime _nowLocal;
@@ -554,14 +565,18 @@ class CustomRodElement {
     } else if (tariffInformation != null) {
       if (tariffInformation == peak || demandWindow) {
         return colors[4]; // Peak
-      } else if (tariffInformation == shoulder || tariffInformation == null) {
+      } else if (tariffInformation == shoulder) {
         return colors[3]; // Shoulder
-      } else if (tariffInformation == offPeak || tariffInformation == solarSponge) {
+      } else if (tariffInformation == offPeak) {
         return colors[2]; // Off peak
+      } else if (tariffInformation == solarSponge) {
+        return colors[7]; // Solar sponge (distinct from off-peak green)
       } else {
         return colors[5]; // Unknown
       }
     } else {
+      // Single-tariff sites return a null period; colour by descriptor so a
+      // flat veryLow day renders all green rather than orange.
       if (descriptor == spike) {
         return Utils.darken(colors[4], 20); // Peak
       } else if (descriptor == high) {

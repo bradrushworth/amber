@@ -52,6 +52,25 @@ Amber Electric (Australia) electricity usage and prices.
   `DateTime.now()`; inject a fixed `nowOverride` instead (see the
   "Forecast Tomorrow tab shows partial data" test).
 
+## Price colours, meter interval & supply (IMPORTANT)
+- Graph bars are fixed half-hour buckets, but their WIDTH and the 5/30-minute
+  -> half-hour bucketing both depend on the selected site's meter interval.
+  `DataAggregator` re-reads `widget.interval` on every `parseFile` aggregate
+  (not only in `initState`), so the first paint - which can run before
+  `_getForecast` corrects the default 30 to the real site interval (5 for
+  Evoenergy) - does not keep a stale 30 that draws wide bars and buckets every
+  record 30 minutes off. (Toggling tabs used to "fix" it only because the
+  widgets were recreated with the now-correct interval.)
+- Price bar colours are TIME-OF-DAY (driven by `tariffInformation.period`):
+  peak=red, shoulder=orange, offPeak=green, controlled=pink, feed=yellow.
+  `solarSponge` has its own distinct colour (cyan) - cheaper than off-peak, so
+  its legend entry sits before "Off". A `null` period (single-tariff sites)
+  falls back to DESCRIPTOR-based colouring (e.g. veryLow -> green), never orange.
+- Supply charge is only drawn on COST charts (`_prices && !_forecast`) and is
+  intentionally excluded from price/forecast charts. The legend matches:
+  forecast/price charts show "Sponge", cost charts show "Supply".
+
+
 ## Chart aggregation model (IMPORTANT)
 - Graph bars are FIXED **half-hour buckets**: 2 bars/hour = 48 bars/day. This
   is intentional and must NOT be changed to one-bar-per-interval.
