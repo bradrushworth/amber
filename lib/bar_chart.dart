@@ -165,6 +165,7 @@ class BarChartState extends State<BarChartWidget1> {
                               child: BarChart(
                                 BarChartData(
                                   barGroups: _barChartData,
+                                  groupsSpace: 2, // Q2 tweak: smaller gaps (fl_chart default was 16)
                                   titlesData: FlTitlesData(
                                     rightTitles:
                                         const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -517,7 +518,7 @@ class DataAggregator {
     return BarChartRodData(
       toY: roundDouble(value, _prices),
       color: Colors.white70,
-      width: _interval == 30 ? 6 : 3, // Width of the drawn columns
+      width: _interval == 30 ? 10 : 6, // Q2 tweak: wider bars (was 6/3)
       //borderRadius: BorderRadius.circular(2),
       rodStackItems: stackedValues
           .toList()
