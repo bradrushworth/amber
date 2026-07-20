@@ -64,11 +64,15 @@ Amber Electric (Australia) electricity usage and prices.
 - Price bar colours are TIME-OF-DAY (driven by `tariffInformation.period`):
   peak=red, shoulder=orange, offPeak=green, controlled=pink, feed=yellow.
   `solarSponge` has its own distinct colour (cyan) - cheaper than off-peak, so
-  its legend entry sits before "Off". A `null` period (single-tariff sites)
-  falls back to DESCRIPTOR-based colouring (e.g. veryLow -> green), never orange.
+  its legend entry sits before "Off". A `null` period (single-tariff / flat
+  tariff sites) renders the whole day uniformly green (off-peak) — never
+  orange/shoulder (a "low" descriptor used to wrongly map to it) or red/peak —
+  because the tariff is flat.
 - Supply charge is only drawn on COST charts (`_prices && !_forecast`) and is
-  intentionally excluded from price/forecast charts. The legend matches:
-  forecast/price charts show "Sponge", cost charts show "Supply".
+  intentionally excluded from price/forecast charts. Every chart's legend leads
+  with a "Sponge" item (solarSponge, cyan) to match the forecast chart; cost
+  charts additionally show "Supply" (blue) since the supply charge is drawn
+  there.
 
 
 ## Chart aggregation model (IMPORTANT)

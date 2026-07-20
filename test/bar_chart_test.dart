@@ -608,6 +608,22 @@ void main() {
       expect(e.getCostColor(), isNot(colors[3]));
     });
 
+    test('flat (null-period) tariff is uniformly green for every descriptor', () {
+      // A single/flat tariff has one flat price, so every interval is off-peak
+      // priced and must render green — never orange/shoulder (the old "low"
+      // mapping) or red/peak. This stops a flat site showing stray orange bars
+      // among the green ones.
+      const descriptors = <String?>[
+        null, 'spike', 'high', 'neutral', 'low', 'veryLow', 'extremelyLow', 'negative', 'other'
+      ];
+      for (final d in descriptors) {
+        final e = CustomRodElement(general)
+          ..tariffInformation = null
+          ..descriptor = d;
+        expect(e.getCostColor(), colors[2], reason: 'descriptor=$d must be green for a flat site');
+      }
+    });
+
     test('peak tariffInformation still maps to the red Peak colour', () {
       final e = CustomRodElement(general)..tariffInformation = 'peak';
       expect(e.getCostColor(), colors[4]);

@@ -147,22 +147,16 @@ class BarChartState extends State<BarChartWidget1> {
                       : [
                           TopSectionWidget(
                             title: _title,
-                            legends: _prices
-                                ? [
-                                    Legend(title: _forecast ? 'Sponge' : 'Supply', color: _forecast ? colors[7] : colors[0]),
-                                    Legend(title: 'Off', color: colors[2]),
-                                    Legend(title: 'Shoulder', color: colors[3]),
-                                    Legend(title: 'Peak', color: colors[4]),
-                                    Legend(title: 'Control', color: colors[1]),
-                                    Legend(title: 'Feed', color: colors[6]),
-                                  ]
-                                : [
-                                    Legend(title: 'Off', color: colors[2]),
-                                    Legend(title: 'Shoulder', color: colors[3]),
-                                    Legend(title: 'Peak', color: colors[4]),
-                                    Legend(title: 'Control', color: colors[1]),
-                                    Legend(title: 'Feed', color: colors[6]),
-                                  ],
+                            legends: [
+                              Legend(title: 'Sponge', color: colors[7]),
+                              if (_prices && !_forecast)
+                                Legend(title: 'Supply', color: colors[0]),
+                              Legend(title: 'Off', color: colors[2]),
+                              Legend(title: 'Shoulder', color: colors[3]),
+                              Legend(title: 'Peak', color: colors[4]),
+                              Legend(title: 'Control', color: colors[1]),
+                              Legend(title: 'Feed', color: colors[6]),
+                            ],
                             padding: const EdgeInsets.only(left: 3, right: 3, top: 3, bottom: 3),
                           ),
                           Expanded(
@@ -575,25 +569,11 @@ class CustomRodElement {
         return colors[5]; // Unknown
       }
     } else {
-      // Single-tariff sites return a null period; colour by descriptor so a
-      // flat veryLow day renders all green rather than orange.
-      if (descriptor == spike) {
-        return Utils.darken(colors[4], 20); // Peak
-      } else if (descriptor == high) {
-        return Utils.darken(colors[4], 10); // Peak
-      } else if (descriptor == neutral) {
-        return colors[4]; // Peak
-      } else if (descriptor == low) {
-        return colors[3]; // Shoulder
-      } else if (descriptor == veryLow) {
+      // Single-tariff / flat-tariff sites return a null period and a single,
+      // flat price, so every interval is off-peak priced. Render the whole day
+      // green (off-peak) - never orange/shoulder (which a 'low' descriptor used
+      // to wrongly map to) or red/peak - so a flat site is uniformly green.
         return colors[2]; // Off peak
-      } else if (descriptor == extremelyLow) {
-        return Utils.lighten(colors[2], 10); // Off peak
-      } else if (descriptor == negative) {
-        return Utils.lighten(colors[2], 20); // Off peak
-      } else {
-        return colors[5]; // Unknown
-      }
     }
   }
 
