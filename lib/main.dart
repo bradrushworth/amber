@@ -9,6 +9,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:amber/bar_chart.dart';
 import 'package:amber/periods.dart';
+import 'package:amber/api_cache.dart';
 import 'package:amber/my_theme_model.dart';
 import 'package:amber/screenshots_mobile.dart'
     if (dart.library.io) 'package:amber/screenshots_mobile.dart'
@@ -207,10 +208,15 @@ class HomePageState extends State<HomePage> {
     String uri =
         'https://api.amber.com.au/v1/sites/${_siteIdItemSelected!.value}/prices/current?next=$numPeriodsForward&previous=$numPeriodsBack&resolution=$intervalLength';
     print(uri);
-    final response = await http.get(Uri.parse(uri), headers: {
-      "accept": "application/json",
-      "Authorization": "Bearer ${amberToken!}",
-    });
+    final response = await ApiCache.instance.get(Uri.parse(uri),
+        headers: {
+          "accept": "application/json",
+          "Authorization": "Bearer ${amberToken!}",
+        },
+        // Prices only change at the meter interval, so only hit the
+        // network when the data could have updated (and never more than
+        // once per interval, even though the timer fires every minute).
+        ttl: Duration(minutes: intervalLength));
 
     if (response.statusCode == 200) {
       // If the server did return a 200 OK response,
@@ -244,10 +250,15 @@ class HomePageState extends State<HomePage> {
       String endDate = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(Duration(days: period * 7 + 1)));
       String uri = 'https://api.amber.com.au/v1/sites/${_siteIdItemSelected!.value}/usage?startDate=$startDate&endDate=$endDate';
       print(uri);
-      final response = await http.get(Uri.parse(uri), headers: {
-        "accept": "application/json",
-        "Authorization": "Bearer ${amberToken!}",
-      });
+      final response = await ApiCache.instance.get(Uri.parse(uri),
+          headers: {
+            "accept": "application/json",
+            "Authorization": "Bearer ${amberToken!}",
+          },
+          // Historical usage changes slowly (most recent day only); cache
+          // for an hour so flipping between sites does not re-fetch all
+          // four weeks and trip the rate limit.
+          ttl: const Duration(hours: 1));
 
       if (response.statusCode == 200) {
         // If the server did return a 200 OK response,
@@ -322,6 +333,7 @@ class HomePageState extends State<HomePage> {
                 textColor: Colors.white,
                 child: const Text('OK'),
                 onPressed: () {
+                  ApiCache.instance.clear();
                   _loadData();
                   setState(() {
                     Navigator.pop(context);

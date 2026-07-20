@@ -90,6 +90,14 @@ Amber Electric (Australia) electricity usage and prices.
 - `intervalLength` (lib/main.dart) comes from the selected site and defaults
   to `meterInterval`; 5-minute sites report 5.
 
+## Amber API caching (IMPORTANT)
+- All Amber HTTP calls go through ApiCache (lib/api_cache.dart), an in-memory cache + rate-limit guard, not http.get directly.
+- _getForecast (prices/current) uses ttl: Duration(minutes: intervalLength), so the network is hit at most once per meter interval even though the timer fires every minute. computePeriods makes the URL constant within an interval block, so the cache key repeats and the cache absorbs the extra ticks.
+- _getHistoricalUsage uses ttl: const Duration(hours: 1), so flipping between sites does not re-fetch all four weeks and trip the rate limit.
+- On a 429/error with a prior success, the cached success is served (stale while error) so charts keep rendering and the user stops getting the too-many-API-calls snackbars. After a failure it backs off for errorTtl (60s) before retrying.
+- Concurrent identical requests are de-duplicated (one in-flight future).
+- ApiCache.instance.clear() is called when the API token changes so a new token starts fresh.
+
 ## Versioning
 - `pubspec.yaml`: `version: x.y.z+build` (e.g. `0.5.2+41`).
 - Minor version bumps and a sequentially increasing build number follow the
