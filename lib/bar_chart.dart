@@ -257,7 +257,8 @@ class BarChartState extends State<BarChartWidget1> {
 
     //final rawData = await rootBundle.loadString(filepath);
     List<Usage> data = _rawData!;
-    DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices, _forecast, _feedIn, _interval);
+    DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices, _forecast, _feedIn, _interval,
+        nowOverride: _forecast ? DateTime.now() : null);
     try {
       dataAggregator.aggregateData(data);
 
@@ -297,20 +298,40 @@ class DataAggregator {
   late final bool _today;
   late final DateTime _nowLocal;
 
-  DataAggregator(this._duration, this._ending, this._prices, this._forecast, this._feedIn, this._interval);
+  /// Optional injected "now". When supplied for a forecast chart, the display
+  /// window is anchored on the real current day (in AEST) instead of on a
+  /// record in the returned data. This makes the Yesterday/Today/Tomorrow tabs
+  /// robust when the Amber API returns incomplete or unsorted future data:
+  /// whatever intervals fall inside the tab's day are shown, and missing bars
+  /// stay empty. Left null in unit tests to keep the data-anchored behaviour.
+  final DateTime? nowOverride;
+
+  DataAggregator(this._duration, this._ending, this._prices, this._forecast, this._feedIn, this._interval, {this.nowOverride});
 
   void aggregateData(List<Usage> data) {
     //print(data.map((u) => u.channelType!).toSet());
 
     //print('data.last.date=${data.last.date}');
     //print('data.first.date=${data.first.date}');
-    DateTime latest = Utils.toLocal(DateTime.parse('${data.last.date!}T00:00:00+10:00')
-        .subtract(_ending)
-        .add(const Duration(days: 1)));
+    // For forecast tabs, anchor the window on the real current day (AEST) so
+    // incomplete/unsorted future data still shows whatever we received. For
+    // historical charts (and forecast unit tests without an injected now),
+    // keep anchoring on the most recent day present in the data.
+    late DateTime latest;
+    if (_forecast && nowOverride != null) {
+      final DateTime aestNow = Utils.toLocal(nowOverride!);
+      final DateTime todayMidnight =
+          DateTime.utc(aestNow.year, aestNow.month, aestNow.day);
+      latest = todayMidnight.subtract(_ending);
+    } else {
+      latest = Utils.toLocal(DateTime.parse('${data.last.date!}T00:00:00+10:00')
+          .subtract(_ending)
+          .add(const Duration(days: 1)));
+    }
     DateTime earliest = latest.subtract(_duration);
     //print('latest=$latest earliest=$earliest');
 
-    _nowLocal = Utils.toLocal(DateTime.now());
+    _nowLocal = Utils.toLocal(nowOverride ?? DateTime.now());
     _today = _nowLocal.isAfter(earliest) && _nowLocal.isBefore(latest);
 
     Map<int, CustomRodGroup> stackedValues = {};

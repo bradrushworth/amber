@@ -530,6 +530,34 @@ void main() {
       expect(agg.newTitles[47], '23:30');
       expect(agg.newTitles.values.where((t) => t.contains('25')).isEmpty, isTrue);
     });
+    test('Forecast Tomorrow tab shows partial data when API returns incomplete future', () {
+      // now = 12:00 AEST on 2023-08-12 (a UTC instant that pins to +10).
+      final now = DateTime.utc(2023, 8, 12, 2, 0);
+      // Tomorrow (2023-08-13) is only partially returned: the first 12
+      // half-hours (00:00-06:00), as the Amber API sometimes does.
+      List<Usage> data = [];
+      for (int i = 0; i < 12; i++) {
+        final nemTime = DateTime.utc(2023, 8, 12, 14, 30)
+            .add(Duration(minutes: i * 30))
+            .toIso8601String();
+        data.add(Usage(
+          type: 'ForecastInterval', duration: 30, date: '2023-08-13',
+          nemTime: nemTime, perKwh: 20.0,
+          channelType: 'general', channelIdentifier: 'E1',
+        ));
+      }
+      // Tomorrow tab: duration 1 day, ending -2 days, anchored on now.
+      final agg = DataAggregator(const Duration(days: 1), const Duration(days: -2),
+          true, true, false, 30, nowOverride: now);
+      agg.aggregateData(data);
 
+      expect(agg.newData.length, 48);
+      // The 12 received bars show their price (20 c/kWh -> 0.20 dollars).
+      expect(agg.newData[0]!.barRods.first.toY, closeTo(0.20, 0.001));
+      expect(agg.newData[11]!.barRods.first.toY, closeTo(0.20, 0.001));
+      // Bars with no data stay empty (not dropped, no cross-day bleed).
+      expect(agg.newData[12]!.barRods.first.toY, closeTo(0.0, 0.001));
+      expect(agg.newData[47]!.barRods.first.toY, closeTo(0.0, 0.001));
+    });
   });
 }

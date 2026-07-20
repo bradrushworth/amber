@@ -38,6 +38,20 @@ Amber Electric (Australia) electricity usage and prices.
 - The chart aggregation buckets by AEST half-hour, so a DST transition day is
   just another 48-bar AEST day - never 46 or 50 bars.
 
+## Forecast window anchoring (IMPORTANT)
+- Forecast tabs (Yesterday/Today/Tomorrow) anchor their display window on the
+  real current day in AEST via `DataAggregator.nowOverride`, NOT on
+  `data.last.date`. `lib/bar_chart.dart` passes
+  `nowOverride: _forecast ? DateTime.now() : null` at the widget call site.
+  This makes the tabs robust when the Amber API returns INCOMPLETE or
+  unsorted future data: whatever intervals fall inside the tab's day are
+  shown and missing bars stay empty (no empty Tomorrow, no cross-day bleed).
+- Historical (usage/cost) charts and forecast UNIT TESTS pass no
+  `nowOverride`, so they keep anchoring on the most recent day in the data
+  (fixtures use fixed 2023 dates). Do NOT make forecast tests depend on
+  `DateTime.now()`; inject a fixed `nowOverride` instead (see the
+  "Forecast Tomorrow tab shows partial data" test).
+
 ## Chart aggregation model (IMPORTANT)
 - Graph bars are FIXED **half-hour buckets**: 2 bars/hour = 48 bars/day. This
   is intentional and must NOT be changed to one-bar-per-interval.
