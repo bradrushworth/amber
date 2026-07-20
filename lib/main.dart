@@ -159,7 +159,7 @@ class HomePageState extends State<HomePage> {
 
       List<ListItem> sites = await _getSites();
       _siteIdMenuItems = buildDropDownMenuItems(sites);
-      _siteIdItemSelected = _siteIdMenuItems[0].value!;
+      _siteIdItemSelected = _siteIdMenuItems.last.value!;
 
       _getForecast();
       _getHistoricalUsage();
