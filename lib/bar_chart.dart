@@ -356,7 +356,7 @@ class DataAggregator {
       // Bars are fixed half-hour buckets (2 per hour); 5-minute data sums
       // its 6 intervals into each bar.
       int graphPos = date.hour * 2 + date.minute ~/ 30;
-      newTitles[graphPos] = newTitles[graphPos] ?? date.toString().substring(11, 16);
+      newTitles[graphPos] ??= _canonicalHalfHour(graphPos);
 
       //print("adding record channel");
       if (record.channelType == controlledLoad && _forecast && !_feedIn) {
@@ -436,12 +436,12 @@ class DataAggregator {
       }
 
       // Fill in any missing graph positions with zeros
-      for (int graphPos = stackedValues.length;
+      for (int graphPos = 0;
           graphPos < (24 * (60 ~/ 30));
           graphPos++) {
         //print('graphPos=$graphPos');
         stackedValues[graphPos] ??= CustomRodGroup();
-        newTitles[graphPos] = newTitles[graphPos] ?? '';
+        newTitles[graphPos] ??= _canonicalHalfHour(graphPos);
       }
     }
 
@@ -466,6 +466,17 @@ class DataAggregator {
     num mod = pow(10.0, digits);
     double result = ((value * mod).roundToDouble() / mod);
     return result;
+  }
+
+  // Canonical half-hour label for a fixed 48-bar/day chart (00:00, 00:30, ...).
+  // Derived from the bar index so labels are independent of the source
+  // interval length and of the intra-half-hour offset used when mapping
+  // interval-end times onto bar starts (which made 5-minute sites show
+  // 00:25 etc instead of 00:00/00:30).
+  static String _canonicalHalfHour(int graphPos) {
+    final int h = graphPos ~/ 2;
+    final int m = (graphPos % 2) * 30;
+    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
   }
 
   BarChartRodData makeRodData(int graphPos, CustomRodGroup stackedValues, double feedInValue) {

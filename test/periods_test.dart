@@ -7,39 +7,39 @@ void main() {
       final now = DateTime.utc(2023, 8, 12, 4, 0);
       final (back, forward) = computePeriods(now, 30);
       expect(back, 76);
-      expect(forward, 19);
-      expect(back + forward + 1, 96);
+      expect(forward, 68);
+      expect(back + forward + 1, 145);
     });
 
     test('5-minute interval fetches 12 periods/hour', () {
       final now = DateTime.utc(2023, 8, 12, 4, 0);
       final (back, forward) = computePeriods(now, 5);
       expect(back, 456);
-      expect(forward, 119);
-      expect(back + forward + 1, 576);
+      expect(forward, 408);
+      expect(back + forward + 1, 865);
     });
 
     test('DST start (first Sun Oct) shifts window by one period-hour', () {
       final now = DateTime.utc(2023, 10, 1, 4, 0);
       final (back, forward) = computePeriods(now, 30);
       expect(back, 74);
-      expect(forward, 21);
-      expect(back + forward + 1, 96);
+      expect(forward, 70);
+      expect(back + forward + 1, 145);
     });
 
     test('DST end (first Sun Apr) shifts window the other way', () {
       final now = DateTime.utc(2023, 4, 2, 4, 0);
       final (back, forward) = computePeriods(now, 30);
       expect(back, 78);
-      expect(forward, 17);
-      expect(back + forward + 1, 96);
+      expect(forward, 66);
+      expect(back + forward + 1, 145);
     });
 
     test('non-DST day in October/April is not adjusted', () {
       final now = DateTime.utc(2023, 10, 15, 4, 0);
       final (back, forward) = computePeriods(now, 30);
       expect(back, 76);
-      expect(forward, 19);
+      expect(forward, 68);
     });
   });
 

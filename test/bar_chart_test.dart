@@ -504,5 +504,32 @@ void main() {
       expect(totalFeedIn, closeTo(-(48 * (fA + fB)), 0.01));
     });
 
+    test('5-minute sites show canonical half-hour labels (00:00/00:30), not 00:25', () async {
+      final List<Map<String, dynamic>> json = [];
+      for (int m = 5; m <= 24 * 60; m += 5) {
+        final t = DateTime.utc(2023, 8, 12).add(Duration(minutes: m));
+        final hh = t.hour.toString().padLeft(2, '0');
+        final mm = t.minute.toString().padLeft(2, '0');
+        json.add({
+          'date': '2023-08-12',
+          'nemTime': '2023-08-12T'+hh+':'+mm+':00+10:00',
+          'channelType': 'general',
+          'kwh': 1.0,
+          'perKwh': 100.0,
+        });
+      }
+      final data = json.map((j) => Usage.fromJson(j)).toList();
+
+      final agg = DataAggregator(
+          const Duration(days: 1), const Duration(days: 0), true, true, false, 5);
+      agg.aggregateData(data);
+
+      expect(agg.newTitles.length, 48);
+      expect(agg.newTitles[0], '00:00');
+      expect(agg.newTitles[1], '00:30');
+      expect(agg.newTitles[47], '23:30');
+      expect(agg.newTitles.values.where((t) => t.contains('25')).isEmpty, isTrue);
+    });
+
   });
 }

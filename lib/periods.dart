@@ -43,9 +43,10 @@ int dstAdjustmentHours(DateTime aestNow) {
   final periodsPerHour = 60 ~/ intervalLength;
   final periodsPerDay = 24 * periodsPerHour;
   final aest = pinToAest(now);
-  int numPeriodsBack =
-      periodsPerHour * aest.hour + aest.minute ~/ intervalLength + periodsPerDay;
-  int numPeriodsForward = 2 * periodsPerDay - numPeriodsBack - 1;
+  final elapsedToday =
+      periodsPerHour * aest.hour + aest.minute ~/ intervalLength;
+  int numPeriodsBack = periodsPerDay + elapsedToday;
+  int numPeriodsForward = 2 * periodsPerDay - elapsedToday;
   final adjustment = dstAdjustmentHours(aest) * periodsPerHour;
   numPeriodsBack -= adjustment;
   numPeriodsForward += adjustment;

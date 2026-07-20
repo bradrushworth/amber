@@ -32,8 +32,9 @@ Amber Electric (Australia) electricity usage and prices.
   - `computePeriods(DateTime now, int intervalLength)` - returns
     `(numPeriodsBack, numPeriodsForward)` for the `prices/current` fetch,
     centred on `now` in AEST. Keeps the `60 ~/ intervalLength` periods/hour
-    behaviour (5-min sites fetch 12/hour, 30-min fetch 2/hour) and the
-    two-day fetch window. Unit-tested in `test/periods_test.dart`.
+    behaviour (5-min sites fetch 12/hour, 30-min fetch 2/hour) and a three-day fetch window (Yesterday/Today/Tomorrow tabs) so the
+    Tomorrow forecast is not starved of future prices. Unit-tested in
+    `test/periods_test.dart`.
 - The chart aggregation buckets by AEST half-hour, so a DST transition day is
   just another 48-bar AEST day - never 46 or 50 bars.
 
