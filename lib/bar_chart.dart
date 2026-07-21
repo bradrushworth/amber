@@ -167,7 +167,7 @@ class BarChartState extends State<BarChartWidget1> {
                               child: BarChart(
                                 BarChartData(
                                   barGroups: _barChartData,
-                                  groupsSpace: _interval == 30 ? 2 : (_interval == 5 ? 0.3 : 1), // Q2+Q1: smaller gaps; scales with bar count (fl_chart default was 16)
+                                  groupsSpace: 3, // Fixed 48 bars/day; consistent spacing regardless of meter interval
                                   titlesData: FlTitlesData(
                                     rightTitles:
                                         const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -531,7 +531,7 @@ class DataAggregator {
     return BarChartRodData(
       toY: roundDouble(value, _prices),
       color: Colors.white70,
-      width: _interval == 30 ? 10 : (_interval == 5 ? 2 : 6), // Q2+Q1: wider bars; scales with bar count (was 6/3)
+      width: 7, // Fixed 48 bars/day (half-hour buckets); consistent width regardless of meter interval
       //borderRadius: BorderRadius.circular(2),
       rodStackItems: stackedValues
           .toList()
