@@ -96,6 +96,8 @@ class BarChartState extends State<BarChartWidget1> {
   @override
   void didUpdateWidget(BarChartWidget1 oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Always re-sync interval from the widget (site may have changed).
+    _interval = widget.interval;
     if (widget.rawData != oldWidget.rawData) {
       //print('new didUpdateWidget _notEnoughData=$_notEnoughData _title=$_title');
       refresh(widget.rawData);
