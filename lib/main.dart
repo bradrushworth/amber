@@ -372,6 +372,13 @@ class HomePageState extends State<HomePage> {
     final DateFormat weekdayDayMonth = DateFormat('E d LLL');
 
     int intervalLength = _siteIdItemSelected?.intervalLength ?? meterInterval;
+    // Cap historical (non-forecast) charts at 15 minutes so 5-minute sites
+    // don't produce 288 tiny bars/day.
+    if (intervalLength < 15) intervalLength = 15;
+    // Forecast data from the Amber API is inherently 30-minute resolution
+    // (AEMO publishes forecasts at 30-min trading intervals), so cap forecast
+    // charts at 30 to avoid alternating empty 15-min bars on the Tomorrow tab.
+    final int forecastInterval = intervalLength < 30 ? 30 : intervalLength;
 
     return Consumer<MyThemeModel>(
       builder: (context, themeModel, child) {
@@ -498,7 +505,7 @@ class HomePageState extends State<HomePage> {
                                 ? [
                                     MyCard(
                                         child: BarChartWidget1(forecastData, 'Yesterday\'s Price',
-                                            intervalLength,
+                                            forecastInterval,
                                             const Duration(days: 1),
                                             ending: const Duration(days: 0),
                                             prices: true,
@@ -506,7 +513,7 @@ class HomePageState extends State<HomePage> {
                                             feedIn: false)),
                                     MyCard(
                                         child: BarChartWidget1(forecastData, 'Yesterday\'s Prices',
-                                            intervalLength,
+                                            forecastInterval,
                                             const Duration(days: 1),
                                             ending: const Duration(days: 0),
                                             prices: true,
@@ -514,7 +521,7 @@ class HomePageState extends State<HomePage> {
                                             feedIn: true)),
                                     MyCard(
                                         child: BarChartWidget1(forecastData, 'Today\'s Price',
-                                            intervalLength,
+                                            forecastInterval,
                                             const Duration(days: 1),
                                             ending: const Duration(days: -1),
                                             prices: true,
@@ -522,7 +529,7 @@ class HomePageState extends State<HomePage> {
                                             feedIn: false)),
                                     MyCard(
                                         child: BarChartWidget1(forecastData, 'Today\'s Prices',
-                                            intervalLength,
+                                            forecastInterval,
                                             const Duration(days: 1),
                                             ending: const Duration(days: -1),
                                             prices: true,
@@ -530,7 +537,7 @@ class HomePageState extends State<HomePage> {
                                             feedIn: true)),
                                     MyCard(
                                         child: BarChartWidget1(forecastData, 'Tomorrow\'s Price',
-                                            intervalLength,
+                                            forecastInterval,
                                             const Duration(days: 1),
                                             ending: const Duration(days: -2),
                                             prices: true,
@@ -538,7 +545,7 @@ class HomePageState extends State<HomePage> {
                                             feedIn: false)),
                                     MyCard(
                                         child: BarChartWidget1(forecastData, 'Tomorrow\'s Prices',
-                                            intervalLength,
+                                            forecastInterval,
                                             const Duration(days: 1),
                                             ending: const Duration(days: -2),
                                             prices: true,
