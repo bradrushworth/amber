@@ -398,7 +398,7 @@ class HomePageState extends State<HomePage> {
                         right: orientation == Orientation.portrait ? 2 : 2,
                         top: 0,
                         bottom: 0),
-                    bottom: false,
+                    bottom: true,
                     child: Column(
                       children: [
                         Row(
