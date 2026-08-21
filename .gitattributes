@@ -1,0 +1,16 @@
+# Normalize line endings: text files are stored with LF in the repo and
+# checked out per-platform. Ends the mixed-CRLF/LF diff noise.
+* text=auto
+
+# Never normalize binaries.
+*.png binary
+*.jpg binary
+*.ico binary
+*.icns binary
+*.ttf binary
+*.otf binary
+*.jks binary
+*.keystore binary
+*.jar binary
+*.zip binary
+*.pdf binary
