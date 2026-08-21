@@ -1,5 +1,9 @@
 # Cline Rules - Amber Electric Dashboard
 
+> NOTE: `AGENTS.md` is the canonical agent guide for this repo and is
+> kept up to date; this file is retained for Cline compatibility. When the
+> two disagree, `AGENTS.md` wins.
+
 Project: Amber Electric Dashboard, a Flutter app that visualises a customer's
 Amber Electric (Australia) electricity usage and prices.
 
@@ -135,8 +139,9 @@ Amber Electric (Australia) electricity usage and prices.
 - Test runs can fail with "Flutter failed to delete a directory at
   build\unit_test_assets" (a locked build dir). Fix by deleting the build
   folder (`Remove-Item -Recurse -Force build`) and re-running `flutter test`.
-- Repo files are **CRLF**. Multi-line edits via the editor tool using `\n`
-  fail to match; prefer single-line edits or include `\r\n`.
+- Line endings are normalized via `.gitattributes` (`* text=auto`) since
+  Aug 2026: the repo stores LF; Windows checkouts are CRLF. No need to
+  hand-craft CRLF sequences in edits any more.
 - When pushing, a plain `git push origin master` can falsely print
   "Everything up-to-date" even when the commit is still local. Use
   `git push origin master --verbose` to force a real push, then confirm
