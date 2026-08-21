@@ -349,19 +349,47 @@ void main() {
         return data;
       }
 
-      final supplyPerBar = DataAggregator.roundDouble(daily / 24 / 2, true);
-
       final agg30 =
           DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false, false, 30);
       agg30.aggregateData(build(30));
-      // One 30-min interval cost (0.10) + a single supply charge.
-      expect(agg30.newData[0]!.barRods.first.toY, closeTo(0.10 + supplyPerBar, 0.001));
+      // One 30-min interval cost (0.10) + 1/48th of the daily charge.
+      expect(agg30.newData[0]!.barRods.first.toY, closeTo(0.10 + daily / 48, 0.01));
 
       final agg5 =
           DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false, false, 5);
       agg5.aggregateData(build(5));
-      // One 5-min cost (0.10) + exactly ONE supply charge per bar.
-      expect(agg5.newData[0]!.barRods.first.toY, closeTo(0.10 + supplyPerBar, 0.001));
+      // One 5-min cost (0.10) + 1/288th of the daily charge per bar.
+      expect(agg5.newData[0]!.barRods.first.toY, closeTo(0.10 + daily / 288, 0.01));
+    });
+
+    test('Supply charge divisor tracks bars per day (15-min regression)', () {
+      // Regression: a fixed /48 divisor doubled the daily supply charge on
+      // 15-minute bars (96 bars/day x daily/48 = 2x daily). The divisor must
+      // be barsPerDay so the whole-day supply total is always `daily`.
+      List<Usage> build(int interval) {
+        final perDay = 24 * 60 ~/ interval;
+        final data = <Usage>[];
+        for (int i = 0; i < perDay; i++) {
+          final nemTime = DateTime.utc(2023, 8, 11, 14, 0)
+              .add(Duration(minutes: (i + 1) * interval))
+              .toIso8601String();
+          data.add(Usage(
+            duration: interval, date: '2023-08-12', nemTime: nemTime,
+            kwh: 1.0, cost: 10.0, perKwh: 20.0,
+            channelType: 'general', channelIdentifier: 'E1',
+          ));
+        }
+        return data;
+      }
+
+      final agg15 =
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false, false, 15);
+      agg15.aggregateData(build(15));
+      expect(agg15.newData.length, 96);
+      // Per bar: one 15-min cost (0.10) + 1/96th of the daily charge —
+      // and definitely not the doubled 1/48th (0.10 + daily/48 ~= 0.14).
+      expect(agg15.newData[0]!.barRods.first.toY, closeTo(0.10 + daily / 96, 0.01));
+      expect(agg15.newData[0]!.barRods.first.toY, lessThan(0.10 + daily / 48 - 0.01));
     });
 
     test('Usage aggregates correctly for 15-minute intervals', () {

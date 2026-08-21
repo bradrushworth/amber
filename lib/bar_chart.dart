@@ -459,7 +459,11 @@ class DataAggregator {
       // day per slot and a single-interval bar never double-counts.
       String supplyKey = '${date.year}-${date.month}-${date.day}-$graphPos';
       if (_prices && !_forecast && supplyAdded.add(supplyKey)) {
-        double dailySupplyChargePerPeriod = roundDouble(daily / 24 / 2, _prices);
+        // Split across the actual number of bars per day so the per-day total
+        // is always `daily` (a fixed /48 doubled the charge on 15-minute bars).
+        // Not pre-rounded: cent-rounding a tiny per-bar fraction distorts the
+        // daily total; display rounding happens in makeRodData.
+        double dailySupplyChargePerPeriod = daily / barsPerDay;
         stackedValues[graphPos] ??= CustomRodGroup();
         stackedValues[graphPos]!.add('supply', null, null, null, dailySupplyChargePerPeriod);
       }
