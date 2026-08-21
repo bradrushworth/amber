@@ -152,14 +152,18 @@ class HomePageState extends State<HomePage> {
 
     // obtain shared preferences
     prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     amberToken = prefs.getString('amberToken');
     //List<Usage>? data;
     if (amberToken != null) {
       _amberTokenController.text = amberToken!;
 
       List<ListItem> sites = await _getSites();
+      if (!mounted || sites.isEmpty) return;
       _siteIdMenuItems = buildDropDownMenuItems(sites);
-      _siteIdItemSelected = _siteIdMenuItems.last.value!;
+      // Prefer the most recent active site; closed sites stay selectable but
+      // are badged and return no current data.
+      _siteIdItemSelected = sites.lastWhere((s) => !s.closed, orElse: () => sites.last);
 
       _getForecast();
       _getHistoricalUsage();
@@ -186,12 +190,22 @@ class HomePageState extends State<HomePage> {
       // then parse the JSON.
       _sites = (jsonDecode(response.body) as List).map((json) => Site.fromJson(json)).toList();
       //int i = 1;
-      return _sites.map((site) => ListItem(site.id!, "${site.network}\n${site.nmi}", intervalLength: site.intervalLength!)).toList();
+      return _sites
+          .map((site) => ListItem(
+              site.id!,
+              site.status == 'closed'
+                  ? "${site.network} (closed)\n${site.nmi}"
+                  : "${site.network}\n${site.nmi}",
+              intervalLength: site.intervalLength!,
+              closed: site.status == 'closed'))
+          .toList();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.body)));
-      // If the server did not return a 200 OK response,
-      // then throw an exception.
-      throw Exception('Failed to load sites! code=${response.statusCode}\n${response.body}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Could not load your sites (HTTP ${response.statusCode}). '
+                'Check your API token.')));
+      }
+      return [];
     }
   }
 
@@ -200,13 +214,15 @@ class HomePageState extends State<HomePage> {
       print('API key not set or site not selected');
       return;
     }
+    // Capture the selection so a site switch mid-request cannot mix data.
+    final ListItem site = _siteIdItemSelected!;
 
-    int intervalLength = _siteIdItemSelected!.intervalLength;
+    int intervalLength = site.intervalLength;
     final (numPeriodsBack, numPeriodsForward) =
         computePeriods(DateTime.now(), intervalLength);
 
     String uri =
-        'https://api.amber.com.au/v1/sites/${_siteIdItemSelected!.value}/prices/current?next=$numPeriodsForward&previous=$numPeriodsBack&resolution=$intervalLength';
+        'https://api.amber.com.au/v1/sites/${site.value}/prices/current?next=$numPeriodsForward&previous=$numPeriodsBack&resolution=$intervalLength';
     print(uri);
     final response = await ApiCache.instance.get(Uri.parse(uri),
         headers: {
@@ -217,6 +233,10 @@ class HomePageState extends State<HomePage> {
         // network when the data could have updated (and never more than
         // once per interval, even though the timer fires every minute).
         ttl: Duration(minutes: intervalLength));
+
+    // Discard the response if the widget is gone or the user switched sites
+    // while the request was in flight.
+    if (!mounted || _siteIdItemSelected?.value != site.value) return;
 
     if (response.statusCode == 200) {
       // If the server did return a 200 OK response,
@@ -234,21 +254,24 @@ class HomePageState extends State<HomePage> {
       setState(() {
         forecastData = null;
       });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.body)));
-
-      // If the server did not return a 200 OK response,
-      // then throw an exception.
-      throw Exception(
-          'Failed to load forecast for site ${_siteIdItemSelected!.value}! code=${response.statusCode}\n${response.body}');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not load prices (HTTP ${response.statusCode}).')));
     }
   }
 
   Future<void> _getHistoricalUsage() async {
+    if (amberToken == null || _siteIdItemSelected == null) {
+      print('API key not set or site not selected');
+      return;
+    }
+    // Capture the selection so a site switch mid-loop cannot mix weeks from
+    // two different sites into rawData1..4.
+    final ListItem site = _siteIdItemSelected!;
     for (int period = 0; period <= 3; period++) {
       //print('period=$period');
       String startDate = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(Duration(days: period * 7 + 7)));
       String endDate = DateFormat('yyyy-MM-dd').format(DateTime.now().subtract(Duration(days: period * 7 + 1)));
-      String uri = 'https://api.amber.com.au/v1/sites/${_siteIdItemSelected!.value}/usage?startDate=$startDate&endDate=$endDate';
+      String uri = 'https://api.amber.com.au/v1/sites/${site.value}/usage?startDate=$startDate&endDate=$endDate';
       print(uri);
       final response = await ApiCache.instance.get(Uri.parse(uri),
           headers: {
@@ -259,6 +282,10 @@ class HomePageState extends State<HomePage> {
           // for an hour so flipping between sites does not re-fetch all
           // four weeks and trip the rate limit.
           ttl: const Duration(hours: 1));
+
+      // Abandon stale responses: widget disposed or site switched mid-loop
+      // (the switch handler starts its own fetch for the new site).
+      if (!mounted || _siteIdItemSelected?.value != site.value) return;
 
       if (response.statusCode == 200) {
         // If the server did return a 200 OK response,
@@ -297,12 +324,9 @@ class HomePageState extends State<HomePage> {
           rawData3 = null;
           rawData4 = null;
         });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response.body)));
-
-        // If the server did not return a 200 OK response,
-        // then throw an exception.
-        throw Exception(
-            'Failed to load usage for site ${_siteIdItemSelected!.value}! code=${response.statusCode}\n${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Could not load usage history (HTTP ${response.statusCode}).')));
+        return;
       }
     }
   }
@@ -935,6 +959,7 @@ class ListItem {
   String value;
   String name;
   int intervalLength; // billing period in minutes
+  bool closed; // site is closed with the retailer (no current data)
 
-  ListItem(this.value, this.name, {this.intervalLength = meterInterval});
+  ListItem(this.value, this.name, {this.intervalLength = meterInterval, this.closed = false});
 }
