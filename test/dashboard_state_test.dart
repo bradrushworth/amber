@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show SocketException;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -82,6 +83,59 @@ void main() {
     // This verifies that dispose() mid-await doesn't cause ChangeNotifier errors
     await initFuture;
     expect(initCompleted, isTrue);
+  });
+
+  test('offline first launch: init survives, warns, and keeps polling',
+      () async {
+    SharedPreferences.setMockInitialValues({'amberToken': 'x' * 36});
+    var online = false;
+    final s = DashboardState(fetch: (u, h, t) async {
+      if (!online) throw const SocketException('Failed host lookup');
+      if (u.path.endsWith('/sites')) return _json(_sites);
+      return _json([]);
+    });
+
+    // Must not throw even though every fetch does.
+    await s.init();
+    expect(s.lastError, DashboardState.offlineMessage);
+    expect(s.sites, isEmpty);
+
+    // The polling timers were started BEFORE the first await, so recovery
+    // doesn't need an app restart: the same instance can fetch again.
+    online = true;
+    await s.loadSites();
+    expect(s.lastError, isNull);
+    expect(s.selectedSite!.id, 'new');
+    await s.refreshForecast();
+    expect(s.lastError, isNull);
+    s.dispose();
+  });
+
+  test('a throwing refresh does not escape as an unhandled async error',
+      () async {
+    SharedPreferences.setMockInitialValues({'amberToken': 'x' * 36});
+    var fail = false;
+    final s = DashboardState(fetch: (u, h, t) async {
+      if (fail) throw const SocketException('offline');
+      if (u.path.endsWith('/sites')) return _json(_sites);
+      return _json([]);
+    });
+    await s.init();
+    fail = true;
+    await s.refreshForecast();
+    expect(s.lastError, DashboardState.offlineMessage);
+    await s.refreshUsage();
+    expect(s.lastError, DashboardState.offlineMessage);
+    s.dispose();
+  });
+
+  test('an account with no sites gets a friendly message', () async {
+    SharedPreferences.setMockInitialValues({'amberToken': 'x' * 36});
+    final s = DashboardState(fetch: (u, h, t) async => _json([]));
+    await s.init();
+    expect(s.lastError, 'No sites found on this account.');
+    expect(s.selectedSite, isNull);
+    s.dispose();
   });
 
   test('now-summary getters', () {

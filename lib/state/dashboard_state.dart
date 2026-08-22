@@ -39,7 +39,20 @@ class DashboardState extends ChangeNotifier {
   Map<String, String> get _headers =>
       {'accept': 'application/json', 'Authorization': 'Bearer $token'};
 
+  /// Shown for any transport-level failure (no network, DNS, TLS, timeout) or
+  /// an unparseable body. Deliberately blame-free and actionable.
+  static const offlineMessage = "Can't reach Amber — check your connection.";
+
   Future<void> init() async {
+    // Timers FIRST, before any await. If the very first launch is offline the
+    // fetches below fail, and starting the timers afterwards meant the app
+    // never polled again — it sat on an empty screen until a manual restart.
+    // Both fetchers no-op while token/site are null, so starting early is safe.
+    _forecastTimer = Timer.periodic(
+        const Duration(minutes: 1), (_) => refreshForecast());
+    _usageTimer =
+        Timer.periodic(const Duration(hours: 1), (_) => refreshUsage());
+
     final prefs = await SharedPreferences.getInstance();
     if (_isDisposed) return;
     token = prefs.getString('amberToken');
@@ -50,10 +63,6 @@ class DashboardState extends ChangeNotifier {
       unawaited(refreshUsage());
     }
     if (_isDisposed) return;
-    _forecastTimer = Timer.periodic(
-        const Duration(minutes: 1), (_) => refreshForecast());
-    _usageTimer =
-        Timer.periodic(const Duration(hours: 1), (_) => refreshUsage());
     notifyListeners();
   }
 
@@ -75,20 +84,32 @@ class DashboardState extends ChangeNotifier {
   }
 
   Future<void> loadSites() async {
-    final r = await _fetch(Uri.parse('$_base/sites'), _headers, Duration.zero);
-    if (_isDisposed) return;
-    if (r.statusCode != 200) {
-      lastError = 'Could not load your sites (HTTP ${r.statusCode}). '
-          'Check your API token in Settings.';
-      notifyListeners();
-      return;
-    }
-    sites = (jsonDecode(r.body) as List).map((j) => Site.fromJson(j)).toList();
-    if (sites.isNotEmpty) {
+    try {
+      final r = await _fetch(Uri.parse('$_base/sites'), _headers, Duration.zero);
+      if (_isDisposed) return;
+      if (r.statusCode != 200) {
+        lastError = 'Could not load your sites (HTTP ${r.statusCode}). '
+            'Check your API token in Settings.';
+        notifyListeners();
+        return;
+      }
+      sites = (jsonDecode(r.body) as List).map((j) => Site.fromJson(j)).toList();
+      if (sites.isEmpty) {
+        lastError = 'No sites found on this account.';
+        notifyListeners();
+        return;
+      }
       selectedSite = sites.lastWhere((s) => s.status != 'closed',
           orElse: () => sites.last);
+      lastError = null;
+    } catch (_) {
+      // Offline / DNS / TLS / malformed body. Never let this escape: init()
+      // awaits it, and an unhandled exception there used to abort the rest of
+      // start-up (leaving the app blank with no way to retry).
+      if (_isDisposed) return;
+      lastError = offlineMessage;
     }
-    lastError = null;
+    if (_isDisposed) return;
     notifyListeners();
   }
 
@@ -110,21 +131,29 @@ class DashboardState extends ChangeNotifier {
     if (token == null || site == null) return;
     final gen = _gen;
     final il = site.intervalLength ?? meterInterval;
-    final (back, fwd) = computePeriods(DateTime.now(), il);
-    final uri = Uri.parse(
-        '$_base/sites/${site.id}/prices/current?next=$fwd&previous=$back&resolution=$il');
-    final r = await _fetch(uri, _headers, Duration(minutes: il));
-    if (gen != _gen || _isDisposed) return;
-    if (r.statusCode != 200) {
-      lastError = 'Could not load prices (HTTP ${r.statusCode}).';
-    } else {
-      forecastData = (jsonDecode(r.body) as List)
-          .map((j) => Usage.fromJson(j))
-          .toList()
-          .reversed
-          .toList();
-      lastError = null;
+    try {
+      final (back, fwd) = computePeriods(DateTime.now(), il);
+      final uri = Uri.parse(
+          '$_base/sites/${site.id}/prices/current?next=$fwd&previous=$back&resolution=$il');
+      final r = await _fetch(uri, _headers, Duration(minutes: il));
+      if (gen != _gen || _isDisposed) return;
+      if (r.statusCode != 200) {
+        lastError = 'Could not load prices (HTTP ${r.statusCode}).';
+      } else {
+        forecastData = (jsonDecode(r.body) as List)
+            .map((j) => Usage.fromJson(j))
+            .toList()
+            .reversed
+            .toList();
+        lastError = null;
+      }
+    } catch (_) {
+      // A throwing fetch/parse here runs on a timer tick with no one to catch
+      // it; swallow it into a friendly banner and let the next tick retry.
+      if (gen != _gen || _isDisposed) return;
+      lastError = offlineMessage;
     }
+    if (gen != _gen || _isDisposed) return;
     notifyListeners();
   }
 
@@ -133,31 +162,39 @@ class DashboardState extends ChangeNotifier {
     if (token == null || site == null) return;
     final gen = _gen;
     final fmt = DateFormat('yyyy-MM-dd');
-    for (int period = 0; period <= 3; period++) {
-      final start = fmt.format(DateTime.now().subtract(Duration(days: period * 7 + 7)));
-      final end = fmt.format(DateTime.now().subtract(Duration(days: period * 7 + 1)));
-      final uri = Uri.parse(
-          '$_base/sites/${site.id}/usage?startDate=$start&endDate=$end');
-      final r = await _fetch(uri, _headers, const Duration(hours: 1));
-      if (gen != _gen || _isDisposed) return;
-      if (r.statusCode != 200) {
-        lastError = 'Could not load usage history (HTTP ${r.statusCode}).';
+    try {
+      for (int period = 0; period <= 3; period++) {
+        final start = fmt.format(DateTime.now().subtract(Duration(days: period * 7 + 7)));
+        final end = fmt.format(DateTime.now().subtract(Duration(days: period * 7 + 1)));
+        final uri = Uri.parse(
+            '$_base/sites/${site.id}/usage?startDate=$start&endDate=$end');
+        final r = await _fetch(uri, _headers, const Duration(hours: 1));
+        if (gen != _gen || _isDisposed) return;
+        if (r.statusCode != 200) {
+          lastError = 'Could not load usage history (HTTP ${r.statusCode}).';
+          notifyListeners();
+          return;
+        }
+        weekData[period] =
+            (jsonDecode(r.body) as List).map((j) => Usage.fromJson(j)).toList(growable: false);
         notifyListeners();
-        return;
       }
-      weekData[period] =
-          (jsonDecode(r.body) as List).map((j) => Usage.fromJson(j)).toList(growable: false);
-      notifyListeners();
+      // today (may legitimately be empty — usage often lags a day)
+      final today = fmt.format(DateTime.now());
+      final r = await _fetch(
+          Uri.parse('$_base/sites/${site.id}/usage?startDate=$today&endDate=$today'),
+          _headers, const Duration(minutes: 30));
+      if (gen != _gen || _isDisposed) return;
+      todayUsage = r.statusCode == 200
+          ? (jsonDecode(r.body) as List).map((j) => Usage.fromJson(j)).toList()
+          : null;
+    } catch (_) {
+      // Same story as refreshForecast: this is fired unawaited and from a
+      // timer, so a throw here would be an unhandled async error.
+      if (gen != _gen || _isDisposed) return;
+      lastError = offlineMessage;
     }
-    // today (may legitimately be empty — usage often lags a day)
-    final today = fmt.format(DateTime.now());
-    final r = await _fetch(
-        Uri.parse('$_base/sites/${site.id}/usage?startDate=$today&endDate=$today'),
-        _headers, const Duration(minutes: 30));
     if (gen != _gen || _isDisposed) return;
-    todayUsage = r.statusCode == 200
-        ? (jsonDecode(r.body) as List).map((j) => Usage.fromJson(j)).toList()
-        : null;
     notifyListeners();
   }
 
