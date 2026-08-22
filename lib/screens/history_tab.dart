@@ -126,12 +126,13 @@ class _HistoryTabState extends State<HistoryTab> {
         card = ChartCard(
           title: entry.title,
           trailing: '\$${value.toStringAsFixed(2)}',
-          chart: BarChartWidget1(data, entry.title, il, entry.duration,
-              ending: entry.ending,
-              prices: true,
-              showHeader: false,
-              yUnit: '\$',
-              allowPartial: entry.allowPartial),
+          chart: IgnorePointer(
+              child: BarChartWidget1(data, entry.title, il, entry.duration,
+                  ending: entry.ending,
+                  prices: true,
+                  showHeader: false,
+                  yUnit: '\$',
+                  allowPartial: entry.allowPartial)),
         );
         break;
       case _Metric.usage:
@@ -140,23 +141,25 @@ class _HistoryTabState extends State<HistoryTab> {
         card = ChartCard(
           title: entry.title,
           trailing: '${value.toStringAsFixed(1)} kWh',
-          chart: BarChartWidget1(data, entry.title, il, entry.duration,
-              ending: entry.ending,
-              showHeader: false,
-              yUnit: 'kWh',
-              allowPartial: entry.allowPartial),
+          chart: IgnorePointer(
+              child: BarChartWidget1(data, entry.title, il, entry.duration,
+                  ending: entry.ending,
+                  showHeader: false,
+                  yUnit: 'kWh',
+                  allowPartial: entry.allowPartial)),
         );
         break;
       case _Metric.prices:
         card = ChartCard(
           title: entry.title,
-          chart: BarChartWidget1(data, entry.title, il, entry.duration,
-              ending: entry.ending,
-              forecast: true,
-              prices: true,
-              showHeader: false,
-              yUnit: 'c',
-              allowPartial: entry.allowPartial),
+          chart: IgnorePointer(
+              child: BarChartWidget1(data, entry.title, il, entry.duration,
+                  ending: entry.ending,
+                  forecast: true,
+                  prices: true,
+                  showHeader: false,
+                  yUnit: 'c',
+                  allowPartial: entry.allowPartial)),
         );
         break;
     }

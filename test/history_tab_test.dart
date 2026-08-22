@@ -8,6 +8,7 @@ import 'package:amber/model/Usage.dart';
 import 'package:amber/screens/history_tab.dart';
 import 'package:amber/state/dashboard_state.dart';
 import 'package:amber/state/day_math.dart';
+import 'package:amber/widgets/chart_card.dart';
 
 import 'test_data.dart';
 
@@ -140,10 +141,10 @@ void main() {
     final now = DateTime.now();
     final firstTitle = DateFormat('E d MMM').format(now.subtract(const Duration(days: 1)));
 
-    // Tap the title text rather than the card's center: the card's center
-    // falls inside the chart, whose own gesture handling can win the tap
-    // gesture arena ahead of the wrapping InkWell.
-    await t.tap(find.text(firstTitle).first);
+    // Tap the card's center (which falls inside the chart body): the chart
+    // is wrapped in IgnorePointer for history-feed cards, so navigation
+    // wins over the chart's own tooltip gesture handling here.
+    await t.tap(find.byType(ChartCard).first);
     await t.pumpAndSettle();
 
     expect(
