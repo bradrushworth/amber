@@ -19,6 +19,6 @@ void main() {
     ], child: const MaterialApp(home: Scaffold(body: NowTab()))));
     await t.pump();
     expect(find.textContaining('18.4'), findsOneWidget);
-    expect(find.textContaining('Off-peak'), findsOneWidget);
+    expect(find.textContaining('Off-peak'), findsWidgets);
   });
 }

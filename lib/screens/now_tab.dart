@@ -4,19 +4,18 @@ import 'package:provider/provider.dart';
 import '../bar_chart.dart';
 import '../state/dashboard_state.dart';
 import '../widgets/chart_card.dart';
+import '../widgets/legend_bar.dart';
 
 /// The "Now" tab: a live-price hero panel (current price, period, spike
 /// status, today's cost-so-far, and a headerless today buy-price chart)
 /// followed by yesterday/tomorrow buy and feed-in price cards.
 ///
-/// NOTE: task-7-brief.md's Interfaces section calls for a top-level
-/// `LegendBar(showSupply: false, showPrices: true)`, but LegendBar
-/// unconditionally renders an 'Off-peak' label (see
-/// lib/widgets/legend_bar.dart), which collides with the hero sub-line's
-/// 'Off-peak' period text and makes the brief's own Step 1 test
-/// (`find.textContaining('Off-peak')` -> `findsOneWidget`) fail with 2
-/// matches. Omitted here to keep the mandated test green; see task-7-report.md
-/// for details and a suggested follow-up.
+/// NOTE: `LegendBar` unconditionally renders an 'Off-peak' label (see
+/// lib/widgets/legend_bar.dart), which duplicates the hero sub-line's
+/// 'Off-peak' period text when the current period is off-peak. Per
+/// controller ruling (see task-7-report.md), the legend stays — every tab
+/// gets one — and test/now_tab_test.dart's period assertion was relaxed to
+/// `findsWidgets` to tolerate the duplicate.
 class NowTab extends StatelessWidget {
   const NowTab({super.key});
 
@@ -44,6 +43,8 @@ class NowTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const LegendBar(showSupply: false, showPrices: true),
+          const SizedBox(height: 12),
           Container(
             decoration: BoxDecoration(
               color: const Color(0xFF1A1A26),
