@@ -43,4 +43,24 @@ void main() {
             cost: true),
         closeTo(1.00, 0.001));
   });
+
+  test('sumFeedIn sums only feed-in channel cost, in dollars', () {
+    expect(sumFeedIn(data, const Duration(days: 1), const Duration(days: 0)),
+        closeTo(-0.40, 0.001));
+  });
+
+  test('sumFeedIn excludes a prior day for 1d but includes it for 7d', () {
+    final withPriorDay = <Usage>[
+      Usage(duration: 30, date: '2023-08-11',
+          nemTime: '2023-08-11T10:30:00+10:00', kwh: 1.0, cost: -20.0,
+          channelType: 'feedIn', channelIdentifier: 'B1'),
+      ...data,
+    ];
+    expect(
+        sumFeedIn(withPriorDay, const Duration(days: 1), const Duration(days: 0)),
+        closeTo(-0.40, 0.001));
+    expect(
+        sumFeedIn(withPriorDay, const Duration(days: 7), const Duration(days: 0)),
+        closeTo(-0.60, 0.001));
+  });
 }

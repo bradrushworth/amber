@@ -8,6 +8,7 @@ import '../state/dashboard_state.dart';
 import '../state/day_math.dart';
 import '../widgets/chart_card.dart';
 import '../widgets/legend_bar.dart';
+import 'day_detail.dart';
 
 enum _Metric { cost, usage, prices }
 
@@ -101,7 +102,8 @@ class _HistoryTabState extends State<HistoryTab> {
     return entries;
   }
 
-  Widget _cardFor(_Entry entry, _Metric metric, int intervalLength) {
+  Widget _cardFor(
+      BuildContext context, _Entry entry, _Metric metric, int intervalLength) {
     final data = entry.data;
     if (data == null) {
       return const ChartCard(
@@ -116,11 +118,12 @@ class _HistoryTabState extends State<HistoryTab> {
     // Historical charts cap interval at 15 (mirror of old main.dart).
     final il = intervalLength < 15 ? 15 : intervalLength;
 
+    final Widget card;
     switch (metric) {
       case _Metric.cost:
         final value =
             sumForRange(data, entry.duration, entry.ending, cost: true);
-        return ChartCard(
+        card = ChartCard(
           title: entry.title,
           trailing: '\$${value.toStringAsFixed(2)}',
           chart: BarChartWidget1(data, entry.title, il, entry.duration,
@@ -130,10 +133,11 @@ class _HistoryTabState extends State<HistoryTab> {
               yUnit: '\$',
               allowPartial: entry.allowPartial),
         );
+        break;
       case _Metric.usage:
         final value =
             sumForRange(data, entry.duration, entry.ending, cost: false);
-        return ChartCard(
+        card = ChartCard(
           title: entry.title,
           trailing: '${value.toStringAsFixed(1)} kWh',
           chart: BarChartWidget1(data, entry.title, il, entry.duration,
@@ -142,8 +146,9 @@ class _HistoryTabState extends State<HistoryTab> {
               yUnit: 'kWh',
               allowPartial: entry.allowPartial),
         );
+        break;
       case _Metric.prices:
-        return ChartCard(
+        card = ChartCard(
           title: entry.title,
           chart: BarChartWidget1(data, entry.title, il, entry.duration,
               ending: entry.ending,
@@ -153,7 +158,19 @@ class _HistoryTabState extends State<HistoryTab> {
               yUnit: 'c',
               allowPartial: entry.allowPartial),
         );
+        break;
     }
+
+    return InkWell(
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => DayDetail(
+              title: entry.title,
+              data: data,
+              duration: entry.duration,
+              ending: entry.ending,
+              interval: il))),
+      child: card,
+    );
   }
 
   Widget _chipsRow() {
@@ -222,9 +239,12 @@ class _HistoryTabState extends State<HistoryTab> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                          child: _cardFor(entries[i], _Metric.usage, il)),
+                          child: _cardFor(
+                              context, entries[i], _Metric.usage, il)),
                       const SizedBox(width: 12),
-                      Expanded(child: _cardFor(entries[i], _Metric.cost, il)),
+                      Expanded(
+                          child: _cardFor(
+                              context, entries[i], _Metric.cost, il)),
                     ],
                   ),
                 )
@@ -233,7 +253,7 @@ class _HistoryTabState extends State<HistoryTab> {
                   itemCount: entries.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (context, i) =>
-                      _cardFor(entries[i], _metric, il),
+                      _cardFor(context, entries[i], _metric, il),
                 ),
         ),
       ],

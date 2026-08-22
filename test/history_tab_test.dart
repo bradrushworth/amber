@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:amber/my_theme_model.dart';
@@ -119,5 +120,34 @@ void main() {
     final oneDay = sumForDay(weekData, Duration.zero, cost: true);
     expect(fullWeek, isNot(closeTo(oneDay, 0.001)));
     expect(find.text('\$${fullWeek.toStringAsFixed(2)}'), findsNWidgets(2));
+  });
+
+  testWidgets('portrait: tapping the first card pushes a day-detail route',
+      (t) async {
+    final originalSize = t.view.physicalSize;
+    final originalRatio = t.view.devicePixelRatio;
+    t.view.physicalSize = const Size(400, 800);
+    t.view.devicePixelRatio = 1;
+    addTearDown(() {
+      t.view.physicalSize = originalSize;
+      t.view.devicePixelRatio = originalRatio;
+    });
+
+    final s = _buildState();
+    await t.pumpWidget(_host(const HistoryTab(weeks: false), s));
+    await t.pump();
+
+    final now = DateTime.now();
+    final firstTitle = DateFormat('E d MMM').format(now.subtract(const Duration(days: 1)));
+
+    // Tap the title text rather than the card's center: the card's center
+    // falls inside the chart, whose own gesture handling can win the tap
+    // gesture arena ahead of the wrapping InkWell.
+    await t.tap(find.text(firstTitle).first);
+    await t.pumpAndSettle();
+
+    expect(
+        find.descendant(of: find.byType(AppBar), matching: find.text(firstTitle)),
+        findsOneWidget);
   });
 }
