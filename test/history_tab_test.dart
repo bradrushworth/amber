@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
-import 'package:amber/my_theme_model.dart';
 import 'package:amber/model/Usage.dart';
 import 'package:amber/screens/history_tab.dart';
 import 'package:amber/state/dashboard_state.dart';
@@ -36,10 +35,9 @@ List<Usage> _twoDayWeek() {
   ];
 }
 
-Widget _host(Widget child, DashboardState s) => MultiProvider(providers: [
-      ChangeNotifierProvider<DashboardState>.value(value: s),
-      ChangeNotifierProvider(create: (_) => MyThemeModel()),
-    ], child: MaterialApp(home: Scaffold(body: child)));
+Widget _host(Widget child, DashboardState s) =>
+    ChangeNotifierProvider<DashboardState>.value(
+        value: s, child: MaterialApp(home: Scaffold(body: child)));
 
 void main() {
   testWidgets('portrait: chips render and switching to Usage swaps cards',

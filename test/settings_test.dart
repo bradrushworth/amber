@@ -3,14 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:amber/my_theme_model.dart';
 import 'package:amber/screens/settings_screen.dart';
 import 'package:amber/state/dashboard_state.dart';
 
-Widget _host(DashboardState s) => MultiProvider(providers: [
-      ChangeNotifierProvider<DashboardState>.value(value: s),
-      ChangeNotifierProvider(create: (_) => MyThemeModel()),
-    ], child: const MaterialApp(home: SettingsScreen()));
+Widget _host(DashboardState s) => ChangeNotifierProvider<DashboardState>.value(
+      value: s,
+      child: const MaterialApp(home: SettingsScreen()),
+    );
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

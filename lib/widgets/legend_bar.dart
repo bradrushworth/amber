@@ -6,15 +6,13 @@ import '../bar_chart.dart' show colors;
 /// if there isn't enough horizontal space.
 ///
 /// The color-to-label mapping mirrors the `colors` list in `bar_chart.dart`
-/// (see `CustomRodElement.getCostColor` and the `TopSectionWidget` legends
-/// built in `BarChartWidget1.build`): colors[0]=Supply, colors[1]=Controlled,
-/// colors[2]=Off-peak, colors[3]=Shoulder, colors[4]=Peak, colors[6]=Feed-in,
-/// colors[7]=Solar sponge.
+/// (see `CustomRodElement.getCostColor`): colors[0]=Supply,
+/// colors[1]=Controlled, colors[2]=Off-peak, colors[3]=Shoulder,
+/// colors[4]=Peak, colors[6]=Feed-in, colors[7]=Solar sponge.
 class LegendBar extends StatelessWidget {
   final bool showSupply;
-  final bool showPrices;
 
-  const LegendBar({super.key, required this.showSupply, required this.showPrices});
+  const LegendBar({super.key, required this.showSupply});
 
   @override
   Widget build(BuildContext context) {

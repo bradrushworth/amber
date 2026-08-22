@@ -3,11 +3,8 @@ import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:amber/my_theme_model.dart';
-import 'package:provider/provider.dart';
 
 import 'model/Usage.dart';
-import 'top_section.dart';
 import 'utils.dart';
 
 const int meterInterval = 30; // minutes
@@ -50,7 +47,6 @@ class BarChartWidget1 extends StatefulWidget {
   final bool forecast;
   final bool feedIn;
   final int interval;
-  final bool showHeader;
   final String yUnit;
   final bool allowPartial;
 
@@ -60,7 +56,6 @@ class BarChartWidget1 extends StatefulWidget {
       this.prices = false,
       this.forecast = false,
       this.feedIn = false,
-      this.showHeader = true,
       this.yUnit = '',
       this.allowPartial = false})
       : super(key: key);
@@ -77,7 +72,6 @@ class BarChartState extends State<BarChartWidget1> {
   late final bool _prices;
   late final bool _forecast;
   late final bool _feedIn;
-  late final bool _showHeader;
   late final String _yUnit;
   late final bool _allowPartial;
   int _interval = 0; // Re-synced from widget.interval on every aggregate (parseFile).
@@ -97,7 +91,6 @@ class BarChartState extends State<BarChartWidget1> {
     _prices = widget.prices;
     _forecast = widget.forecast;
     _feedIn = widget.feedIn;
-    _showHeader = widget.showHeader;
     _yUnit = widget.yUnit;
     _allowPartial = widget.allowPartial;
     _interval = widget.interval;
@@ -127,131 +120,115 @@ class BarChartState extends State<BarChartWidget1> {
   @override
   Widget build(BuildContext context) {
     //print('new build');
-    return Consumer<MyThemeModel>(
-      builder: (context, themeModel, child) {
-        return Column(
-          children: _loading
+    // The per-card title/legend header (TopSectionWidget) was deleted in the
+    // UI overhaul: titles now live on ChartCard and the legend is a single
+    // LegendBar per tab.
+    return Column(
+      children: _loading
+          ? [
+              const Spacer(),
+              Text(
+                'Data is loading for:\n$_title',
+                textAlign: TextAlign.center,
+              ),
+              const Spacer()
+            ]
+          : _cancelled
               ? [
                   const Spacer(),
                   Text(
-                    'Data is loading for:\n$_title',
+                    'No API key entered yet:\n$_title',
                     textAlign: TextAlign.center,
                   ),
                   const Spacer()
                 ]
-              : _cancelled
+              : _notEnoughData
                   ? [
                       const Spacer(),
                       Text(
-                        'No API key entered yet:\n$_title',
+                        'Not enough data available for:\n$_title',
                         textAlign: TextAlign.center,
                       ),
                       const Spacer()
                     ]
-                  : _notEnoughData
-                      ? [
-                          const Spacer(),
-                          Text(
-                            'Not enough data available for:\n$_title',
-                            textAlign: TextAlign.center,
-                          ),
-                          const Spacer()
-                        ]
-                      : [
-                          if (_showHeader)
-                            TopSectionWidget(
-                              title: _title,
-                              legends: [
-                                Legend(title: 'Sponge', color: colors[7]),
-                                if (_prices && !_forecast)
-                                  Legend(title: 'Supply', color: colors[0]),
-                                Legend(title: 'Off', color: colors[2]),
-                                Legend(title: 'Shoulder', color: colors[3]),
-                                Legend(title: 'Peak', color: colors[4]),
-                                Legend(title: 'Control', color: colors[1]),
-                                Legend(title: 'Feed', color: colors[6]),
-                              ],
-                              padding: const EdgeInsets.only(left: 3, right: 3, top: 3, bottom: 3),
-                            ),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
-                              child: BarChart(
-                                BarChartData(
-                                  barGroups: _barChartData,
-                                  groupsSpace: _interval == 5 ? 1 : (_interval == 15 ? 2 : 3), // Match width: narrower spacing for 5-min data
-                                  titlesData: FlTitlesData(
-                                    rightTitles:
-                                        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                    topTitles:
-                                        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                    bottomTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                      reservedSize: 30,
-                                      showTitles: true,
-                                      interval: (60 ~/ _interval).toDouble(), // one label per hour (2/4/12 bars for 30/15/5-min)
-                                      getTitlesWidget: (xValue, titleMeta) {
-                                        int graphPos = xValue.toInt();
-                                        return SideTitleWidget(
-                                          axisSide: AxisSide.bottom,
-                                          angle: 0,
-                                          space: 9,
-                                          child: Text(
-                                            graphPos % (3 * (60 ~/ _interval)) == 0
-                                                ? _barChartTitles[graphPos]!
-                                                : '',
-                                            // Workaround
-                                            style: const TextStyle(fontSize: 8),
-                                          ),
-                                        );
-                                      },
-                                    )),
-                                    leftTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                            showTitles: true,
-                                            //interval: 1,
-                                            reservedSize: 40,
-                                            getTitlesWidget: (xValue, titleMeta) {
-                                              String formattedNumber = titleMeta.max < 1
-                                                  ? xValue.toStringAsFixed(2)
-                                                  : xValue.toStringAsFixed(1);
-                                              return SideTitleWidget(
-                                                axisSide: AxisSide.left,
-                                                //child: Text(xValue == xValue.roundToDouble() ? "$xValue" : ''),
-                                                child: Text(
-                                                  (_prices || _forecast ? '\$' : '') +
-                                                      formattedNumber +
-                                                      _yUnit,
-                                                  style: const TextStyle(fontSize: 9),
-                                                ),
-                                              );
-                                            })),
-                                  ),
-                                  barTouchData: BarTouchData(
-                                    enabled: true,
-                                    handleBuiltInTouches: true,
-                                    touchTooltipData: BarTouchTooltipData(
-                                      getTooltipItem: (group, gi, rod, ri) {
-                                        final label = _barChartTitles[group.x] ?? '';
-                                        final unit = _prices || _forecast ? ' \$' : ' kWh';
-                                        return BarTooltipItem(
-                                            '$label\n${rod.toY.toStringAsFixed(_prices || _forecast ? 2 : 3)}$unit',
-                                            const TextStyle(color: Colors.white, fontSize: 11));
-                                      },
-                                    ),
-                                  ),
-                                  //maxY: 10.0,
-                                  gridData: const FlGridData(show: false),
-                                  borderData: FlBorderData(show: false),
-                                ),
-                                duration:
-                                    Duration.zero, // Duration(milliseconds: 1500)
+                  : [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
+                          child: BarChart(
+                            BarChartData(
+                              barGroups: _barChartData,
+                              groupsSpace: _interval == 5 ? 1 : (_interval == 15 ? 2 : 3), // Match width: narrower spacing for 5-min data
+                              titlesData: FlTitlesData(
+                                rightTitles:
+                                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                topTitles:
+                                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                  reservedSize: 30,
+                                  showTitles: true,
+                                  interval: (60 ~/ _interval).toDouble(), // one label per hour (2/4/12 bars for 30/15/5-min)
+                                  getTitlesWidget: (xValue, titleMeta) {
+                                    int graphPos = xValue.toInt();
+                                    return SideTitleWidget(
+                                      axisSide: AxisSide.bottom,
+                                      angle: 0,
+                                      space: 9,
+                                      child: Text(
+                                        graphPos % (3 * (60 ~/ _interval)) == 0
+                                            ? _barChartTitles[graphPos]!
+                                            : '',
+                                        // Workaround
+                                        style: const TextStyle(fontSize: 8),
+                                      ),
+                                    );
+                                  },
+                                )),
+                                leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                        showTitles: true,
+                                        //interval: 1,
+                                        reservedSize: 40,
+                                        getTitlesWidget: (xValue, titleMeta) {
+                                          String formattedNumber = titleMeta.max < 1
+                                              ? xValue.toStringAsFixed(2)
+                                              : xValue.toStringAsFixed(1);
+                                          return SideTitleWidget(
+                                            axisSide: AxisSide.left,
+                                            //child: Text(xValue == xValue.roundToDouble() ? "$xValue" : ''),
+                                            child: Text(
+                                              (_prices || _forecast ? '\$' : '') +
+                                                  formattedNumber +
+                                                  _yUnit,
+                                              style: const TextStyle(fontSize: 9),
+                                            ),
+                                          );
+                                        })),
                               ),
+                              barTouchData: BarTouchData(
+                                enabled: true,
+                                handleBuiltInTouches: true,
+                                touchTooltipData: BarTouchTooltipData(
+                                  getTooltipItem: (group, gi, rod, ri) {
+                                    final label = _barChartTitles[group.x] ?? '';
+                                    final unit = _prices || _forecast ? ' \$' : ' kWh';
+                                    return BarTooltipItem(
+                                        '$label\n${rod.toY.toStringAsFixed(_prices || _forecast ? 2 : 3)}$unit',
+                                        const TextStyle(color: Colors.white, fontSize: 11));
+                                  },
+                                ),
+                              ),
+                              //maxY: 10.0,
+                              gridData: const FlGridData(show: false),
+                              borderData: FlBorderData(show: false),
                             ),
+                            duration:
+                                Duration.zero, // Duration(milliseconds: 1500)
                           ),
-                        ],
-        );
-      },
+                        ),
+                      ),
+                    ],
     );
   }
 

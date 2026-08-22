@@ -77,7 +77,6 @@ class DayDetail extends StatelessWidget {
             child: BarChartWidget1(data, title, interval, duration,
                 ending: ending,
                 prices: true,
-                showHeader: false,
                 yUnit: '\$',
                 allowPartial: true),
           ),

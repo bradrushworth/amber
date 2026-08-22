@@ -130,7 +130,6 @@ class _HistoryTabState extends State<HistoryTab> {
               child: BarChartWidget1(data, entry.title, il, entry.duration,
                   ending: entry.ending,
                   prices: true,
-                  showHeader: false,
                   yUnit: '\$',
                   allowPartial: entry.allowPartial)),
         );
@@ -144,7 +143,6 @@ class _HistoryTabState extends State<HistoryTab> {
           chart: IgnorePointer(
               child: BarChartWidget1(data, entry.title, il, entry.duration,
                   ending: entry.ending,
-                  showHeader: false,
                   yUnit: 'kWh',
                   allowPartial: entry.allowPartial)),
         );
@@ -157,7 +155,6 @@ class _HistoryTabState extends State<HistoryTab> {
                   ending: entry.ending,
                   forecast: true,
                   prices: true,
-                  showHeader: false,
                   yUnit: 'c',
                   allowPartial: entry.allowPartial)),
         );
@@ -228,7 +225,7 @@ class _HistoryTabState extends State<HistoryTab> {
       children: [
         const Padding(
           padding: EdgeInsets.fromLTRB(12, 12, 12, 12),
-          child: LegendBar(showSupply: true, showPrices: false),
+          child: LegendBar(showSupply: true),
         ),
         if (!isLandscape) _chipsRow(),
         if (isLandscape) _landscapeHeader(),

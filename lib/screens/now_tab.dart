@@ -43,7 +43,7 @@ class NowTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const LegendBar(showSupply: false, showPrices: true),
+          const LegendBar(showSupply: false),
           const SizedBox(height: 12),
           Container(
             decoration: BoxDecoration(
@@ -90,7 +90,6 @@ class NowTab extends StatelessWidget {
                           ending: const Duration(days: -1),
                           forecast: true,
                           prices: true,
-                          showHeader: false,
                           yUnit: 'c',
                         ),
                       ),
@@ -111,7 +110,6 @@ class NowTab extends StatelessWidget {
                     forecast: true,
                     prices: true,
                     feedIn: false,
-                    showHeader: false,
                   ),
           ),
           const SizedBox(height: 12),
@@ -128,7 +126,6 @@ class NowTab extends StatelessWidget {
                     forecast: true,
                     prices: true,
                     feedIn: true,
-                    showHeader: false,
                   ),
           ),
           const SizedBox(height: 12),
@@ -145,7 +142,6 @@ class NowTab extends StatelessWidget {
                     forecast: true,
                     prices: true,
                     feedIn: false,
-                    showHeader: false,
                   ),
           ),
           const SizedBox(height: 12),
@@ -162,7 +158,6 @@ class NowTab extends StatelessWidget {
                     forecast: true,
                     prices: true,
                     feedIn: true,
-                    showHeader: false,
                   ),
           ),
         ],
