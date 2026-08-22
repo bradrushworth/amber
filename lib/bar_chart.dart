@@ -52,6 +52,7 @@ class BarChartWidget1 extends StatefulWidget {
   final int interval;
   final bool showHeader;
   final String yUnit;
+  final bool allowPartial;
 
   BarChartWidget1(this.rawData, this.title, this.interval, this.duration,
       {Key? key,
@@ -60,7 +61,8 @@ class BarChartWidget1 extends StatefulWidget {
       this.forecast = false,
       this.feedIn = false,
       this.showHeader = true,
-      this.yUnit = ''})
+      this.yUnit = '',
+      this.allowPartial = false})
       : super(key: key);
 
   @override
@@ -77,6 +79,7 @@ class BarChartState extends State<BarChartWidget1> {
   late final bool _feedIn;
   late final bool _showHeader;
   late final String _yUnit;
+  late final bool _allowPartial;
   int _interval = 0; // Re-synced from widget.interval on every aggregate (parseFile).
   List<BarChartGroupData> _barChartData = [];
   Map<int, String> _barChartTitles = {};
@@ -96,6 +99,7 @@ class BarChartState extends State<BarChartWidget1> {
     _feedIn = widget.feedIn;
     _showHeader = widget.showHeader;
     _yUnit = widget.yUnit;
+    _allowPartial = widget.allowPartial;
     _interval = widget.interval;
     parseFile();
   }
@@ -286,7 +290,7 @@ class BarChartState extends State<BarChartWidget1> {
     //final rawData = await rootBundle.loadString(filepath);
     List<Usage> data = _rawData!;
     DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices, _forecast, _feedIn, _interval,
-        nowOverride: _forecast ? DateTime.now() : null);
+        nowOverride: _forecast ? DateTime.now() : null, allowPartial: _allowPartial);
     try {
       dataAggregator.aggregateData(data);
 
@@ -321,6 +325,7 @@ class DataAggregator {
   late final bool _prices;
   late final bool _forecast;
   late final bool _feedIn;
+  late final bool _allowPartial;
   int _interval = 0; // Re-synced from widget.interval on every aggregate (parseFile).
 
   late final bool _today;
@@ -334,7 +339,7 @@ class DataAggregator {
   /// stay empty. Left null in unit tests to keep the data-anchored behaviour.
   final DateTime? nowOverride;
 
-  DataAggregator(this._duration, this._ending, this._prices, this._forecast, this._feedIn, this._interval, {this.nowOverride});
+  DataAggregator(this._duration, this._ending, this._prices, this._forecast, this._feedIn, this._interval, {this.nowOverride, bool allowPartial = false}) : _allowPartial = allowPartial;
 
   void aggregateData(List<Usage> data) {
     //print(data.map((u) => u.channelType!).toSet());
@@ -491,7 +496,7 @@ class DataAggregator {
 
     //print('beforeRange=$beforeRange afterRange=$afterRange');
     if (!beforeRange || !afterRange) {
-      if (!_forecast) {
+      if (!_forecast && !_allowPartial) {
         // If there wasn't enough data to answer the questions
         throw NotEnoughDataException();
       }
