@@ -161,6 +161,35 @@ class DashboardState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Usage? get _currentRecord => forecastData?.cast<Usage?>().firstWhere(
+      (u) => u!.type == 'CurrentInterval' && u.channelType == 'general',
+      orElse: () => null);
+
+  double? get currentPriceCents => _currentRecord?.perKwh?.toDouble();
+
+  String? get currentPeriodLabel {
+    final r = _currentRecord;
+    if (r == null) return null;
+    final p = r.tariffInformation?.period ?? r.descriptor;
+    switch (p) {
+      case 'peak': return 'Peak';
+      case 'shoulder': return 'Shoulder';
+      case 'solarSponge': return 'Solar sponge';
+      case 'offPeak': case 'low': case 'veryLow': return 'Off-peak';
+      default: return null;
+    }
+  }
+
+  bool get isSpike => _currentRecord?.spikeStatus == 'spike';
+
+  double? get todayCostSoFar {
+    final t = todayUsage;
+    if (t == null || t.isEmpty) return null;
+    double cents = 0;
+    for (final u in t) { cents += u.cost ?? 0; }
+    return cents / 100.0;
+  }
+
   @override
   void dispose() {
     _forecastTimer?.cancel();

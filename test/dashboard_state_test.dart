@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:amber/model/Usage.dart';
 import 'package:amber/state/dashboard_state.dart';
 
 http.Response _json(Object body) => http.Response(jsonEncode(body), 200);
@@ -81,5 +82,26 @@ void main() {
     // This verifies that dispose() mid-await doesn't cause ChangeNotifier errors
     await initFuture;
     expect(initCompleted, isTrue);
+  });
+
+  test('now-summary getters', () {
+    final s = DashboardState(fetch: (u, h, t) async => _json([]));
+    s.forecastData = [
+      Usage(type: 'ActualInterval', perKwh: 30.0, channelType: 'general',
+          nemTime: '2026-08-22T09:30:00+10:00', duration: 30),
+      Usage(type: 'CurrentInterval', perKwh: 18.4, channelType: 'general',
+          nemTime: '2026-08-22T10:00:00+10:00', duration: 30,
+          descriptor: 'low', spikeStatus: 'none'),
+    ];
+    expect(s.currentPriceCents, closeTo(18.4, 0.001));
+    expect(s.currentPeriodLabel, 'Off-peak');
+    expect(s.isSpike, isFalse);
+    s.todayUsage = [
+      Usage(type: 'ActualInterval', cost: 120.0, kwh: 1.0, channelType: 'general',
+          nemTime: '2026-08-22T00:30:00+10:00', duration: 30, date: '2026-08-22'),
+      Usage(type: 'ActualInterval', cost: -30.0, kwh: 1.0, channelType: 'feedIn',
+          nemTime: '2026-08-22T00:30:00+10:00', duration: 30, date: '2026-08-22'),
+    ];
+    expect(s.todayCostSoFar, closeTo(0.90, 0.001)); // (120 - 30) cents -> $
   });
 }
