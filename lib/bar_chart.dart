@@ -47,8 +47,17 @@ class BarChartWidget1 extends StatefulWidget {
   final bool forecast;
   final bool feedIn;
   final int interval;
-  final String yUnit;
   final bool allowPartial;
+
+  /// Optional injected "now", forwarded to [DataAggregator.nowOverride].
+  ///
+  /// When null the previous behaviour applies: forecast charts anchor on the
+  /// real clock (`DateTime.now()`), everything else anchors on the last date
+  /// present in [rawData]. Supplying an anchor lets a caller (the history
+  /// feed) pin BOTH kinds of chart to the same data-derived instant, so the
+  /// card title, the drawn window and the trailing total can't drift apart
+  /// when the Amber usage API lags a day or two behind the wall clock.
+  final DateTime? anchor;
 
   BarChartWidget1(this.rawData, this.title, this.interval, this.duration,
       {Key? key,
@@ -56,8 +65,8 @@ class BarChartWidget1 extends StatefulWidget {
       this.prices = false,
       this.forecast = false,
       this.feedIn = false,
-      this.yUnit = '',
-      this.allowPartial = false})
+      this.allowPartial = false,
+      this.anchor})
       : super(key: key);
 
   @override
@@ -65,15 +74,23 @@ class BarChartWidget1 extends StatefulWidget {
 }
 
 class BarChartState extends State<BarChartWidget1> {
-  late List<Usage>? _rawData;
-  late final String _title;
-  late final Duration _duration;
-  late final Duration _ending;
-  late final bool _prices;
-  late final bool _forecast;
-  late final bool _feedIn;
-  late final String _yUnit;
-  late final bool _allowPartial;
+  // NONE of these may be `late final`. Flutter reuses a State object whenever
+  // the new widget has the same runtimeType and key at the same tree position,
+  // so a Cost -> Usage metric switch in the history feed hands this State a
+  // brand-new BarChartWidget1 with different flags. Caching the first widget's
+  // values in final fields made the chart keep drawing its first metric for
+  // ever (only the card's title/trailing text changed). See _syncFromWidget.
+  // (Plain defaults rather than `late`: _syncFromWidget reads them to detect
+  // a change, and it runs for the first time from initState.)
+  List<Usage>? _rawData;
+  String _title = '';
+  Duration _duration = Duration.zero;
+  Duration _ending = Duration.zero;
+  bool _prices = false;
+  bool _forecast = false;
+  bool _feedIn = false;
+  bool _allowPartial = false;
+  DateTime? _anchor;
   int _interval = 0; // Re-synced from widget.interval on every aggregate (parseFile).
   List<BarChartGroupData> _barChartData = [];
   Map<int, String> _barChartTitles = {};
@@ -84,6 +101,23 @@ class BarChartState extends State<BarChartWidget1> {
   @override
   initState() {
     super.initState();
+    _syncFromWidget();
+    parseFile();
+  }
+
+  /// Copy every rendering input off the current widget. Returns true when any
+  /// of them actually changed, i.e. when the cached aggregation is stale.
+  bool _syncFromWidget() {
+    final changed = _rawData != widget.rawData ||
+        _title != widget.title ||
+        _duration != widget.duration ||
+        _ending != widget.ending ||
+        _prices != widget.prices ||
+        _forecast != widget.forecast ||
+        _feedIn != widget.feedIn ||
+        _allowPartial != widget.allowPartial ||
+        _anchor != widget.anchor ||
+        _interval != widget.interval;
     _rawData = widget.rawData;
     _title = widget.title;
     _duration = widget.duration;
@@ -91,30 +125,21 @@ class BarChartState extends State<BarChartWidget1> {
     _prices = widget.prices;
     _forecast = widget.forecast;
     _feedIn = widget.feedIn;
-    _yUnit = widget.yUnit;
     _allowPartial = widget.allowPartial;
+    _anchor = widget.anchor;
     _interval = widget.interval;
-    parseFile();
+    return changed;
   }
 
   @override
   void didUpdateWidget(BarChartWidget1 oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Always re-sync interval from the widget (site may have changed).
-    _interval = widget.interval;
-    if (widget.rawData != oldWidget.rawData) {
-      //print('new didUpdateWidget _notEnoughData=$_notEnoughData _title=$_title');
-      refresh(widget.rawData);
+    // Re-sync EVERY input (not just rawData/interval) and re-aggregate when
+    // anything moved: the history feed's metric chips swap prices/forecast on
+    // a reused State, and the window params can change with the data.
+    if (_syncFromWidget()) {
       parseFile();
-    } else {
-      //print('old didUpdateWidget _notEnoughData=$_notEnoughData _title=$_title');
     }
-  }
-
-  void refresh(List<Usage>? rawData) {
-    setState(() {
-      _rawData = rawData;
-    });
   }
 
   @override
@@ -198,9 +223,14 @@ class BarChartState extends State<BarChartWidget1> {
                                             axisSide: AxisSide.left,
                                             //child: Text(xValue == xValue.roundToDouble() ? "$xValue" : ''),
                                             child: Text(
-                                              (_prices || _forecast ? '\$' : '') +
-                                                  formattedNumber +
-                                                  _yUnit,
+                                              // The unit is derived here and
+                                              // ONLY here: a caller-supplied
+                                              // yUnit used to be appended on
+                                              // top of this prefix, printing
+                                              // '$0.50$' / '$0.20c'.
+                                              _prices || _forecast
+                                                  ? '\$$formattedNumber'
+                                                  : '$formattedNumber kWh',
                                               style: const TextStyle(fontSize: 9),
                                             ),
                                           );
@@ -212,7 +242,11 @@ class BarChartState extends State<BarChartWidget1> {
                                 touchTooltipData: BarTouchTooltipData(
                                   getTooltipItem: (group, gi, rod, ri) {
                                     final label = _barChartTitles[group.x] ?? '';
-                                    final unit = _prices || _forecast ? ' \$' : ' kWh';
+                                    // Forecast bars are a price per unit of
+                                    // energy, not a dollar amount.
+                                    final unit = _forecast
+                                        ? ' \$/kWh'
+                                        : (_prices ? ' \$' : ' kWh');
                                     return BarTooltipItem(
                                         '$label\n${rod.toY.toStringAsFixed(_prices || _forecast ? 2 : 3)}$unit',
                                         const TextStyle(color: Colors.white, fontSize: 11));
@@ -266,8 +300,11 @@ class BarChartState extends State<BarChartWidget1> {
 
     //final rawData = await rootBundle.loadString(filepath);
     List<Usage> data = _rawData!;
+    // An explicit anchor wins; otherwise forecast charts follow the clock and
+    // historical charts stay anchored on their own data (nowOverride null).
     DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices, _forecast, _feedIn, _interval,
-        nowOverride: _forecast ? DateTime.now() : null, allowPartial: _allowPartial);
+        nowOverride: _anchor ?? (_forecast ? DateTime.now() : null),
+        allowPartial: _allowPartial);
     try {
       dataAggregator.aggregateData(data);
 
@@ -314,6 +351,11 @@ class DataAggregator {
   /// robust when the Amber API returns incomplete or unsorted future data:
   /// whatever intervals fall inside the tab's day are shown, and missing bars
   /// stay empty. Left null in unit tests to keep the data-anchored behaviour.
+  ///
+  /// The history feed passes a DATA-derived instant here (see
+  /// `BarChartWidget1.anchor`) so its forecast/price charts line up with the
+  /// data-anchored cost/usage charts beside them instead of following the
+  /// wall clock.
   final DateTime? nowOverride;
 
   DataAggregator(this._duration, this._ending, this._prices, this._forecast, this._feedIn, this._interval, {this.nowOverride, bool allowPartial = false}) : _allowPartial = allowPartial;

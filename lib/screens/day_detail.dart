@@ -75,10 +75,7 @@ class DayDetail extends StatelessWidget {
         children: [
           Expanded(
             child: BarChartWidget1(data, title, interval, duration,
-                ending: ending,
-                prices: true,
-                yUnit: '\$',
-                allowPartial: true),
+                ending: ending, prices: true, allowPartial: true),
           ),
           Padding(
             padding: const EdgeInsets.all(12),

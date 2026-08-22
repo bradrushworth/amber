@@ -90,7 +90,6 @@ class NowTab extends StatelessWidget {
                           ending: const Duration(days: -1),
                           forecast: true,
                           prices: true,
-                          yUnit: 'c',
                         ),
                       ),
               ],
