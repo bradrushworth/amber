@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:amber/bar_chart.dart';
 import 'package:amber/my_theme_model.dart';
 import 'package:amber/model/Usage.dart';
+import 'package:amber/widgets/chart_card.dart';
 
 List<Usage> day() => List.generate(48, (i) => Usage(
     type: 'ActualInterval', duration: 30, date: '2023-08-12',
@@ -24,5 +25,13 @@ void main() {
     await t.pump();
     expect(find.text('Thu 21 Aug'), findsNothing); // header suppressed
     expect(find.text('Peak'), findsNothing);       // no per-card legend
+  });
+
+  testWidgets('ChartCard renders title and trailing', (t) async {
+    await t.pumpWidget(host(const ChartCard(
+        title: 'Thu 21 Aug', trailing: '\$7.43', chart: SizedBox())));
+    await t.pump();
+    expect(find.text('Thu 21 Aug'), findsOneWidget);
+    expect(find.text('\$7.43'), findsOneWidget);
   });
 }
