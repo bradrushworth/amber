@@ -223,6 +223,19 @@ class BarChartState extends State<BarChartWidget1> {
                                               );
                                             })),
                                   ),
+                                  barTouchData: BarTouchData(
+                                    enabled: true,
+                                    handleBuiltInTouches: true,
+                                    touchTooltipData: BarTouchTooltipData(
+                                      getTooltipItem: (group, gi, rod, ri) {
+                                        final label = _barChartTitles[group.x] ?? '';
+                                        final unit = _prices || _forecast ? ' \$' : ' kWh';
+                                        return BarTooltipItem(
+                                            '$label\n${rod.toY.toStringAsFixed(_prices || _forecast ? 2 : 3)}$unit',
+                                            const TextStyle(color: Colors.white, fontSize: 11));
+                                      },
+                                    ),
+                                  ),
                                   //maxY: 10.0,
                                   gridData: const FlGridData(show: false),
                                   borderData: FlBorderData(show: false),
