@@ -91,7 +91,9 @@ spec.
 ## 6. Settings, onboarding, errors
 
 - Settings screen (both apps): Amber — API token entry (moved from the
-  header dialog; accepts any non-empty token, no 36-char gate);
+  header dialog; the 36-character validation is KEPT, but a failing
+  token shows an inline "token should be 36 characters" message instead
+  of silently not saving);
   Momentum — tariff rates (exists since v1.3.3, moves here); both —
   About (the former footer links + version).
 - First-run onboarding replaces the permanent header instructions: a
