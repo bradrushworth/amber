@@ -6,11 +6,25 @@ import '../bar_chart.dart';
 import '../model/Usage.dart';
 import '../state/dashboard_state.dart';
 import '../state/day_math.dart';
+import '../utils.dart';
 import '../widgets/chart_card.dart';
 import '../widgets/legend_bar.dart';
 import 'day_detail.dart';
 
 enum _Metric { cost, usage, prices }
+
+/// Midnight AEST of the last date present in [d], as the raw instant
+/// `DateTime.parse('<date>T00:00:00+10:00')` produces — the same expression
+/// `DataAggregator` and `day_math` use to place their windows.
+///
+/// Returns null when there is nothing to anchor on yet (no slice, an empty
+/// slice, or a record without a date), which the callers turn into a loading
+/// placeholder row.
+DateTime? _rawLastDate(List<Usage>? d) {
+  if (d == null || d.isEmpty) return null;
+  final date = d.last.date;
+  return date == null ? null : DateTime.parse('${date}T00:00:00+10:00');
+}
 
 /// One row of the history list: either a real card backed by [data], or (when
 /// [data] is null — the underlying week hasn't loaded yet) a loading
@@ -22,13 +36,26 @@ class _Entry {
   final String title;
   final bool allowPartial;
 
+  /// The instant this row's window ends on, derived from [data] rather than
+  /// the clock (one day past the data's last date, so it plays the role of
+  /// "now" for `BarChartWidget1.anchor`). Null for loading placeholders.
+  final DateTime? anchor;
+
   const _Entry({
     required this.data,
     required this.duration,
     required this.ending,
     required this.title,
     this.allowPartial = false,
+    this.anchor,
   });
+
+  static const loading = _Entry(
+    data: null,
+    duration: Duration(days: 1),
+    ending: Duration.zero,
+    title: 'Loading…',
+  );
 }
 
 /// The "History" tab content, shared by the Days and Weeks sub-tabs.
@@ -48,56 +75,89 @@ class HistoryTab extends StatefulWidget {
 class _HistoryTabState extends State<HistoryTab> {
   _Metric _metric = _Metric.cost;
 
+  // Memo for the concatenated current-week list, so a rebuild that changes
+  // nothing doesn't hand BarChartWidget1 a fresh List identity (which would
+  // re-aggregate every frame).
+  List<Usage>? _currentWeekCache, _currentWeekFromWeek, _currentWeekFromToday;
+
+  static final _dayFormat = DateFormat('E d MMM');
+
+  /// The genuine current week: the newest completed week plus however much of
+  /// today has landed. `todayUsage` is often null/empty (Amber's usage feed
+  /// lags), in which case this is just `weekData[0]`.
+  List<Usage>? _currentWeekData(DashboardState state) {
+    final week = state.weekData[0];
+    if (week == null) return null;
+    final today = state.todayUsage;
+    if (!identical(week, _currentWeekFromWeek) ||
+        !identical(today, _currentWeekFromToday) ||
+        _currentWeekCache == null) {
+      _currentWeekFromWeek = week;
+      _currentWeekFromToday = today;
+      _currentWeekCache =
+          (today == null || today.isEmpty) ? week : [...week, ...today];
+    }
+    return _currentWeekCache;
+  }
+
   List<_Entry> _entries(DashboardState state) =>
       widget.weeks ? _weekEntries(state) : _dayEntries(state);
 
   List<_Entry> _dayEntries(DashboardState state) {
-    final now = DateTime.now();
     final entries = <_Entry>[];
     for (var w = 0; w < 4; w++) {
       final weekSlice = state.weekData[w];
-      if (weekSlice == null) {
-        entries.add(const _Entry(
-          data: null,
-          duration: Duration(days: 1),
-          ending: Duration.zero,
-          title: 'Loading…',
-        ));
+      // Titles are derived from the DATA's last date, never from the clock:
+      // the usage endpoint routinely lags a day or more, and a clock-derived
+      // title made the card claim a day the chart below it wasn't drawing.
+      final raw = _rawLastDate(weekSlice);
+      if (weekSlice == null || raw == null) {
+        entries.add(_Entry.loading);
         continue;
       }
+      final anchor = raw.add(const Duration(days: 1));
       for (var local = 0; local < 7; local++) {
-        final e = w * 7 + local;
+        final ending = Duration(days: local);
         entries.add(_Entry(
           data: weekSlice,
           duration: const Duration(days: 1),
-          ending: Duration(days: local),
-          title: DateFormat('E d MMM')
-              .format(now.subtract(Duration(days: e + 1))),
+          ending: ending,
+          title: _dayFormat.format(Utils.toLocal(raw.subtract(ending))),
+          // The newest day is legitimately short (the API returns a partial
+          // final day); render what there is instead of throwing
+          // NotEnoughDataException and showing "Not enough data".
+          allowPartial: true,
+          anchor: anchor,
         ));
       }
     }
     return entries;
   }
 
+  _Entry _weekEntry(List<Usage>? data, {bool allowPartial = false}) {
+    final raw = _rawLastDate(data);
+    if (data == null || raw == null) return _Entry.loading;
+    return _Entry(
+      data: data,
+      duration: const Duration(days: 7),
+      ending: Duration.zero,
+      title: 'Week to ${_dayFormat.format(Utils.toLocal(raw))}',
+      allowPartial: allowPartial,
+      anchor: raw.add(const Duration(days: 1)),
+    );
+  }
+
   List<_Entry> _weekEntries(DashboardState state) {
-    final now = DateTime.now();
+    // The leading row used to re-render weekData[0] verbatim under a
+    // hardcoded 'This week (partial)' title — a pixel-for-pixel duplicate of
+    // the w=0 row below it. It is now a real current week (last completed
+    // week + today's records so far), so it only coincides with w=0 while
+    // today's usage hasn't arrived.
     final entries = <_Entry>[
-      _Entry(
-        data: state.weekData[0],
-        duration: const Duration(days: 7),
-        ending: Duration.zero,
-        title: 'This week (partial)',
-        allowPartial: true,
-      ),
+      _weekEntry(_currentWeekData(state), allowPartial: true),
     ];
     for (var w = 0; w < 4; w++) {
-      entries.add(_Entry(
-        data: state.weekData[w],
-        duration: const Duration(days: 7),
-        ending: Duration.zero,
-        title:
-            'Week to ${DateFormat('E d MMM').format(now.subtract(Duration(days: w * 7 + 1)))}',
-      ));
+      entries.add(_weekEntry(state.weekData[w]));
     }
     return entries;
   }
@@ -118,6 +178,13 @@ class _HistoryTabState extends State<HistoryTab> {
     // Historical charts cap interval at 15 (mirror of old main.dart).
     final il = intervalLength < 15 ? 15 : intervalLength;
 
+    // The metric belongs in the key: identical tree positions otherwise let
+    // Flutter hand the same BarChartState a differently-configured widget.
+    // BarChartState re-syncs everything now, but the key makes the swap a
+    // fresh State and keeps the two landscape columns distinct.
+    final key = ValueKey<String>(
+        '${widget.weeks ? 'w' : 'd'}|${entry.title}|${entry.ending.inDays}|${metric.name}');
+
     final Widget card;
     switch (metric) {
       case _Metric.cost:
@@ -128,9 +195,9 @@ class _HistoryTabState extends State<HistoryTab> {
           trailing: '\$${value.toStringAsFixed(2)}',
           chart: IgnorePointer(
               child: BarChartWidget1(data, entry.title, il, entry.duration,
+                  key: key,
                   ending: entry.ending,
                   prices: true,
-                  yUnit: '\$',
                   allowPartial: entry.allowPartial)),
         );
         break;
@@ -142,8 +209,8 @@ class _HistoryTabState extends State<HistoryTab> {
           trailing: '${value.toStringAsFixed(1)} kWh',
           chart: IgnorePointer(
               child: BarChartWidget1(data, entry.title, il, entry.duration,
+                  key: key,
                   ending: entry.ending,
-                  yUnit: 'kWh',
                   allowPartial: entry.allowPartial)),
         );
         break;
@@ -152,11 +219,15 @@ class _HistoryTabState extends State<HistoryTab> {
           title: entry.title,
           chart: IgnorePointer(
               child: BarChartWidget1(data, entry.title, il, entry.duration,
+                  key: key,
                   ending: entry.ending,
                   forecast: true,
                   prices: true,
-                  yUnit: 'c',
-                  allowPartial: entry.allowPartial)),
+                  allowPartial: entry.allowPartial,
+                  // Forecast charts otherwise anchor on DateTime.now(); in
+                  // history that made the price card show a different day
+                  // from the cost/usage cards whenever the API lagged.
+                  anchor: entry.anchor)),
         );
         break;
     }

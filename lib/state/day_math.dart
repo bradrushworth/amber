@@ -1,3 +1,4 @@
+import '../bar_chart.dart' show daily;
 import '../model/Usage.dart';
 import '../utils.dart';
 
@@ -8,6 +9,11 @@ import '../utils.dart';
 ///
 /// Feed-in cost is ADDED for the cost sum (feed-in cost is already negative)
 /// and excluded from the kWh sum.
+///
+/// The cost sum also includes the fixed daily supply charge — `daily` per day
+/// in the window — because `aggregateData` draws that charge as a blue
+/// `supply` segment in every bar. Leaving it out made a card's trailing total
+/// visibly smaller than the bars stacked above it.
 double sumForRange(List<Usage> data, Duration duration, Duration ending,
     {required bool cost}) {
   if (data.isEmpty) return 0;
@@ -26,7 +32,7 @@ double sumForRange(List<Usage> data, Duration duration, Duration ending,
       total += u.kwh ?? 0;
     }
   }
-  return cost ? total / 100.0 : total;
+  return cost ? total / 100.0 + daily * duration.inDays : total;
 }
 
 /// Sums `cost`/`kwh` for the single AEST day ending [ending] days back from
