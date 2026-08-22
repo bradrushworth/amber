@@ -5,7 +5,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:amber/my_theme_model.dart';
 import 'package:provider/provider.dart';
-import 'package:vector_math/vector_math.dart' as math;
 
 import 'model/Usage.dart';
 import 'top_section.dart';
@@ -51,13 +50,17 @@ class BarChartWidget1 extends StatefulWidget {
   final bool forecast;
   final bool feedIn;
   final int interval;
+  final bool showHeader;
+  final String yUnit;
 
   BarChartWidget1(this.rawData, this.title, this.interval, this.duration,
       {Key? key,
       this.ending = const Duration(days: 0),
       this.prices = false,
       this.forecast = false,
-      this.feedIn = false})
+      this.feedIn = false,
+      this.showHeader = true,
+      this.yUnit = ''})
       : super(key: key);
 
   @override
@@ -72,6 +75,8 @@ class BarChartState extends State<BarChartWidget1> {
   late final bool _prices;
   late final bool _forecast;
   late final bool _feedIn;
+  late final bool _showHeader;
+  late final String _yUnit;
   int _interval = 0; // Re-synced from widget.interval on every aggregate (parseFile).
   List<BarChartGroupData> _barChartData = [];
   Map<int, String> _barChartTitles = {};
@@ -89,6 +94,8 @@ class BarChartState extends State<BarChartWidget1> {
     _prices = widget.prices;
     _forecast = widget.forecast;
     _feedIn = widget.feedIn;
+    _showHeader = widget.showHeader;
+    _yUnit = widget.yUnit;
     _interval = widget.interval;
     parseFile();
   }
@@ -147,20 +154,21 @@ class BarChartState extends State<BarChartWidget1> {
                           const Spacer()
                         ]
                       : [
-                          TopSectionWidget(
-                            title: _title,
-                            legends: [
-                              Legend(title: 'Sponge', color: colors[7]),
-                              if (_prices && !_forecast)
-                                Legend(title: 'Supply', color: colors[0]),
-                              Legend(title: 'Off', color: colors[2]),
-                              Legend(title: 'Shoulder', color: colors[3]),
-                              Legend(title: 'Peak', color: colors[4]),
-                              Legend(title: 'Control', color: colors[1]),
-                              Legend(title: 'Feed', color: colors[6]),
-                            ],
-                            padding: const EdgeInsets.only(left: 3, right: 3, top: 3, bottom: 3),
-                          ),
+                          if (_showHeader)
+                            TopSectionWidget(
+                              title: _title,
+                              legends: [
+                                Legend(title: 'Sponge', color: colors[7]),
+                                if (_prices && !_forecast)
+                                  Legend(title: 'Supply', color: colors[0]),
+                                Legend(title: 'Off', color: colors[2]),
+                                Legend(title: 'Shoulder', color: colors[3]),
+                                Legend(title: 'Peak', color: colors[4]),
+                                Legend(title: 'Control', color: colors[1]),
+                                Legend(title: 'Feed', color: colors[6]),
+                              ],
+                              padding: const EdgeInsets.only(left: 3, right: 3, top: 3, bottom: 3),
+                            ),
                           Expanded(
                             child: Padding(
                               padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
@@ -179,13 +187,14 @@ class BarChartState extends State<BarChartWidget1> {
                                       showTitles: true,
                                       interval: (60 ~/ _interval).toDouble(), // one label per hour (2/4/12 bars for 30/15/5-min)
                                       getTitlesWidget: (xValue, titleMeta) {
+                                        int graphPos = xValue.toInt();
                                         return SideTitleWidget(
                                           axisSide: AxisSide.bottom,
-                                          angle: math.radians(-90),
+                                          angle: 0,
                                           space: 9,
                                           child: Text(
-                                            xValue.toInt() % (60 ~/ _interval) == 0
-                                                ? _barChartTitles[xValue.toInt()]!
+                                            graphPos % (3 * (60 ~/ _interval)) == 0
+                                                ? _barChartTitles[graphPos]!
                                                 : '',
                                             // Workaround
                                             style: const TextStyle(fontSize: 8),
@@ -199,18 +208,16 @@ class BarChartState extends State<BarChartWidget1> {
                                             //interval: 1,
                                             reservedSize: 40,
                                             getTitlesWidget: (xValue, titleMeta) {
-                                              String formattedNumber;
-                                              if (xValue < 1) {
-                                                formattedNumber = xValue.toStringAsFixed(2);
-                                              } else {
-                                                formattedNumber = xValue.toStringAsFixed(0);
-                                              }
+                                              String formattedNumber = titleMeta.max < 1
+                                                  ? xValue.toStringAsFixed(2)
+                                                  : xValue.toStringAsFixed(1);
                                               return SideTitleWidget(
                                                 axisSide: AxisSide.left,
                                                 //child: Text(xValue == xValue.roundToDouble() ? "$xValue" : ''),
                                                 child: Text(
                                                   (_prices || _forecast ? '\$' : '') +
-                                                      formattedNumber,
+                                                      formattedNumber +
+                                                      _yUnit,
                                                   style: const TextStyle(fontSize: 9),
                                                 ),
                                               );
