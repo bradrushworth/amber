@@ -41,12 +41,15 @@ class DashboardState extends ChangeNotifier {
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
+    if (_isDisposed) return;
     token = prefs.getString('amberToken');
     if (token != null) {
       await loadSites();
+      if (_isDisposed) return;
       unawaited(refreshForecast());
       unawaited(refreshUsage());
     }
+    if (_isDisposed) return;
     _forecastTimer = Timer.periodic(
         const Duration(minutes: 1), (_) => refreshForecast());
     _usageTimer =
@@ -57,11 +60,14 @@ class DashboardState extends ChangeNotifier {
   Future<bool> saveToken(String v) async {
     if (v.length != 36) return false;
     final prefs = await SharedPreferences.getInstance();
+    if (_isDisposed) return true;
     await prefs.setString('amberToken', v);
+    if (_isDisposed) return true;
     token = v;
     _gen++;
     ApiCache.instance.clear();
     await loadSites();
+    if (_isDisposed) return true;
     unawaited(refreshForecast());
     unawaited(refreshUsage());
     notifyListeners();

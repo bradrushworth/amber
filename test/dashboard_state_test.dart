@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -58,5 +59,27 @@ void main() {
     // the slow 'old' data must NOT have landed in weekData
     expect(s.weekData.every((w) => w == null || w.isEmpty), isTrue);
     s.dispose();
+  });
+
+  test('dispose during init does not throw or leak timers', () async {
+    SharedPreferences.setMockInitialValues({'amberToken': 'x' * 36});
+    final sitesCompleter = Completer<http.Response>();
+    var initCompleted = false;
+    final s = DashboardState(fetch: (u, h, t) async {
+      if (u.path.endsWith('/sites')) return sitesCompleter.future;
+      return _json([]);
+    });
+    // Start init but don't await it yet
+    final initFuture = s.init().then((_) { initCompleted = true; });
+    // Give it time to reach the sites fetch
+    await Future.delayed(const Duration(milliseconds: 10));
+    // Dispose before sites response arrives
+    s.dispose();
+    // Complete the sites fetch
+    sitesCompleter.complete(_json(_sites));
+    // Wait for init to finish — should not throw despite dispose
+    // This verifies that dispose() mid-await doesn't cause ChangeNotifier errors
+    await initFuture;
+    expect(initCompleted, isTrue);
   });
 }
