@@ -118,7 +118,8 @@ class _HistoryTabState extends State<HistoryTab> {
 
     switch (metric) {
       case _Metric.cost:
-        final value = sumForDay(data, entry.ending, cost: true);
+        final value =
+            sumForRange(data, entry.duration, entry.ending, cost: true);
         return ChartCard(
           title: entry.title,
           trailing: '\$${value.toStringAsFixed(2)}',
@@ -130,7 +131,8 @@ class _HistoryTabState extends State<HistoryTab> {
               allowPartial: entry.allowPartial),
         );
       case _Metric.usage:
-        final value = sumForDay(data, entry.ending, cost: false);
+        final value =
+            sumForRange(data, entry.duration, entry.ending, cost: false);
         return ChartCard(
           title: entry.title,
           trailing: '${value.toStringAsFixed(1)} kWh',
