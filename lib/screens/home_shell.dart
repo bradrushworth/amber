@@ -30,6 +30,12 @@ class _HomeShellState extends State<HomeShell> {
 
   int _tab = 0;
 
+  /// The [DashboardState.lastError] the user has already dismissed. The error
+  /// banner reappears as soon as the message *changes* (a new failure), but a
+  /// dismissed message stays hidden while the same error keeps being re-set by
+  /// the polling timers.
+  String? _dismissedError;
+
   @override
   void initState() {
     super.initState();
@@ -128,12 +134,33 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
+  /// The only surface for [DashboardState.lastError]: without it a bad token
+  /// (401 on `/sites`) leaves the shell showing empty skeletons forever, since
+  /// the old `HomePageState` snackbars are gone.
+  Widget _errorBanner(String message) {
+    return MaterialBanner(
+      backgroundColor: _surface,
+      surfaceTintColor: Colors.transparent,
+      dividerColor: Colors.transparent,
+      leading: const Icon(Icons.error_outline, color: Colors.redAccent),
+      content: Text(message, style: const TextStyle(color: Colors.white)),
+      actions: [
+        TextButton(
+          onPressed: () => setState(() => _dismissedError = message),
+          child: const Text('Dismiss'),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<DashboardState>();
     // Before a token exists there is only one thing to show, so the tab bar is
     // hidden rather than left inert over the onboarding screen.
     final bool hasToken = state.token != null;
+    final String? error = state.lastError;
+    final bool showError = error != null && error != _dismissedError;
 
     return Scaffold(
       backgroundColor: _background,
@@ -151,16 +178,23 @@ class _HomeShellState extends State<HomeShell> {
           ),
         ],
       ),
-      body: hasToken
-          ? IndexedStack(
-              index: _tab,
-              children: const [
-                NowTab(),
-                HistoryTab(weeks: false),
-                HistoryTab(weeks: true),
-              ],
-            )
-          : const Onboarding(),
+      body: Column(
+        children: [
+          if (showError) _errorBanner(error),
+          Expanded(
+            child: hasToken
+                ? IndexedStack(
+                    index: _tab,
+                    children: const [
+                      NowTab(),
+                      HistoryTab(weeks: false),
+                      HistoryTab(weeks: true),
+                    ],
+                  )
+                : const Onboarding(),
+          ),
+        ],
+      ),
       bottomNavigationBar: hasToken
           ? NavigationBar(
               backgroundColor: _surface,

@@ -127,6 +127,38 @@ void main() {
     expect(find.text('Endeavour · 4103000002 (closed)'), findsOneWidget);
   });
 
+  testWidgets('lastError surfaces as a dismissible banner', (t) async {
+    _portrait(t);
+    final s = await _state(withToken: true);
+    await t.pumpWidget(_host(s));
+    await t.pump();
+
+    const message =
+        'Could not load your sites (HTTP 401). Check your API token in Settings.';
+    expect(find.text(message), findsNothing);
+
+    s.lastError = message;
+    s.notifyListeners();
+    await t.pump();
+
+    expect(find.byType(MaterialBanner), findsOneWidget);
+    expect(find.text(message), findsOneWidget);
+
+    await t.tap(find.widgetWithText(TextButton, 'Dismiss'));
+    await t.pump();
+
+    // Dismissed locally even though lastError is still set on the state.
+    expect(find.byType(MaterialBanner), findsNothing);
+    expect(find.text(message), findsNothing);
+    expect(s.lastError, message);
+
+    // A *different* error is a new failure, so the banner comes back.
+    s.lastError = 'Could not load prices (HTTP 500).';
+    s.notifyListeners();
+    await t.pump();
+    expect(find.text('Could not load prices (HTTP 500).'), findsOneWidget);
+  });
+
   testWidgets('renders under the app dark theme', (t) async {
     _portrait(t);
     await t.pumpWidget(_host(await _state(withToken: true), theme: darkTheme));
