@@ -157,7 +157,11 @@ class _HistoryTabState extends State<HistoryTab> {
       _weekEntry(_currentWeekData(state), allowPartial: true),
     ];
     for (var w = 0; w < 4; w++) {
-      entries.add(_weekEntry(state.weekData[w]));
+      // allowPartial: a week slice can legitimately be short (API lag, new
+      // account); without it the strict range check renders a full-height
+      // "Not enough data" card while the sibling current-week card draws
+      // the same records.
+      entries.add(_weekEntry(state.weekData[w], allowPartial: true));
     }
     return entries;
   }
