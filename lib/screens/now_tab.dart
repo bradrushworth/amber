@@ -7,8 +7,11 @@ import '../widgets/chart_card.dart';
 import '../widgets/legend_bar.dart';
 
 /// The "Now" tab: a live-price hero panel (current price, period, spike
-/// status, today's cost-so-far, and a headerless today buy-price chart)
-/// followed by yesterday/tomorrow buy and feed-in price cards.
+/// status, today's cost-so-far) followed by the three price-day pairs in the
+/// order the pre-overhaul GridView used — yesterday, today, tomorrow — each
+/// pair being the buy price and the feed-in price for the same day. In
+/// landscape the two charts of a pair sit side by side, matching the old
+/// two-column grid (and the History tab's paired columns).
 ///
 /// NOTE: `LegendBar` unconditionally renders an 'Off-peak' label (see
 /// lib/widgets/legend_bar.dart), which duplicates the hero sub-line's
@@ -19,6 +22,14 @@ import '../widgets/legend_bar.dart';
 class NowTab extends StatelessWidget {
   const NowTab({super.key});
 
+  // The old dropdown's "Prices" group order: each day is a (label, ending)
+  // pair, buy chart first, feed-in chart second.
+  static const _days = [
+    ('yesterday', Duration(days: 0)),
+    ('today', Duration(days: -1)),
+    ('tomorrow', Duration(days: -2)),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<DashboardState>();
@@ -27,6 +38,9 @@ class NowTab extends StatelessWidget {
     int intervalLength = state.intervalLength;
     if (intervalLength < 15) intervalLength = 15;
     final int forecastInterval = intervalLength < 30 ? 30 : intervalLength;
+
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     final priceText = state.currentPriceCents != null
         ? '${state.currentPriceCents!.toStringAsFixed(1)} c/kWh'
@@ -38,6 +52,29 @@ class NowTab extends StatelessWidget {
       subLineBuffer.write(' · today so far \$${state.todayCostSoFar!.toStringAsFixed(2)}');
     }
 
+    Widget chart(String title, Duration ending, bool feedIn) =>
+        state.forecastData == null
+            ? Container(height: 180, color: const Color(0xFF23232F))
+            : BarChartWidget1(
+                state.forecastData,
+                title,
+                forecastInterval,
+                const Duration(days: 1),
+                ending: ending,
+                forecast: true,
+                prices: true,
+                feedIn: feedIn,
+              );
+
+    ChartCard buyCard(String day, Duration ending) => ChartCard(
+          title: 'Buy price — $day',
+          chart: chart('Buy price — $day', ending, false),
+        );
+    ChartCard feedInCard(String day, Duration ending) => ChartCard(
+          title: 'Feed-in price — $day',
+          chart: chart('Feed-in price — $day', ending, true),
+        );
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -46,6 +83,7 @@ class NowTab extends StatelessWidget {
           const LegendBar(showSupply: false),
           const SizedBox(height: 12),
           Container(
+            width: double.infinity,
             decoration: BoxDecoration(
               color: const Color(0xFF1A1A26),
               borderRadius: BorderRadius.circular(8),
@@ -77,88 +115,26 @@ class NowTab extends StatelessWidget {
                   subLineBuffer.toString(),
                   style: const TextStyle(color: Color(0xFF9595A4)),
                 ),
-                const SizedBox(height: 12),
-                state.forecastData == null
-                    ? Container(height: 180, color: const Color(0xFF23232F))
-                    : SizedBox(
-                        height: 180,
-                        child: BarChartWidget1(
-                          state.forecastData,
-                          'today',
-                          forecastInterval,
-                          const Duration(days: 1),
-                          ending: const Duration(days: -1),
-                          forecast: true,
-                          prices: true,
-                        ),
-                      ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          ChartCard(
-            title: 'Buy price — yesterday',
-            chart: state.forecastData == null
-                ? Container(height: 180, color: const Color(0xFF23232F))
-                : BarChartWidget1(
-                    state.forecastData,
-                    'Buy price — yesterday',
-                    forecastInterval,
-                    const Duration(days: 1),
-                    ending: const Duration(days: 0),
-                    forecast: true,
-                    prices: true,
-                    feedIn: false,
-                  ),
-          ),
-          const SizedBox(height: 12),
-          ChartCard(
-            title: 'Feed-in price — yesterday',
-            chart: state.forecastData == null
-                ? Container(height: 180, color: const Color(0xFF23232F))
-                : BarChartWidget1(
-                    state.forecastData,
-                    'Feed-in price — yesterday',
-                    forecastInterval,
-                    const Duration(days: 1),
-                    ending: const Duration(days: 0),
-                    forecast: true,
-                    prices: true,
-                    feedIn: true,
-                  ),
-          ),
-          const SizedBox(height: 12),
-          ChartCard(
-            title: 'Buy price — tomorrow',
-            chart: state.forecastData == null
-                ? Container(height: 180, color: const Color(0xFF23232F))
-                : BarChartWidget1(
-                    state.forecastData,
-                    'Buy price — tomorrow',
-                    forecastInterval,
-                    const Duration(days: 1),
-                    ending: const Duration(days: -2),
-                    forecast: true,
-                    prices: true,
-                    feedIn: false,
-                  ),
-          ),
-          const SizedBox(height: 12),
-          ChartCard(
-            title: 'Feed-in price — tomorrow',
-            chart: state.forecastData == null
-                ? Container(height: 180, color: const Color(0xFF23232F))
-                : BarChartWidget1(
-                    state.forecastData,
-                    'Feed-in price — tomorrow',
-                    forecastInterval,
-                    const Duration(days: 1),
-                    ending: const Duration(days: -2),
-                    forecast: true,
-                    prices: true,
-                    feedIn: true,
-                  ),
-          ),
+          for (final (day, ending) in _days) ...[
+            const SizedBox(height: 12),
+            if (isLandscape)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: buyCard(day, ending)),
+                  const SizedBox(width: 12),
+                  Expanded(child: feedInCard(day, ending)),
+                ],
+              )
+            else ...[
+              buyCard(day, ending),
+              const SizedBox(height: 12),
+              feedInCard(day, ending),
+            ],
+          ],
         ],
       ),
     );

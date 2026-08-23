@@ -21,9 +21,9 @@ class LegendBar extends StatelessWidget {
       _LegendEntry('Off-peak', colors[2]),
       _LegendEntry('Shoulder', colors[3]),
       _LegendEntry('Peak', colors[4]),
-      _LegendEntry('Controlled', colors[1]),
+      _LegendEntry('Controlled load', colors[1]),
       _LegendEntry('Feed-in', colors[6]),
-      if (showSupply) _LegendEntry('Supply', colors[0]),
+      if (showSupply) _LegendEntry('Supply charge', colors[0]),
     ];
 
     return Wrap(
