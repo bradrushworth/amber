@@ -578,7 +578,10 @@ class DataAggregator {
         .reduce((value, element) => value += element);
     return BarChartRodData(
       toY: roundDouble(value, _prices),
-      color: Colors.white70,
+      // Transparent, not a colour: the rod is only a backdrop for
+      // `rodStackItems`, which carry every visible segment. A solid rod
+      // showed through above the stack as a grey tip.
+      color: Colors.transparent,
       width: _interval == 5 ? 2 : (_interval == 15 ? 4 : 7), // Narrower bars for 5-min data (6 intervals aggregated per bar), wider for 30-min
       //borderRadius: BorderRadius.circular(2),
       rodStackItems: stackedValues
