@@ -9,34 +9,46 @@ file wins.
 A Flutter app (Android / iOS / web) that visualises a customer's
 [Amber Electric](https://amber.com.au) (Australian retailer, wholesale price
 passthrough) electricity prices, usage, and costs as a wall of bar charts.
-Single screen, four views (Forecast / Recent Days / Combined Days / Weekly
-Usage), designed to run landscape as a glanceable always-on board
-(`keep_screen_on`).
+Three tabs (Now / Days / Weeks) behind a nav bar, still designed to run
+landscape as a glanceable always-on board (`keep_screen_on`).
 
 **Sister app:** `../momentumenergy` is a near-clone for Momentum Energy
-(CSV-import instead of API). `my_theme_model.dart`, `top_section.dart`,
-`screenshots_*.dart`, and most of `utils.dart` are copy-paste twins, and the
-`main.dart` / `bar_chart.dart` skeletons match. Fixes to shared-shaped code
-are manually ported between repos (see commits referencing "from Amber app");
-a shared package is planned but does not exist yet. When you fix something in
-a twin file, say so, so the port isn't forgotten.
+(CSV-import instead of API). `screenshots_*.dart` and most of `utils.dart` are
+copy-paste twins, and the `bar_chart.dart` skeleton matches. (`my_theme_model.dart`
+and `top_section.dart` were deleted here in the UI overhaul — the Momentum
+twins still exist on their side, so a port of anything touching them has to be
+hand-translated.) Fixes to shared-shaped code are manually ported between repos
+(see commits referencing "from Amber app"); a shared package is planned but
+does not exist yet. When you fix something in a twin file, say so, so the port
+isn't forgotten.
 
 ## Commands
 
 ```bash
 flutter pub get      # deps
-flutter test         # 40+ tests, must stay green
+flutter test         # 75+ unit + widget tests, must stay green
 flutter analyze      # ~50 pre-existing style warnings are the baseline;
                      # any NEW error/warning is a regression
 flutter build web --release   # local web build (serves fine from build/web)
 ```
 
-## Architecture (current, pre-overhaul)
+## Architecture
 
-- `lib/main.dart` — everything UI + orchestration: `HomePageState` owns the
-  API token (SharedPreferences, key `amberToken`), site list, two polling
-  timers (1-min forecast, 1-hr usage), and a large `build()` that
-  hand-enumerates ~40 `MyCard(BarChartWidget1(...))` instances per view.
+The UI overhaul split the old single `main.dart` screen into a state object
+plus a tabbed shell: `lib/state/dashboard_state.dart` (`DashboardState`, a
+`ChangeNotifier` provided via `package:provider`) owns the API token
+(SharedPreferences, key `amberToken`), the site list/selection, the two
+polling timers (1-min forecast, 1-hr usage, started before the first `await`
+in `init()` so an offline launch still recovers), `forecastData` /
+`weekData[0..3]` / `todayUsage`, and a user-facing `lastError`; every fetcher
+is generation-guarded (`_gen`) and swallows transport failures into
+`lastError`. `lib/screens/` holds the views — `home_shell.dart` (nav bar,
+site picker, error banner), `now_tab.dart`, `history_tab.dart` (Days/Weeks
+feed, metric chips), `day_detail.dart`, `settings_screen.dart`,
+`onboarding.dart` — with small presentational pieces in `lib/widgets/`
+(`ChartCard`, `LegendBar`) and the card-total arithmetic in
+`lib/state/day_math.dart`. `lib/main.dart` is now just app bootstrap + theme.
+
 - `lib/bar_chart.dart` — `BarChartWidget1` (fl_chart view) + `DataAggregator`
   (bucketing/summing/pricing domain logic, unit-tested).
 - `lib/api_cache.dart` — singleton TTL cache + rate-limit guard in front of
@@ -59,21 +71,23 @@ and defaults to the most recent **active** site — keep that behaviour.
 
 ### Async conventions (added Aug 2026 — keep these invariants)
 
-- Every fetcher guards `amberToken == null || _siteIdItemSelected == null`
-  before doing anything (timers start in `initState`, before a token may
-  exist).
-- Every fetcher captures `final ListItem site = _siteIdItemSelected!` up
-  front and, after each await, bails if `!mounted` or the selection changed —
-  this is what prevents mixed-site data in `rawData1..4`. Do not remove.
-- Error paths show a short human message and `return`; never
-  snackbar-then-throw, never surface raw response bodies.
+- Every fetcher guards `token == null || selectedSite == null` before doing
+  anything (timers start at the top of `init()`, before a token may exist).
+- Every fetcher captures `final site = selectedSite!` and `final gen = _gen`
+  up front and, after each await, bails if `_isDisposed` or `gen != _gen` —
+  this is what prevents mixed-site data in `weekData`. Do not remove.
+- Error paths set a short human `lastError` and `return`; never
+  snackbar-then-throw, never surface raw response bodies. The network+parse
+  body of each fetcher is wrapped in `try/catch` so an offline launch (or a
+  timer tick with no network) degrades to a banner instead of an unhandled
+  async error — `DashboardState.offlineMessage`.
 
 ## Chart aggregation model (do not "improve" without reading)
 
 - Bars are per-interval buckets; `graphPos = hour * periodsPerHour +
   minute ~/ interval`. Historical charts cap the interval at 15 min
-  (`main.dart`) so 5-minute sites don't draw 288 bars; forecast charts cap at
-  30 (AEMO forecasts are 30-min).
+  (`history_tab.dart`) so 5-minute sites don't draw 288 bars; forecast charts
+  cap at 30 (`now_tab.dart`; AEMO forecasts are 30-min).
 - Usage (kWh) and cost ($) are **summed** into a bar; forecast prices
   (perKwh) are **averaged** (`CustomRodElement.displayAmount`). Forecast uses
   `perKwh` only, never `cost`.
@@ -87,7 +101,9 @@ and defaults to the most recent **active** site — keep that behaviour.
   interleaves channels/days.
 - `daily` in `bar_chart.dart` is a hardcoded supply charge (known debt; the
   sister app grew a Settings dialog for its rates — same treatment planned
-  here).
+  here). `day_math.sumForRange` imports it and adds `daily * duration.inDays`
+  to every cost total, so a card's trailing figure matches the supply
+  segments the chart draws. Keep the two in step.
 
 ## Timezone / DST (critical, NSW)
 
@@ -102,11 +118,19 @@ tests, never depend on `DateTime.now()`).
 
 ## Tests
 
-`test/bar_chart_test.dart` (aggregation incl. 5-min/15-min/30-min, supply
-charge, SA fixture data), `test/periods_test.dart` (DST windows),
-`test/api_cache_test.dart` (TTL/dedup/stale-on-error).
-`test/widget_test.dart` is fully commented out — there are NO widget tests;
-don't claim otherwise.
+Unit: `test/bar_chart_test.dart` (aggregation incl. 5-min/15-min/30-min,
+supply charge, SA fixture data), `test/periods_test.dart` (DST windows),
+`test/api_cache_test.dart` (TTL/dedup/stale-on-error),
+`test/day_math_test.dart` (card totals), `test/dashboard_state_test.dart`
+(site selection, stale-response guards, offline degradation).
+
+Widget: `test/widget_test.dart`, `test/widget_smoke_test.dart`,
+`test/home_shell_test.dart`, `test/now_tab_test.dart`,
+`test/history_tab_test.dart`, `test/settings_test.dart`,
+`test/onboarding_test.dart`. Shared fixtures live in `test/test_data.dart`.
+Widget tests that exercise the history feed must force a portrait surface
+(`t.view.physicalSize`) — the default 800x600 test window is landscape, which
+hides the metric chips.
 
 ## Git, releases, CI
 

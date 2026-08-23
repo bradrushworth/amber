@@ -3,12 +3,8 @@ import 'dart:math';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:amber/my_theme_model.dart';
-import 'package:provider/provider.dart';
-import 'package:vector_math/vector_math.dart' as math;
 
 import 'model/Usage.dart';
-import 'top_section.dart';
 import 'utils.dart';
 
 const int meterInterval = 30; // minutes
@@ -51,13 +47,26 @@ class BarChartWidget1 extends StatefulWidget {
   final bool forecast;
   final bool feedIn;
   final int interval;
+  final bool allowPartial;
+
+  /// Optional injected "now", forwarded to [DataAggregator.nowOverride].
+  ///
+  /// When null the previous behaviour applies: forecast charts anchor on the
+  /// real clock (`DateTime.now()`), everything else anchors on the last date
+  /// present in [rawData]. Supplying an anchor lets a caller (the history
+  /// feed) pin BOTH kinds of chart to the same data-derived instant, so the
+  /// card title, the drawn window and the trailing total can't drift apart
+  /// when the Amber usage API lags a day or two behind the wall clock.
+  final DateTime? anchor;
 
   BarChartWidget1(this.rawData, this.title, this.interval, this.duration,
       {Key? key,
       this.ending = const Duration(days: 0),
       this.prices = false,
       this.forecast = false,
-      this.feedIn = false})
+      this.feedIn = false,
+      this.allowPartial = false,
+      this.anchor})
       : super(key: key);
 
   @override
@@ -65,13 +74,23 @@ class BarChartWidget1 extends StatefulWidget {
 }
 
 class BarChartState extends State<BarChartWidget1> {
-  late List<Usage>? _rawData;
-  late final String _title;
-  late final Duration _duration;
-  late final Duration _ending;
-  late final bool _prices;
-  late final bool _forecast;
-  late final bool _feedIn;
+  // NONE of these may be `late final`. Flutter reuses a State object whenever
+  // the new widget has the same runtimeType and key at the same tree position,
+  // so a Cost -> Usage metric switch in the history feed hands this State a
+  // brand-new BarChartWidget1 with different flags. Caching the first widget's
+  // values in final fields made the chart keep drawing its first metric for
+  // ever (only the card's title/trailing text changed). See _syncFromWidget.
+  // (Plain defaults rather than `late`: _syncFromWidget reads them to detect
+  // a change, and it runs for the first time from initState.)
+  List<Usage>? _rawData;
+  String _title = '';
+  Duration _duration = Duration.zero;
+  Duration _ending = Duration.zero;
+  bool _prices = false;
+  bool _forecast = false;
+  bool _feedIn = false;
+  bool _allowPartial = false;
+  DateTime? _anchor;
   int _interval = 0; // Re-synced from widget.interval on every aggregate (parseFile).
   List<BarChartGroupData> _barChartData = [];
   Map<int, String> _barChartTitles = {};
@@ -82,6 +101,23 @@ class BarChartState extends State<BarChartWidget1> {
   @override
   initState() {
     super.initState();
+    _syncFromWidget();
+    parseFile();
+  }
+
+  /// Copy every rendering input off the current widget. Returns true when any
+  /// of them actually changed, i.e. when the cached aggregation is stale.
+  bool _syncFromWidget() {
+    final changed = _rawData != widget.rawData ||
+        _title != widget.title ||
+        _duration != widget.duration ||
+        _ending != widget.ending ||
+        _prices != widget.prices ||
+        _forecast != widget.forecast ||
+        _feedIn != widget.feedIn ||
+        _allowPartial != widget.allowPartial ||
+        _anchor != widget.anchor ||
+        _interval != widget.interval;
     _rawData = widget.rawData;
     _title = widget.title;
     _duration = widget.duration;
@@ -89,145 +125,144 @@ class BarChartState extends State<BarChartWidget1> {
     _prices = widget.prices;
     _forecast = widget.forecast;
     _feedIn = widget.feedIn;
+    _allowPartial = widget.allowPartial;
+    _anchor = widget.anchor;
     _interval = widget.interval;
-    parseFile();
+    return changed;
   }
 
   @override
   void didUpdateWidget(BarChartWidget1 oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Always re-sync interval from the widget (site may have changed).
-    _interval = widget.interval;
-    if (widget.rawData != oldWidget.rawData) {
-      //print('new didUpdateWidget _notEnoughData=$_notEnoughData _title=$_title');
-      refresh(widget.rawData);
+    // Re-sync EVERY input (not just rawData/interval) and re-aggregate when
+    // anything moved: the history feed's metric chips swap prices/forecast on
+    // a reused State, and the window params can change with the data.
+    if (_syncFromWidget()) {
       parseFile();
-    } else {
-      //print('old didUpdateWidget _notEnoughData=$_notEnoughData _title=$_title');
     }
-  }
-
-  void refresh(List<Usage>? rawData) {
-    setState(() {
-      _rawData = rawData;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     //print('new build');
-    return Consumer<MyThemeModel>(
-      builder: (context, themeModel, child) {
-        return Column(
-          children: _loading
+    // The per-card title/legend header (TopSectionWidget) was deleted in the
+    // UI overhaul: titles now live on ChartCard and the legend is a single
+    // LegendBar per tab.
+    return Column(
+      children: _loading
+          ? [
+              const Spacer(),
+              Text(
+                'Data is loading for:\n$_title',
+                textAlign: TextAlign.center,
+              ),
+              const Spacer()
+            ]
+          : _cancelled
               ? [
                   const Spacer(),
                   Text(
-                    'Data is loading for:\n$_title',
+                    'No API key entered yet:\n$_title',
                     textAlign: TextAlign.center,
                   ),
                   const Spacer()
                 ]
-              : _cancelled
+              : _notEnoughData
                   ? [
                       const Spacer(),
                       Text(
-                        'No API key entered yet:\n$_title',
+                        'Not enough data available for:\n$_title',
                         textAlign: TextAlign.center,
                       ),
                       const Spacer()
                     ]
-                  : _notEnoughData
-                      ? [
-                          const Spacer(),
-                          Text(
-                            'Not enough data available for:\n$_title',
-                            textAlign: TextAlign.center,
-                          ),
-                          const Spacer()
-                        ]
-                      : [
-                          TopSectionWidget(
-                            title: _title,
-                            legends: [
-                              Legend(title: 'Sponge', color: colors[7]),
-                              if (_prices && !_forecast)
-                                Legend(title: 'Supply', color: colors[0]),
-                              Legend(title: 'Off', color: colors[2]),
-                              Legend(title: 'Shoulder', color: colors[3]),
-                              Legend(title: 'Peak', color: colors[4]),
-                              Legend(title: 'Control', color: colors[1]),
-                              Legend(title: 'Feed', color: colors[6]),
-                            ],
-                            padding: const EdgeInsets.only(left: 3, right: 3, top: 3, bottom: 3),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
-                              child: BarChart(
-                                BarChartData(
-                                  barGroups: _barChartData,
-                                  groupsSpace: _interval == 5 ? 1 : (_interval == 15 ? 2 : 3), // Match width: narrower spacing for 5-min data
-                                  titlesData: FlTitlesData(
-                                    rightTitles:
-                                        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                    topTitles:
-                                        const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                    bottomTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                      reservedSize: 30,
-                                      showTitles: true,
-                                      interval: (60 ~/ _interval).toDouble(), // one label per hour (2/4/12 bars for 30/15/5-min)
-                                      getTitlesWidget: (xValue, titleMeta) {
-                                        return SideTitleWidget(
-                                          axisSide: AxisSide.bottom,
-                                          angle: math.radians(-90),
-                                          space: 9,
-                                          child: Text(
-                                            xValue.toInt() % (60 ~/ _interval) == 0
-                                                ? _barChartTitles[xValue.toInt()]!
-                                                : '',
-                                            // Workaround
-                                            style: const TextStyle(fontSize: 8),
-                                          ),
-                                        );
-                                      },
-                                    )),
-                                    leftTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                            showTitles: true,
-                                            //interval: 1,
-                                            reservedSize: 40,
-                                            getTitlesWidget: (xValue, titleMeta) {
-                                              String formattedNumber;
-                                              if (xValue < 1) {
-                                                formattedNumber = xValue.toStringAsFixed(2);
-                                              } else {
-                                                formattedNumber = xValue.toStringAsFixed(0);
-                                              }
-                                              return SideTitleWidget(
-                                                axisSide: AxisSide.left,
-                                                //child: Text(xValue == xValue.roundToDouble() ? "$xValue" : ''),
-                                                child: Text(
-                                                  (_prices || _forecast ? '\$' : '') +
-                                                      formattedNumber,
-                                                  style: const TextStyle(fontSize: 9),
-                                                ),
-                                              );
-                                            })),
-                                  ),
-                                  //maxY: 10.0,
-                                  gridData: const FlGridData(show: false),
-                                  borderData: FlBorderData(show: false),
-                                ),
-                                duration:
-                                    Duration.zero, // Duration(milliseconds: 1500)
+                  : [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
+                          child: BarChart(
+                            BarChartData(
+                              barGroups: _barChartData,
+                              groupsSpace: _interval == 5 ? 1 : (_interval == 15 ? 2 : 3), // Match width: narrower spacing for 5-min data
+                              titlesData: FlTitlesData(
+                                rightTitles:
+                                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                topTitles:
+                                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                  reservedSize: 30,
+                                  showTitles: true,
+                                  interval: (60 ~/ _interval).toDouble(), // one label per hour (2/4/12 bars for 30/15/5-min)
+                                  getTitlesWidget: (xValue, titleMeta) {
+                                    int graphPos = xValue.toInt();
+                                    return SideTitleWidget(
+                                      axisSide: AxisSide.bottom,
+                                      angle: 0,
+                                      space: 9,
+                                      child: Text(
+                                        graphPos % (3 * (60 ~/ _interval)) == 0
+                                            ? _barChartTitles[graphPos]!
+                                            : '',
+                                        // Workaround
+                                        style: const TextStyle(fontSize: 8),
+                                      ),
+                                    );
+                                  },
+                                )),
+                                leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                        showTitles: true,
+                                        //interval: 1,
+                                        reservedSize: 40,
+                                        getTitlesWidget: (xValue, titleMeta) {
+                                          String formattedNumber = titleMeta.max < 1
+                                              ? xValue.toStringAsFixed(2)
+                                              : xValue.toStringAsFixed(1);
+                                          return SideTitleWidget(
+                                            axisSide: AxisSide.left,
+                                            //child: Text(xValue == xValue.roundToDouble() ? "$xValue" : ''),
+                                            child: Text(
+                                              // The unit is derived here and
+                                              // ONLY here: a caller-supplied
+                                              // yUnit used to be appended on
+                                              // top of this prefix, printing
+                                              // '$0.50$' / '$0.20c'.
+                                              _prices || _forecast
+                                                  ? '\$$formattedNumber'
+                                                  : '$formattedNumber kWh',
+                                              style: const TextStyle(fontSize: 9),
+                                            ),
+                                          );
+                                        })),
                               ),
+                              barTouchData: BarTouchData(
+                                enabled: true,
+                                handleBuiltInTouches: true,
+                                touchTooltipData: BarTouchTooltipData(
+                                  getTooltipItem: (group, gi, rod, ri) {
+                                    final label = _barChartTitles[group.x] ?? '';
+                                    // Forecast bars are a price per unit of
+                                    // energy, not a dollar amount.
+                                    final unit = _forecast
+                                        ? ' \$/kWh'
+                                        : (_prices ? ' \$' : ' kWh');
+                                    return BarTooltipItem(
+                                        '$label\n${rod.toY.toStringAsFixed(_prices || _forecast ? 2 : 3)}$unit',
+                                        const TextStyle(color: Colors.white, fontSize: 11));
+                                  },
+                                ),
+                              ),
+                              //maxY: 10.0,
+                              gridData: const FlGridData(show: false),
+                              borderData: FlBorderData(show: false),
                             ),
+                            duration:
+                                Duration.zero, // Duration(milliseconds: 1500)
                           ),
-                        ],
-        );
-      },
+                        ),
+                      ),
+                    ],
     );
   }
 
@@ -265,8 +300,11 @@ class BarChartState extends State<BarChartWidget1> {
 
     //final rawData = await rootBundle.loadString(filepath);
     List<Usage> data = _rawData!;
+    // An explicit anchor wins; otherwise forecast charts follow the clock and
+    // historical charts stay anchored on their own data (nowOverride null).
     DataAggregator dataAggregator = DataAggregator(_duration, _ending, _prices, _forecast, _feedIn, _interval,
-        nowOverride: _forecast ? DateTime.now() : null);
+        nowOverride: _anchor ?? (_forecast ? DateTime.now() : null),
+        allowPartial: _allowPartial);
     try {
       dataAggregator.aggregateData(data);
 
@@ -301,6 +339,7 @@ class DataAggregator {
   late final bool _prices;
   late final bool _forecast;
   late final bool _feedIn;
+  late final bool _allowPartial;
   int _interval = 0; // Re-synced from widget.interval on every aggregate (parseFile).
 
   late final bool _today;
@@ -312,9 +351,14 @@ class DataAggregator {
   /// robust when the Amber API returns incomplete or unsorted future data:
   /// whatever intervals fall inside the tab's day are shown, and missing bars
   /// stay empty. Left null in unit tests to keep the data-anchored behaviour.
+  ///
+  /// The history feed passes a DATA-derived instant here (see
+  /// `BarChartWidget1.anchor`) so its forecast/price charts line up with the
+  /// data-anchored cost/usage charts beside them instead of following the
+  /// wall clock.
   final DateTime? nowOverride;
 
-  DataAggregator(this._duration, this._ending, this._prices, this._forecast, this._feedIn, this._interval, {this.nowOverride});
+  DataAggregator(this._duration, this._ending, this._prices, this._forecast, this._feedIn, this._interval, {this.nowOverride, bool allowPartial = false}) : _allowPartial = allowPartial;
 
   void aggregateData(List<Usage> data) {
     //print(data.map((u) => u.channelType!).toSet());
@@ -471,7 +515,7 @@ class DataAggregator {
 
     //print('beforeRange=$beforeRange afterRange=$afterRange');
     if (!beforeRange || !afterRange) {
-      if (!_forecast) {
+      if (!_forecast && !_allowPartial) {
         // If there wasn't enough data to answer the questions
         throw NotEnoughDataException();
       }

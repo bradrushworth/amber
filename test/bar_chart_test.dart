@@ -670,5 +670,23 @@ void main() {
       agg.aggregateData(daySpan());
       expect(hasSupply(agg), isTrue);
     });
+
+    test('allowPartial renders a half-empty week instead of throwing', () {
+      // 3 days of data, 7-day window
+      final data = <Usage>[];
+      for (int d = 0; d < 3; d++) {
+        for (int i = 0; i < 48; i++) {
+          data.add(Usage(duration: 30, date: '2023-08-1${2 + d}',
+              nemTime: DateTime.utc(2023, 8, 11 + d, 14, 0)
+                  .add(Duration(minutes: (i + 1) * 30)).toIso8601String(),
+              kwh: 1.0, channelType: 'general', channelIdentifier: 'E1'));
+        }
+      }
+      final agg = DataAggregator(const Duration(days: 7), const Duration(days: 0),
+          false, false, false, 30, allowPartial: true);
+      agg.aggregateData(data);                    // must not throw
+      expect(agg.newData.length, 48);             // full axis present
+      expect(agg.newData[0]!.barRods.first.toY, closeTo(3.0, 0.01)); // 3 days summed
+    });
   });
 }
