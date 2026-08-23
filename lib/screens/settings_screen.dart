@@ -26,6 +26,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _controller;
   String? _error;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -41,15 +42,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _save() async {
-    final ok = await context.read<DashboardState>().saveToken(_controller.text.trim());
-    if (!mounted) return;
-    if (!ok) {
-      setState(() => _error = 'Token should be 36 characters');
-      return;
+    // Guard re-entry: a double-tap fired two overlapping saveToken calls,
+    // which defeated ApiCache's request de-duplication.
+    if (_saving) return;
+    setState(() => _saving = true);
+    final state = context.read<DashboardState>();
+    try {
+      final ok = await state.saveToken(_controller.text.trim());
+      if (!mounted) return;
+      if (!ok) {
+        setState(() => _error = 'Token should be 36 characters');
+        return;
+      }
+      setState(() => _error = null);
+      // Be honest about the outcome: length passing is not the API accepting
+      // the token. loadSites has already run inside saveToken by now.
+      final accepted = state.sites.isNotEmpty && state.lastError == null;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(accepted
+              ? 'Token saved'
+              : 'Saved, but Amber rejected it — check the token and try again')));
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-    setState(() => _error = null);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Token saved')));
   }
 
   @override
@@ -60,7 +75,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: const Color(0xFF1A1A26),
         title: const Text('Settings'),
       ),
-      body: ListView(
+      // SafeArea keeps the last About tile above the Android gesture bar —
+      // the same regression master's 40e6724 fixed in the old footer.
+      body: SafeArea(
+        top: false,
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
@@ -94,8 +113,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
           const SizedBox(height: 12),
           FilledButton(
-            onPressed: _save,
-            child: const Text('Save'),
+            onPressed: _saving ? null : _save,
+            child: Text(_saving ? 'Saving…' : 'Save'),
           ),
           const SizedBox(height: 12),
           Text.rich(
@@ -192,6 +211,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
         ],
+        ),
       ),
     );
   }

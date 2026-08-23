@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:amber/model/Usage.dart';
+import 'package:amber/bar_chart.dart' show daily;
 import 'package:amber/state/dashboard_state.dart';
 
 http.Response _json(Object body) => http.Response(jsonEncode(body), 200);
@@ -156,6 +157,73 @@ void main() {
       Usage(type: 'ActualInterval', cost: -30.0, kwh: 1.0, channelType: 'feedIn',
           nemTime: '2026-08-22T00:30:00+10:00', duration: 30, date: '2026-08-22'),
     ];
-    expect(s.todayCostSoFar, closeTo(0.90, 0.001)); // (120 - 30) cents -> $
+    // (120 - 30) cents -> $0.90, plus the supply charge prorated by the one
+    // general interval present (1 of 48 half-hour slots).
+    expect(s.todayCostSoFar, closeTo(0.90 + daily * (1 / 48), 0.001));
+  });
+
+  test('saveToken clears the previous account data synchronously', () async {
+    SharedPreferences.setMockInitialValues({});
+    final s = DashboardState(fetch: (u, h, t) async => _json(_sites));
+    s.forecastData = [Usage(type: 'CurrentInterval', perKwh: 10.0,
+        channelType: 'general', duration: 30,
+        nemTime: '2026-08-22T10:00:00+10:00')];
+    s.weekData[0] = const [];
+    s.todayUsage = const [];
+    final done = s.saveToken('b' * 36);
+    // Cleared before any network response can land:
+    expect(s.forecastData, isNull);
+    expect(s.weekData[0], isNull);
+    expect(s.todayUsage, isNull);
+    expect(s.selectedSite, isNull);
+    await done;
+    s.dispose();
+  });
+
+  test('overlapping token saves: the stale /sites response is discarded', () async {
+    SharedPreferences.setMockInitialValues({});
+    final holdA = Completer<void>();
+    const sitesA = [{"id": "a", "nmi": "1", "network": "X", "status": "active",
+      "intervalLength": 30, "channels": [], "activeFrom": "2020-01-01"}];
+    const sitesB = [{"id": "b", "nmi": "2", "network": "Y", "status": "active",
+      "intervalLength": 30, "channels": [], "activeFrom": "2020-01-01"}];
+    final s = DashboardState(fetch: (u, h, t) async {
+      if (u.path.endsWith('/sites')) {
+        if (h['Authorization']!.contains('aaaa')) {
+          await holdA.future;
+          return _json(sitesA);
+        }
+        return _json(sitesB);
+      }
+      return _json([]);
+    });
+    final fa = s.saveToken('a' * 36); // slow /sites, held open
+    final fb = s.saveToken('b' * 36); // fast /sites for the new token
+    await fb;
+    holdA.complete();                 // now A's stale response lands last
+    await fa;
+    expect(s.sites.single.id, 'b');   // ...and must be discarded
+    expect(s.selectedSite!.id, 'b');
+    s.dispose();
+  });
+
+  test('one failing week does not abort the rest of the usage cycle', () async {
+    SharedPreferences.setMockInitialValues({});
+    var usageCalls = 0;
+    final s = DashboardState(fetch: (u, h, t) async {
+      if (u.path.endsWith('/sites')) return _json(_sites);
+      usageCalls++;
+      if (usageCalls == 1) return http.Response('rate limited', 429);
+      return _json([]);
+    });
+    s.token = 'x' * 36;
+    await s.loadSites();
+    await s.refreshUsage();
+    expect(s.weekData[0], isNull);          // the failed week stays empty
+    expect(s.weekData[1], isNotNull);       // ...but the rest loaded
+    expect(s.weekData[3], isNotNull);
+    expect(s.todayUsage, isNotNull);        // today still fetched
+    expect(s.lastError, contains('429'));   // and the failure is surfaced
+    s.dispose();
   });
 }

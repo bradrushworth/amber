@@ -14,7 +14,9 @@ class Onboarding extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return SafeArea(
+      top: false,
+      child: Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -67,6 +69,7 @@ class Onboarding extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

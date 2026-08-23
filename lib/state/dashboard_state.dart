@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:amber/api_cache.dart';
-import 'package:amber/bar_chart.dart' show meterInterval;
+import 'package:amber/bar_chart.dart' show meterInterval, daily;
 import 'package:amber/model/Sites.dart';
 import 'package:amber/model/Usage.dart';
 import 'package:amber/periods.dart';
@@ -68,12 +68,25 @@ class DashboardState extends ChangeNotifier {
 
   Future<bool> saveToken(String v) async {
     if (v.length != 36) return false;
+    // Bump the generation and clear the previous account's data BEFORE any
+    // await: a token change means everything on screen may belong to another
+    // account, and in-flight responses for it must be discarded. Leaving the
+    // old site selected also meant a rejected token kept polling the OLD
+    // site's endpoints forever.
+    _gen++;
+    token = v;
+    forecastData = null;
+    todayUsage = null;
+    for (var i = 0; i < 4; i++) {
+      weekData[i] = null;
+    }
+    sites = [];
+    selectedSite = null;
+    notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     if (_isDisposed) return true;
     await prefs.setString('amberToken', v);
     if (_isDisposed) return true;
-    token = v;
-    _gen++;
     ApiCache.instance.clear();
     await loadSites();
     if (_isDisposed) return true;
@@ -84,9 +97,12 @@ class DashboardState extends ChangeNotifier {
   }
 
   Future<void> loadSites() async {
+    // Guard like the other fetchers: two overlapping token saves must not let
+    // the earlier /sites response land last and install the wrong account.
+    final gen = _gen;
     try {
       final r = await _fetch(Uri.parse('$_base/sites'), _headers, Duration.zero);
-      if (_isDisposed) return;
+      if (gen != _gen || _isDisposed) return;
       if (r.statusCode != 200) {
         lastError = 'Could not load your sites (HTTP ${r.statusCode}). '
             'Check your API token in Settings.';
@@ -106,10 +122,10 @@ class DashboardState extends ChangeNotifier {
       // Offline / DNS / TLS / malformed body. Never let this escape: init()
       // awaits it, and an unhandled exception there used to abort the rest of
       // start-up (leaving the app blank with no way to retry).
-      if (_isDisposed) return;
+      if (gen != _gen || _isDisposed) return;
       lastError = offlineMessage;
     }
-    if (_isDisposed) return;
+    if (gen != _gen || _isDisposed) return;
     notifyListeners();
   }
 
@@ -162,25 +178,33 @@ class DashboardState extends ChangeNotifier {
     if (token == null || site == null) return;
     final gen = _gen;
     final fmt = DateFormat('yyyy-MM-dd');
+    // One clock reading for the whole cycle: nine separate DateTime.now()
+    // calls could straddle midnight and compute overlapping/gapped windows.
+    final now = DateTime.now();
+    bool anyFailure = false;
     try {
       for (int period = 0; period <= 3; period++) {
-        final start = fmt.format(DateTime.now().subtract(Duration(days: period * 7 + 7)));
-        final end = fmt.format(DateTime.now().subtract(Duration(days: period * 7 + 1)));
+        final start = fmt.format(now.subtract(Duration(days: period * 7 + 7)));
+        final end = fmt.format(now.subtract(Duration(days: period * 7 + 1)));
         final uri = Uri.parse(
             '$_base/sites/${site.id}/usage?startDate=$start&endDate=$end');
         final r = await _fetch(uri, _headers, const Duration(hours: 1));
         if (gen != _gen || _isDisposed) return;
         if (r.statusCode != 200) {
+          // Record and keep going: one rate-limited week used to blank ALL
+          // tabs for the whole hourly cycle. The other weeks and today still
+          // load, and ApiCache's 60s error backoff lets a later tick heal it.
           lastError = 'Could not load usage history (HTTP ${r.statusCode}).';
+          anyFailure = true;
           notifyListeners();
-          return;
+          continue;
         }
         weekData[period] =
             (jsonDecode(r.body) as List).map((j) => Usage.fromJson(j)).toList(growable: false);
         notifyListeners();
       }
       // today (may legitimately be empty — usage often lags a day)
-      final today = fmt.format(DateTime.now());
+      final today = fmt.format(now);
       final r = await _fetch(
           Uri.parse('$_base/sites/${site.id}/usage?startDate=$today&endDate=$today'),
           _headers, const Duration(minutes: 30));
@@ -188,6 +212,7 @@ class DashboardState extends ChangeNotifier {
       todayUsage = r.statusCode == 200
           ? (jsonDecode(r.body) as List).map((j) => Usage.fromJson(j)).toList()
           : null;
+      if (!anyFailure) lastError = null;
     } catch (_) {
       // Same story as refreshForecast: this is fired unawaited and from a
       // timer, so a throw here would be an unhandled async error.
@@ -223,8 +248,18 @@ class DashboardState extends ChangeNotifier {
     final t = todayUsage;
     if (t == null || t.isEmpty) return null;
     double cents = 0;
-    for (final u in t) { cents += u.cost ?? 0; }
-    return cents / 100.0;
+    int generalIntervals = 0;
+    for (final u in t) {
+      cents += u.cost ?? 0;
+      if (u.channelType == 'general') generalIntervals++;
+    }
+    // Include the supply charge, prorated by how much of the day has data,
+    // so the hero agrees with every other cost figure in the app (day_math
+    // adds daily per day; the charts draw daily/barsPerDay per bar).
+    final int barsPerDay = 24 * 60 ~/ intervalLength;
+    final double supplyShare =
+        daily * (generalIntervals / barsPerDay).clamp(0.0, 1.0);
+    return cents / 100.0 + supplyShare;
   }
 
   @override
