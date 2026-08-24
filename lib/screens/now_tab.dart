@@ -105,8 +105,11 @@ class NowTab extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   priceText,
+                  // Mint, the way Amber's own app puts the live price in its
+                  // mint circle — this number is the one thing a customer
+                  // opens the app for.
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AmberPalette.mint,
                     fontWeight: FontWeight.bold,
                     fontSize: 40,
                   ),

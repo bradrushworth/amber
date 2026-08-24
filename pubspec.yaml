@@ -1,4 +1,4 @@
-﻿name: amber
+name: amber
 description: "Amber Electric Dashboard: View energy usage patterns with Amber Electric electricity provider in Australia."
 
 # The following line prevents the package from being accidentally published to
