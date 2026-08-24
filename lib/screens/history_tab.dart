@@ -153,8 +153,13 @@ class _HistoryTabState extends State<HistoryTab> {
     // the w=0 row below it. It is now a real current week (last completed
     // week + today's records so far), so it only coincides with w=0 while
     // today's usage hasn't arrived.
+    // ...and when today's records haven't arrived, _currentWeekData IS
+    // weekData[0], so a leading card would be that same duplicate again.
+    // Only show it once it genuinely differs.
+    final current = _currentWeekData(state);
     final entries = <_Entry>[
-      _weekEntry(_currentWeekData(state), allowPartial: true),
+      if (current != null && !identical(current, state.weekData[0]))
+        _weekEntry(current, allowPartial: true),
     ];
     for (var w = 0; w < 4; w++) {
       // allowPartial: a week slice can legitimately be short (API lag, new

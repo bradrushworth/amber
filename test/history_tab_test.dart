@@ -215,15 +215,36 @@ void main() {
 
     expect(find.textContaining('Week to'), findsWidgets);
 
-    // Default metric is Cost. The leading "This week (partial)" card and the
-    // w=0 "Week to ..." card both cover the same (data, duration, ending),
-    // so the full-week total from sumForRange should appear twice — proving
-    // the trailing figure is the 7-day sum, not sumForDay's one-day sum
-    // (which would only capture 2023-08-12, half the total).
+    // Default metric is Cost. The trailing figure must be the 7-day sum, not
+    // sumForDay's one-day sum (which would only capture 2023-08-12, half the
+    // total).
     final fullWeek = sumForRange(weekData, const Duration(days: 7), Duration.zero, cost: true);
     final oneDay = sumForDay(weekData, Duration.zero, cost: true);
     expect(fullWeek, isNot(closeTo(oneDay, 0.001)));
-    expect(find.text('\$${fullWeek.toStringAsFixed(2)}'), findsNWidgets(2));
+    // Exactly once: with no todayUsage the "current week" IS weekData[0], so
+    // the leading card is suppressed rather than duplicating the w=0 row.
+    expect(find.text('\$${fullWeek.toStringAsFixed(2)}'), findsOneWidget);
+  });
+
+  testWidgets('weeks: no duplicate leading card when today has not arrived',
+      (t) async {
+    final originalSize = t.view.physicalSize;
+    final originalRatio = t.view.devicePixelRatio;
+    t.view.physicalSize = const Size(400, 2400);
+    t.view.devicePixelRatio = 1;
+    addTearDown(() {
+      t.view.physicalSize = originalSize;
+      t.view.devicePixelRatio = originalRatio;
+    });
+
+    final s = DashboardState(fetch: (u, h, ttl) async => http.Response('[]', 200));
+    s.weekData[0] = _dayOf('2023-08-12');
+    s.todayUsage = const [];      // Amber's usage feed routinely lags
+
+    await t.pumpWidget(_host(const HistoryTab(weeks: true), s));
+    await t.pump();
+
+    expect(find.text('Week to Sat 12 Aug'), findsOneWidget);
   });
 
   testWidgets('portrait: tapping the first card pushes a day-detail route',

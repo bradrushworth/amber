@@ -125,20 +125,21 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
 
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/electricity.png"
-  image_path_ios: "assets/electricity-white.png"
+  image_path: "assets/icon.png"
   remove_alpha_ios: true
-  #adaptive_icon_background: "#FFFFFF"
-  #adaptive_icon_foreground: "assets/electricity.png"
+  # Adaptive icon: Android masks the foreground to the launcher's shape, so the
+  # bars live inside the centre safe zone of icon_foreground.png.
+  adaptive_icon_background: "#1B1B25"
+  adaptive_icon_foreground: "assets/icon_foreground.png"
   web:
     generate: true
-    image_path: "assets/electricity-white.png"
-    background_color: "#050505"
-    theme_color: "#050505"
+    image_path: "assets/icon.png"
+    background_color: "#20202A"
+    theme_color: "#20202A"
   windows:
     generate: true
-    image_path: "assets/electricity-white.png"
+    image_path: "assets/icon.png"
     icon_size: 256 # min:48, max:256, default: 48

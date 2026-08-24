@@ -216,6 +216,19 @@ class BarChartState extends State<BarChartWidget1> {
                                         //interval: 1,
                                         reservedSize: 40,
                                         getTitlesWidget: (xValue, titleMeta) {
+                                          // fl_chart adds the axis min/max on top of its evenly spaced
+                                          // ticks (AxisChartHelper.iterateThroughAxis); on a short card
+                                          // that extra label lands on the neighbouring tick ('$0.42'
+                                          // printed over '$0.40'). Keep the even ticks, drop an edge
+                                          // label that isn't on one.
+                                          final double step = titleMeta.appliedInterval;
+                                          if (step > 0 &&
+                                              (xValue == titleMeta.min || xValue == titleMeta.max) &&
+                                              ((xValue / step) - (xValue / step).round()).abs() > 1e-6) {
+                                            return const SizedBox.shrink();
+                                          }
+                                          // -0.0 would format as '-0.00'.
+                                          if (xValue == 0) xValue = 0;
                                           String formattedNumber = titleMeta.max < 1
                                               ? xValue.toStringAsFixed(2)
                                               : xValue.toStringAsFixed(1);
@@ -243,12 +256,16 @@ class BarChartState extends State<BarChartWidget1> {
                                   getTooltipItem: (group, gi, rod, ri) {
                                     final label = _barChartTitles[group.x] ?? '';
                                     // Forecast bars are a price per unit of
-                                    // energy, not a dollar amount.
-                                    final unit = _forecast
-                                        ? ' \$/kWh'
-                                        : (_prices ? ' \$' : ' kWh');
+                                    // energy, not a dollar amount. Currency reads
+                                    // as a prefix ('$0.18'), not the trailing
+                                    // '0.18 $' this used to print.
+                                    final value = rod.toY
+                                        .toStringAsFixed(_prices || _forecast ? 2 : 3);
+                                    final amount = _forecast
+                                        ? '\$$value/kWh'
+                                        : (_prices ? '\$$value' : '$value kWh');
                                     return BarTooltipItem(
-                                        '$label\n${rod.toY.toStringAsFixed(_prices || _forecast ? 2 : 3)}$unit',
+                                        '$label\n$amount',
                                         const TextStyle(color: Colors.white, fontSize: 11));
                                   },
                                 ),
