@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme.dart';
 
 /// A dark, rounded card used to host a chart: a title row (title left,
 /// optional [trailing] right in grey) above the [chart], which is laid out
@@ -14,7 +15,7 @@ class ChartCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A26),
+        color: AmberPalette.surface,
         borderRadius: BorderRadius.circular(8),
       ),
       padding: const EdgeInsets.all(12),
@@ -33,7 +34,7 @@ class ChartCard extends StatelessWidget {
               if (trailing != null)
                 Text(
                   trailing!,
-                  style: const TextStyle(color: Color(0xFF9595A4)),
+                  style: const TextStyle(color: AmberPalette.muted),
                 ),
             ],
           ),

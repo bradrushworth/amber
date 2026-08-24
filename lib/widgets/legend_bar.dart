@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../bar_chart.dart' show colors;
+import '../theme.dart';
 
 /// A single row of swatch+label legend entries, wrapping onto multiple lines
 /// if there isn't enough horizontal space.
@@ -61,7 +62,7 @@ class _LegendSwatch extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 4),
-        Text(entry.label, style: const TextStyle(color: Color(0xFFA7A7B7), fontSize: 11)),
+        Text(entry.label, style: const TextStyle(color: AmberPalette.mutedBright, fontSize: 11)),
       ],
     );
   }

@@ -5,6 +5,7 @@ import '../bar_chart.dart';
 import '../state/dashboard_state.dart';
 import '../widgets/chart_card.dart';
 import '../widgets/legend_bar.dart';
+import '../theme.dart';
 
 /// The "Now" tab: a live-price hero panel (current price, period, spike
 /// status, today's cost-so-far) followed by the three price-day pairs in the
@@ -54,7 +55,7 @@ class NowTab extends StatelessWidget {
 
     Widget chart(String title, Duration ending, bool feedIn) =>
         state.forecastData == null
-            ? Container(height: 180, color: const Color(0xFF23232F))
+            ? Container(height: 180, color: AmberPalette.skeleton)
             : BarChartWidget1(
                 state.forecastData,
                 title,
@@ -85,7 +86,7 @@ class NowTab extends StatelessWidget {
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A26),
+              color: AmberPalette.surface,
               borderRadius: BorderRadius.circular(8),
             ),
             padding: const EdgeInsets.all(16),
@@ -95,7 +96,7 @@ class NowTab extends StatelessWidget {
                 const Text(
                   'RIGHT NOW',
                   style: TextStyle(
-                    color: Color(0xFF9595A4),
+                    color: AmberPalette.muted,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                     letterSpacing: 1.2,
@@ -113,7 +114,7 @@ class NowTab extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   subLineBuffer.toString(),
-                  style: const TextStyle(color: Color(0xFF9595A4)),
+                  style: const TextStyle(color: AmberPalette.muted),
                 ),
               ],
             ),

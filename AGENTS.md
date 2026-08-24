@@ -153,6 +153,22 @@ hides the metric chips.
 - The user's Amber token is entered in-app and stored in SharedPreferences;
   it must never appear in code, fixtures, or committed files.
 
+## Look and feel (Amber's palette, deliberately)
+
+`lib/theme.dart` holds the whole palette, sampled from amber.com.au's own brand
+custom properties: deep navy `#0A1A43` with the mint `#00FFA8` accent. The app
+is NOT affiliated with Amber Electric, but it reads their API for their
+customers, so it speaks the visual language those customers already associate
+with their account. The line not to cross is passing for the official app:
+their circular "a" glyph, their wordmark and their screenshots stay theirs —
+our mark is a bar chart and the naming keeps "Dashboard" plus the
+non-affiliation notice in the store listing.
+
+Screens must not hardcode hex colours; add a named `AmberPalette` entry
+instead. Accent roles (chips, `FilledButton`, the `NavigationBar` indicator)
+come from `darkTheme` in `main.dart` — Material's dark defaults otherwise leak
+their stock lilac in, which is what the mint pinning fixes.
+
 ## Store assets and the app icon
 
 `store/` holds everything the Play Store / App Store listings are built from,

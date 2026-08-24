@@ -10,6 +10,7 @@ import '../utils.dart';
 import '../widgets/chart_card.dart';
 import '../widgets/legend_bar.dart';
 import 'day_detail.dart';
+import '../theme.dart';
 
 enum _Metric { cost, usage, prices }
 
@@ -179,7 +180,7 @@ class _HistoryTabState extends State<HistoryTab> {
         title: 'Loading…',
         chart: SizedBox(
           height: 180,
-          child: ColoredBox(color: Color(0xFF23232F)),
+          child: ColoredBox(color: AmberPalette.skeleton),
         ),
       );
     }
@@ -276,7 +277,7 @@ class _HistoryTabState extends State<HistoryTab> {
 
   Widget _landscapeHeader() {
     const style = TextStyle(
-      color: Color(0xFF9595A4),
+      color: AmberPalette.muted,
       fontWeight: FontWeight.bold,
       fontSize: 12,
       letterSpacing: 1.2,

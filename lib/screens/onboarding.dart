@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../utils.dart';
 import 'settings_screen.dart';
+import '../theme.dart';
 
 /// First-run empty state shown when no Amber API token is saved yet.
 ///
@@ -10,7 +11,7 @@ import 'settings_screen.dart';
 class Onboarding extends StatelessWidget {
   const Onboarding({super.key});
 
-  static const _stepStyle = TextStyle(color: Color(0xFF9595A4), height: 1.5);
+  static const _stepStyle = TextStyle(color: AmberPalette.muted, height: 1.5);
 
   @override
   Widget build(BuildContext context) {

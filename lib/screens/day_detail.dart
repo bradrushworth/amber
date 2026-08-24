@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../bar_chart.dart';
 import '../model/Usage.dart';
 import '../state/day_math.dart';
+import '../theme.dart';
 
 /// Full-screen detail for a single day/week: a full-height cost chart above
 /// a row of DAY TOTAL / USED / FEED-IN stat tiles, reached by tapping a
@@ -27,7 +28,7 @@ class DayDetail extends StatelessWidget {
     return Expanded(
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF23232F),
+          color: AmberPalette.skeleton,
           borderRadius: BorderRadius.circular(6),
         ),
         padding: const EdgeInsets.all(8),
@@ -38,7 +39,7 @@ class DayDetail extends StatelessWidget {
             Text(
               label,
               style: const TextStyle(
-                color: Color(0xFF9595A4),
+                color: AmberPalette.muted,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.0,
@@ -66,9 +67,9 @@ class DayDetail extends StatelessWidget {
     final feedIn = sumFeedIn(data, duration, ending);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF20202A),
+      backgroundColor: AmberPalette.navy,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A26),
+        backgroundColor: AmberPalette.surface,
         title: Text(title),
       ),
       body: Column(

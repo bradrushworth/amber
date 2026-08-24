@@ -11,6 +11,7 @@ import 'history_tab.dart';
 import 'now_tab.dart';
 import 'onboarding.dart';
 import 'settings_screen.dart';
+import '../theme.dart';
 
 /// Root screen: an app bar (app name + tappable site context line + Settings
 /// gear) over a three-tab body (Now / Days / Weeks) driven by a
@@ -25,8 +26,8 @@ class HomeShell extends StatefulWidget {
 }
 
 class _HomeShellState extends State<HomeShell> {
-  static const Color _background = Color(0xFF20202A);
-  static const Color _surface = Color(0xFF1A1A26);
+  static const Color _background = AmberPalette.navy;
+  static const Color _surface = AmberPalette.surface;
 
   int _tab = 0;
 
@@ -83,7 +84,7 @@ class _HomeShellState extends State<HomeShell> {
                   style: const TextStyle(color: Colors.white),
                 ),
                 selected: identical(site, state.selectedSite),
-                selectedTileColor: const Color(0xFF23232F),
+                selectedTileColor: AmberPalette.skeleton,
                 onTap: () {
                   state.selectSite(site);
                   Navigator.of(sheetContext).pop();
@@ -120,13 +121,13 @@ class _HomeShellState extends State<HomeShell> {
                     _contextLine(site),
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(0xFF9595A4),
+                      color: AmberPalette.muted,
                       fontSize: 12,
                     ),
                   ),
                 ),
                 const Icon(Icons.arrow_drop_down,
-                    size: 16, color: Color(0xFF9595A4)),
+                    size: 16, color: AmberPalette.muted),
               ],
             ),
           ),
@@ -170,7 +171,7 @@ class _HomeShellState extends State<HomeShell> {
         title: _title(context, state),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings, color: Color(0xFF9595A4)),
+            icon: const Icon(Icons.settings, color: AmberPalette.muted),
             tooltip: 'Settings',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
@@ -199,7 +200,8 @@ class _HomeShellState extends State<HomeShell> {
           ? NavigationBar(
               backgroundColor: _surface,
               surfaceTintColor: Colors.transparent,
-              indicatorColor: const Color(0xFF2E2E3E),
+              // Indicator/icon/label colours come from navigationBarTheme so
+              // the mint selection stays defined in one place.
               selectedIndex: _tab,
               onDestinationSelected: (i) => setState(() => _tab = i),
               destinations: const [

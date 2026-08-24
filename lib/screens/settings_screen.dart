@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../state/dashboard_state.dart';
 import '../utils.dart';
+import '../theme.dart';
 
 /// Settings: Amber API token entry + About links.
 ///
@@ -70,9 +71,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF20202A),
+      backgroundColor: AmberPalette.navy,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A26),
+        backgroundColor: AmberPalette.surface,
         title: const Text('Settings'),
       ),
       // SafeArea keeps the last About tile above the Android gesture bar —
@@ -85,7 +86,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Text(
             'AMBER API TOKEN',
             style: TextStyle(
-              color: Color(0xFF9595A4),
+              color: AmberPalette.muted,
               fontWeight: FontWeight.bold,
               fontSize: 12,
               letterSpacing: 1.2,
@@ -98,7 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
             decoration: InputDecoration(
               filled: true,
-              fillColor: const Color(0xFF1A1A26),
+              fillColor: AmberPalette.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide.none,
@@ -120,7 +121,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Text.rich(
             TextSpan(
               text: 'Enable ',
-              style: const TextStyle(color: Color(0xFF9595A4), height: 1.5),
+              style: const TextStyle(color: AmberPalette.muted, height: 1.5),
               children: [
                 TextSpan(
                   text: '\'For Developers\'',
@@ -155,7 +156,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Text(
             'ABOUT',
             style: TextStyle(
-              color: Color(0xFF9595A4),
+              color: AmberPalette.muted,
               fontWeight: FontWeight.bold,
               fontSize: 12,
               letterSpacing: 1.2,
