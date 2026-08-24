@@ -153,46 +153,6 @@ hides the metric chips.
 - The user's Amber token is entered in-app and stored in SharedPreferences;
   it must never appear in code, fixtures, or committed files.
 
-## Look and feel (Amber's palette, deliberately)
-
-`lib/theme.dart` holds the whole palette, sampled from amber.com.au's own brand
-custom properties: deep navy `#0A1A43` with the mint `#00FFA8` accent. The app
-is NOT affiliated with Amber Electric, but it reads their API for their
-customers, so it speaks the visual language those customers already associate
-with their account. The line not to cross is passing for the official app:
-their circular "a" glyph, their wordmark and their screenshots stay theirs —
-our mark is a bar chart and the naming keeps "Dashboard" plus the
-non-affiliation notice in the store listing.
-
-Screens must not hardcode hex colours; add a named `AmberPalette` entry
-instead. Accent roles (chips, `FilledButton`, the `NavigationBar` indicator)
-come from `darkTheme` in `main.dart` — Material's dark defaults otherwise leak
-their stock lilac in, which is what the mint pinning fixes.
-
-## Store assets and the app icon
-
-`store/` holds everything the Play Store / App Store listings are built from,
-so the repo is the record of what is published:
-
-- `store/listing.md` — app name, short/full description, "What's new". Edit here
-  first, then paste into the console.
-- `store/screenshots/` — `play-*` 1080x1920, `ios-*` 1290x2796 (iPhone 6.7"),
-  `land-*` 1600x800. Regenerated from a real `flutter build web --release`
-  driven by headless Chrome, never mocked up.
-- `store/feature-graphic.png` (1024x500, Play only), `store/icon-512.png`.
-
-The launcher icon is generated, not hand-drawn: `assets/icon.png` (full-bleed
-1024x1024) and `assets/icon_foreground.png` (same art, transparent) feed
-`flutter_launcher_icons`. After changing either, run:
-
-```bash
-dart run flutter_launcher_icons
-```
-
-`adaptive_icon_foreground` is wrapped in a 16% inset by the generator, so the
-foreground must use the SAME geometry as the full icon — pre-shrinking it a
-second time makes the launcher icon look tiny.
-
 ## Gotchas
 
 - `flutter test` can fail on a locked `build\unit_test_assets` dir on
