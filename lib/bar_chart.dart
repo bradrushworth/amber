@@ -434,8 +434,15 @@ class DataAggregator {
       Usage record = data[n];
 
       //print("adding record=" + record.nemTime!);
-      DateTime date = Utils.toLocal(
-          DateTime.parse(record.nemTime!).subtract(Duration(minutes: _interval)));
+      // nemTime is the END of the interval, so the interval STARTS at nemTime
+      // minus the RECORD's own length -- not minus the chart's bar width. The
+      // two differ whenever a site's records are finer than the bars drawn
+      // from them: the Now tab requests resolution=<site interval> (5 minutes
+      // here) and draws 30-minute bars, so subtracting 30 pushed five of every
+      // six readings into the previous half hour and a cheap 06:30 rendered at
+      // the expensive 07:00 price.
+      DateTime date = Utils.toLocal(DateTime.parse(record.nemTime!)
+          .subtract(Duration(minutes: record.duration ?? _interval)));
 
       if (date.isBefore(earliest)) {
         continue; // Skip data outside of range

@@ -99,6 +99,18 @@ and defaults to the most recent **active** site — keep that behaviour.
 - `aggregateData` iterates every record once and buckets on its own
   `nemTime`/channel. Never reintroduce a fixed meter-stride — the API
   interleaves channels/days.
+- **`nemTime` is the END of an interval**, so a record starts at
+  `nemTime - record.duration`. Subtract the RECORD's own duration, never the
+  chart's bar width: `dashboard_state` requests
+  `prices/current?resolution=<site interval>`, so a 5-minute site returns
+  5-minute price records that the Now tab then draws on 30-minute bars. While
+  the code subtracted the bar width, five of every six readings fell into the
+  previous half hour and a genuinely cheap 06:30 rendered at the expensive
+  07:00 price (verified against the API and Amber's own app for 2026-08-25:
+  06:30 settled at 22c, the app drew 31c). Regression test
+  `test/interval_bucketing_test.dart`. Usage charts were never affected —
+  there the records and the bars are both the site interval, which is exactly
+  why this hid for so long.
 - `daily` in `bar_chart.dart` is a hardcoded supply charge (known debt; the
   sister app grew a Settings dialog for its rates — same treatment planned
   here). `day_math.sumForRange` imports it and adds `daily * duration.inDays`
