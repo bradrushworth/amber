@@ -110,7 +110,9 @@ and defaults to the most recent **active** site — keep that behaviour.
   06:30 settled at 22c, the app drew 31c). Regression test
   `test/interval_bucketing_test.dart`. Usage charts were never affected —
   there the records and the bars are both the site interval, which is exactly
-  why this hid for so long.
+  why this hid for so long. Momentum's CSV takes the OPPOSITE convention (its
+  timestamps are interval STARTS), so do not port this subtraction there --
+  `momentumenergy/test/interval_convention_test.dart` guards it.
 - `daily` in `bar_chart.dart` is a hardcoded supply charge (known debt; the
   sister app grew a Settings dialog for its rates — same treatment planned
   here). `day_math.sumForRange` imports it and adds `daily * duration.inDays`
