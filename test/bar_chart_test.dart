@@ -221,6 +221,66 @@ void main() {
           closeTo(0.01 + dailySupplyChargePer30mins, 0.01));
     });
 
+    test('Days tab: feed-in draws below axis on Cost metric', () async {
+      // Cost metric: prices:true, forecast:false. feedin.json's feedIn
+      // records carry a NEGATIVE cost already (money paid to the user); the
+      // aggregator must not flip that positive, and must route feed-in
+      // through the below-axis backdrop rather than the main stack.
+      final myData = await File('assets/feedin.json').readAsString();
+      List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
+
+      DataAggregator dataAggregator =
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), true, false, false, 30);
+      dataAggregator.aggregateData(data);
+
+      for (final group in dataAggregator.newData.values) {
+        expect(group.barRods.first.backDrawRodData.toY, lessThan(0.0));
+      }
+    });
+
+    test('Days tab: feed-in draws below axis on Usage metric', () async {
+      // Usage metric: prices:false, forecast:false. kwh is positive for
+      // feed-in records; the backdrop must still be negative.
+      final myData = await File('assets/feedin.json').readAsString();
+      List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
+
+      DataAggregator dataAggregator =
+          DataAggregator(const Duration(days: 1), const Duration(days: 0), false, false, false, 30);
+      dataAggregator.aggregateData(data);
+
+      for (final group in dataAggregator.newData.values) {
+        expect(group.barRods.first.backDrawRodData.toY, lessThan(0.0));
+      }
+    });
+
+    test('Days tab: feed-in draws below axis on Prices metric (forecast)', () async {
+      // Prices metric: prices:true, forecast:true. This used to hit the
+      // "_forecast && _prices && !hasControlled" special case, which
+      // stacked feed-in additively into the main rod group instead of
+      // drawing it as a below-axis backdrop. south_australia_prices.json's
+      // feedIn perKwh is NEGATIVE (unlike feedin.json's positive perKwh),
+      // pinning that the fix is robust to either sign convention.
+      final myData = await File('assets/south_australia_prices.json').readAsString();
+      List<Usage> data = (jsonDecode(myData) as List).map((json) => Usage.fromJson(json)).toList();
+
+      final nowOverride = DateTime.utc(2023, 9, 13, 2, 0); // AEST 2023-09-13 12:00
+      DataAggregator dataAggregator = DataAggregator(
+          const Duration(days: 1), const Duration(days: 0), true, true, false, 30,
+          nowOverride: nowOverride);
+      dataAggregator.aggregateData(data);
+
+      expect(dataAggregator.newData, isNotEmpty);
+      bool sawNegativeFeedIn = false;
+      for (final group in dataAggregator.newData.values) {
+        final toY = group.barRods.first.backDrawRodData.toY;
+        if (toY != 0.0) {
+          expect(toY, lessThan(0.0));
+          sawNegativeFeedIn = true;
+        }
+      }
+      expect(sawNegativeFeedIn, isTrue);
+    });
+
     test('1 Day 5-minute intervals', () {
       // Build one full day of 5-minute 'general' usage, each interval = 1.0 kWh.
       // Q1: bars are per-interval buckets, so the 288 five-minute

@@ -418,16 +418,6 @@ class DataAggregator {
 
     bool beforeRange = false;
     bool afterRange = false;
-    bool hasControlled = false;
-
-    // Have a look if the controlled load is in the data somewhere
-    for (int n = 0; n < data.length; n++) {
-      Usage record = data[n];
-      if (record.channelType == controlledLoad) {
-        hasControlled = true;
-        break;
-      }
-    }
 
     // Start drawing the data
     for (int n = 0; n < data.length; n++) {
@@ -474,11 +464,6 @@ class DataAggregator {
           ((_forecast && record.perKwh != null) ||
               (_prices && record.cost != null && record.cost! >= 0.0) ||
               (!_prices && record.kwh != null && record.kwh! >= 0.0))) {
-        // Record if a controlledLoad exists, and reverse the cost chart
-        // positivity/negativity for usability if there is not one
-        if (record.channelType == controlledLoad) {
-          hasControlled = true;
-        }
         // Ignore feed in tariff here or negative costs. Forecast charts show
         // the price (perKwh); usage/cost charts sum kwh/cost.
         stackedValues[graphPos] ??= CustomRodGroup();
@@ -494,32 +479,37 @@ class DataAggregator {
                 _prices || _forecast));
       } else if ((_feedIn && record.channelType == feedIn) ||
           (_feedIn && record.perKwh != null) ||
+          (_forecast && record.perKwh != null) ||
           (_prices && record.cost != null) ||
           (!_prices && record.kwh != null)) {
-        // Calculate feed in tariff
+        // Calculate feed in tariff. Feed-in always draws BELOW the x-axis as
+        // a backdrop (feedInValue/backDrawRodData), on every metric (Cost,
+        // Usage, and forecast Prices) -- matching how the Usage view has
+        // always rendered it. There used to be a special case here that
+        // stacked feed-in INTO the main rod group when forecasting prices
+        // without a controlled load, so it would show additively alongside
+        // the buy price on the Now tab's forecast chart; but that made the
+        // Days-tab "Prices" metric (also forecast+prices) render feed-in
+        // inside the stack instead of as a backdrop, which is the bug this
+        // fixes. The Now tab's forecast chart still gets a below-axis
+        // backdrop, which reads sensibly as "what you'd be paid" under the
+        // buy-price bars.
+        //
+        // The source sign convention for feed-in is NOT consistent across
+        // fixtures/regions: perKwh and cost may each be positive or
+        // negative for a feedIn record depending on data source, while kwh
+        // is observed positive. Rather than assume a sign, take the
+        // magnitude and force it negative here so feed-in reliably draws
+        // below the axis regardless of source sign.
         stackedValues[graphPos] ??= CustomRodGroup();
-        if (_forecast && _prices && !hasControlled) {
-          stackedValues[graphPos]!.add(
-              record.channelType!,
-              record.tariffInformation?.demandWindow,
-              record.tariffInformation?.period,
-              record.descriptor,
-              roundDouble(
-                  -(_prices || _forecast
-                      ? (_forecast ? record.perKwh! : (record.cost ?? record.perKwh!)) / 100
-                      : (record.kwh ?? record.perKwh! / 100)),
-                  _prices || _forecast));
-        } else {
-          // Feed-in is money paid TO the user, so both branches negate it and
-          // it draws below the x-axis, matching the rest of the app.
-          feedInValue[graphPos] = (feedInValue[graphPos] ?? 0.0) +
-              roundDouble(
-                  _prices || _forecast
-                      ? -(_forecast ? record.perKwh! : (record.cost ?? record.perKwh!)) / 100
-                      : -(record.kwh ?? record.perKwh! / 100),
-                  _prices || _forecast);
-          feedInCount[graphPos] = (feedInCount[graphPos] ?? 0) + 1;
-        }
+        feedInValue[graphPos] = (feedInValue[graphPos] ?? 0.0) -
+            roundDouble(
+                (_prices || _forecast
+                        ? (_forecast ? record.perKwh! : (record.cost ?? record.perKwh!)) / 100
+                        : (record.kwh ?? record.perKwh! / 100))
+                    .abs(),
+                _prices || _forecast);
+        feedInCount[graphPos] = (feedInCount[graphPos] ?? 0) + 1;
       } else {
         //print("unmatched record");
       }
