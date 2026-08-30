@@ -52,9 +52,9 @@ their trademark.
 
 A rebuilt interface: a live price panel up top, then buy and feed-in prices
 paired for yesterday, today and tomorrow. New Days and Weeks tabs let you scroll
-your history and tap any day for a half-hourly breakdown. Rotate to landscape
-for side-by-side charts. Plus a new app icon, clearer chart labels and a
-full-word legend.
+A refreshed app icon coloured by tariff period, and a cleaner Now tab: the
+yesterday charts have moved to the Days tab, which now also draws feed-in
+prices below the axis like everywhere else in the app.
 
 ## Assets
 

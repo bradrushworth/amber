@@ -510,10 +510,12 @@ class DataAggregator {
                       : (record.kwh ?? record.perKwh! / 100)),
                   _prices || _forecast));
         } else {
+          // Feed-in is money paid TO the user, so both branches negate it and
+          // it draws below the x-axis, matching the rest of the app.
           feedInValue[graphPos] = (feedInValue[graphPos] ?? 0.0) +
               roundDouble(
                   _prices || _forecast
-                      ? (_forecast ? record.perKwh! : (record.cost ?? record.perKwh!)) / 100
+                      ? -(_forecast ? record.perKwh! : (record.cost ?? record.perKwh!)) / 100
                       : -(record.kwh ?? record.perKwh! / 100),
                   _prices || _forecast);
           feedInCount[graphPos] = (feedInCount[graphPos] ?? 0) + 1;
