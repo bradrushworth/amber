@@ -33,8 +33,8 @@ void main() {
 
   testWidgets(
       'portrait: buy/feed-in pairs stacked in the old order '
-      '(yesterday, today, tomorrow)', (t) async {
-    // Tall enough that all six cards fit without scrolling, so their
+      '(today, tomorrow)', (t) async {
+    // Tall enough that all four cards fit without scrolling, so their
     // vertical positions can be compared in a single frame.
     t.view.physicalSize = const Size(600, 4000);
     t.view.devicePixelRatio = 1.0;
@@ -45,8 +45,6 @@ void main() {
     await t.pump();
 
     const titles = [
-      'Buy price — yesterday',
-      'Feed-in price — yesterday',
       'Buy price — today',
       'Feed-in price — today',
       'Buy price — tomorrow',
@@ -74,8 +72,8 @@ void main() {
     await t.pumpWidget(host(stateWithPrice()));
     await t.pump();
 
-    final buy = find.text('Buy price — yesterday');
-    final feed = find.text('Feed-in price — yesterday');
+    final buy = find.text('Buy price — today');
+    final feed = find.text('Feed-in price — today');
     await t.scrollUntilVisible(buy, 200);
     expect(buy, findsOneWidget);
     expect(feed, findsOneWidget);

@@ -8,10 +8,10 @@ import '../widgets/legend_bar.dart';
 import '../theme.dart';
 
 /// The "Now" tab: a live-price hero panel (current price, period, spike
-/// status, today's cost-so-far) followed by the three price-day pairs in the
-/// order the pre-overhaul GridView used — yesterday, today, tomorrow — each
-/// pair being the buy price and the feed-in price for the same day. In
-/// landscape the two charts of a pair sit side by side, matching the old
+/// status, today's cost-so-far) followed by the today and tomorrow price-day
+/// pairs — each pair being the buy price and the feed-in price for the same
+/// day. (The yesterday pair was removed once the Days tab took over history.)
+/// In landscape the two charts of a pair sit side by side, matching the old
 /// two-column grid (and the History tab's paired columns).
 ///
 /// NOTE: `LegendBar` unconditionally renders an 'Off-peak' label (see
@@ -26,7 +26,6 @@ class NowTab extends StatelessWidget {
   // The old dropdown's "Prices" group order: each day is a (label, ending)
   // pair, buy chart first, feed-in chart second.
   static const _days = [
-    ('yesterday', Duration(days: 0)),
     ('today', Duration(days: -1)),
     ('tomorrow', Duration(days: -2)),
   ];
