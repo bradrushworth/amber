@@ -222,6 +222,14 @@ hides the metric chips.
 
 ## Gotchas
 
+- `android/build.gradle` must keep TWO `subprojects` blocks: buildDir
+  redirection first, `evaluationDependsOn(':app')` second (Flutter's
+  template). Merged into one, any plugin whose name sorts before "app"
+  evaluates `:app` with its default buildDir, the default R8 rules path goes
+  stale, and `bundleRelease` fails with "Missing class
+  androidx.window.extensions…" — `flutter test` stays green. It stopped the
+  Momentum twin's 1.6.0+28 on CI; `test/android_build_config_test.dart`
+  guards it here.
 - `flutter test` can fail on a locked `build\unit_test_assets` dir on
   Windows: `Remove-Item -Recurse -Force build` and rerun.
 - `git push origin master` can falsely print "Everything up-to-date"; verify

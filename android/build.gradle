@@ -21,8 +21,16 @@ allprojects {
 }
 
 rootProject.buildDir = '../build'
+// Two blocks, not one (as in Flutter's own template): every subproject's
+// buildDir must be redirected BEFORE anything forces :app to evaluate. In one
+// block, a plugin sorting before "app" evaluates :app with its default
+// buildDir, the default R8 rules path goes stale, and the release build fails
+// on missing androidx.window classes (it broke the Momentum twin's 1.6.0).
+// test/android_build_config_test.dart guards this.
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
     project.evaluationDependsOn(':app')
 }
 
