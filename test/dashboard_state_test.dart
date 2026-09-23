@@ -20,13 +20,132 @@ const _sites = [
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('saveToken rejects wrong length without saving', () async {
+  test('connect() rejects the wrong length without fetching', () async {
+    var fetched = false;
+    final s = DashboardState(fetch: (u, h, t) async {
+      fetched = true;
+      return _json([]);
+    });
+    final error = await s.connect('short');
+    expect(error, 'Amber tokens are 36 characters — check you copied all of it.');
+    expect(fetched, isFalse);
+    expect(s.token, isNull);
+    s.dispose();
+  });
+
+  test('connect() success installs sites/selected site, persists the token, and clears lastError',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+    final s = DashboardState(fetch: (u, h, t) async => _json(_sites));
+    final error = await s.connect('c' * 36);
+    expect(error, isNull);
+    expect(s.token, 'c' * 36);
+    expect(s.sites.length, 2);
+    expect(s.selectedSite!.id, 'new'); // last non-closed, matching loadSites
+    expect(s.lastError, isNull);
+    expect(s.tokenRejected, isFalse);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('amberToken'), 'c' * 36);
+    s.dispose();
+  });
+
+  test('connect() with a 401 returns the rejected message and leaves a connected account untouched',
+      () async {
+    SharedPreferences.setMockInitialValues({'amberToken': 'a' * 36});
+    final s = DashboardState(fetch: (u, h, t) async {
+      if (h['Authorization'] == 'Bearer ${'a' * 36}') return _json(_sites);
+      return http.Response('nope', 401);
+    });
+    await s.init();
+    expect(s.token, 'a' * 36);
+    expect(s.sites.length, 2);
+
+    final error = await s.connect('b' * 36);
+    expect(error,
+        "Amber didn't accept that token. Generate a new one and paste it again.");
+    // Nothing changed: still the old token/sites, and the pref wasn't touched.
+    expect(s.token, 'a' * 36);
+    expect(s.sites.length, 2);
+    expect(s.selectedSite!.id, 'new');
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('amberToken'), 'a' * 36);
+    s.dispose();
+  });
+
+  test('connect() with an empty site list says so and changes nothing', () async {
     SharedPreferences.setMockInitialValues({});
     final s = DashboardState(fetch: (u, h, t) async => _json([]));
-    expect(await s.saveToken('short'), isFalse);
+    final error = await s.connect('c' * 36);
+    expect(error, 'That token works, but there are no sites on this Amber account.');
     expect(s.token, isNull);
-    expect(await s.saveToken('psk_73928b0b75931018721fcbbbd4deda5b'), isTrue);
+    s.dispose();
+  });
+
+  test('connect() offline returns the offline message and changes nothing', () async {
+    final s =
+        DashboardState(fetch: (u, h, t) async => throw const SocketException('offline'));
+    final error = await s.connect('c' * 36);
+    expect(error, DashboardState.offlineMessage);
+    expect(s.token, isNull);
+    s.dispose();
+  });
+
+  test('a connect still checking when the token is removed does not install it', () async {
+    // The generation guard every fetcher carries: the late /sites answer
+    // belongs to a token the user has since walked away from.
+    SharedPreferences.setMockInitialValues({});
+    final gate = Completer<http.Response>();
+    final s = DashboardState(fetch: (u, h, t) => gate.future);
+
+    final pending = s.connect('c' * 36);
+    await s.removeToken();
+    gate.complete(_json(_sites));
+
+    expect(await pending, isNotNull);
+    expect(s.token, isNull);
+    expect(s.sites, isEmpty);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('amberToken'), isNull);
+    s.dispose();
+  });
+
+  test('loadSites sets tokenRejected on a 401 and clears it on a later success', () async {
+    SharedPreferences.setMockInitialValues({'amberToken': 'a' * 36});
+    var reject = true;
+    final s = DashboardState(fetch: (u, h, t) async {
+      if (reject) return http.Response('nope', 401);
+      return _json(_sites);
+    });
+    s.token = 'a' * 36;
+    await s.loadSites();
+    expect(s.tokenRejected, isTrue);
+    expect(s.lastError,
+        'Amber no longer accepts your saved token. Generate a new one and connect again.');
+
+    reject = false;
+    await s.loadSites();
+    expect(s.tokenRejected, isFalse);
+    expect(s.lastError, isNull);
+    s.dispose();
+  });
+
+  test('removeToken clears the token, sites, and the saved pref', () async {
+    SharedPreferences.setMockInitialValues({'amberToken': 'a' * 36});
+    final s = DashboardState(fetch: (u, h, t) async => _json(_sites));
+    await s.init();
     expect(s.token, isNotNull);
+    expect(s.sites, isNotEmpty);
+
+    await s.removeToken();
+    expect(s.token, isNull);
+    expect(s.sites, isEmpty);
+    expect(s.selectedSite, isNull);
+    expect(s.forecastData, isNull);
+    expect(s.todayUsage, isNull);
+    expect(s.tokenRejected, isFalse);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('amberToken'), isNull);
+    s.dispose();
   });
 
   test('loadSites prefers last active site and keeps closed ones listed', () async {
@@ -160,51 +279,6 @@ void main() {
     // (120 - 30) cents -> $0.90, plus the supply charge prorated by the one
     // general interval present (1 of 48 half-hour slots).
     expect(s.todayCostSoFar, closeTo(0.90 + daily * (1 / 48), 0.001));
-  });
-
-  test('saveToken clears the previous account data synchronously', () async {
-    SharedPreferences.setMockInitialValues({});
-    final s = DashboardState(fetch: (u, h, t) async => _json(_sites));
-    s.forecastData = [Usage(type: 'CurrentInterval', perKwh: 10.0,
-        channelType: 'general', duration: 30,
-        nemTime: '2026-08-22T10:00:00+10:00')];
-    s.weekData[0] = const [];
-    s.todayUsage = const [];
-    final done = s.saveToken('b' * 36);
-    // Cleared before any network response can land:
-    expect(s.forecastData, isNull);
-    expect(s.weekData[0], isNull);
-    expect(s.todayUsage, isNull);
-    expect(s.selectedSite, isNull);
-    await done;
-    s.dispose();
-  });
-
-  test('overlapping token saves: the stale /sites response is discarded', () async {
-    SharedPreferences.setMockInitialValues({});
-    final holdA = Completer<void>();
-    const sitesA = [{"id": "a", "nmi": "1", "network": "X", "status": "active",
-      "intervalLength": 30, "channels": [], "activeFrom": "2020-01-01"}];
-    const sitesB = [{"id": "b", "nmi": "2", "network": "Y", "status": "active",
-      "intervalLength": 30, "channels": [], "activeFrom": "2020-01-01"}];
-    final s = DashboardState(fetch: (u, h, t) async {
-      if (u.path.endsWith('/sites')) {
-        if (h['Authorization']!.contains('aaaa')) {
-          await holdA.future;
-          return _json(sitesA);
-        }
-        return _json(sitesB);
-      }
-      return _json([]);
-    });
-    final fa = s.saveToken('a' * 36); // slow /sites, held open
-    final fb = s.saveToken('b' * 36); // fast /sites for the new token
-    await fb;
-    holdA.complete();                 // now A's stale response lands last
-    await fa;
-    expect(s.sites.single.id, 'b');   // ...and must be discarded
-    expect(s.selectedSite!.id, 'b');
-    s.dispose();
   });
 
   test('one failing week does not abort the rest of the usage cycle', () async {

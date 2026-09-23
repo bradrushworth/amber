@@ -66,6 +66,18 @@ final ThemeData darkTheme = ThemeData.dark().copyWith(
   textButtonTheme: TextButtonThemeData(
     style: TextButton.styleFrom(foregroundColor: AmberPalette.mint),
   ),
+  // The textTheme above replaces dark()'s wholesale, so a dialog's title
+  // inherits no colour and draws near-black on the navy surface.
+  dialogTheme: const DialogThemeData(
+    backgroundColor: AmberPalette.surface,
+    surfaceTintColor: Colors.transparent,
+    titleTextStyle: TextStyle(
+      color: Colors.white,
+      fontSize: 20,
+      fontWeight: FontWeight.bold,
+    ),
+    contentTextStyle: TextStyle(color: AmberPalette.mutedBright, fontSize: 14),
+  ),
 );
 
 void main() {

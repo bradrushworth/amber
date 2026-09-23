@@ -31,6 +31,12 @@ class DashboardState extends ChangeNotifier {
   List<Usage>? todayUsage;
   String? lastError;
 
+  /// True once a SAVED token has been rejected by Amber (401/403 from
+  /// `loadSites`). Distinct from a `connect()` failure (which never saves a
+  /// bad token in the first place): this is what routes [HomeShell] back to
+  /// the onboarding guide for an account that used to work.
+  bool tokenRejected = false;
+
   Timer? _forecastTimer, _usageTimer;
   int _gen = 0; // bumped on site switch / token change; stale awaits bail
   bool _isDisposed = false;
@@ -66,13 +72,62 @@ class DashboardState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> saveToken(String v) async {
-    if (v.length != 36) return false;
-    // Bump the generation and clear the previous account's data BEFORE any
-    // await: a token change means everything on screen may belong to another
-    // account, and in-flight responses for it must be discarded. Leaving the
-    // old site selected also meant a rejected token kept polling the OLD
-    // site's endpoints forever.
+  /// Validates [raw] against the live Amber API and, only on success, adopts
+  /// it as the saved token. Returns null on success, else a short human
+  /// error message.
+  ///
+  /// The candidate token is never saved or installed until Amber has
+  /// actually accepted it: the old `saveToken` persisted first and found out
+  /// second, so a rejected token flipped the whole app to an empty state with
+  /// only a dismissible banner and no way back. Every failure path here
+  /// leaves the current token, sites, data and prefs completely untouched.
+  Future<String?> connect(String raw) async {
+    final v = raw.trim();
+    if (v.length != 36) {
+      return 'Amber tokens are 36 characters — check you copied all of it.';
+    }
+
+    final candidateHeaders = {
+      'accept': 'application/json',
+      'Authorization': 'Bearer $v',
+    };
+    // Generation-guarded like every fetcher: if the token is removed (or
+    // another connect lands) while this check is in flight, its late answer
+    // must not install a token the user has since walked away from.
+    final gen = _gen;
+    http.Response r;
+    try {
+      r = await _fetch(
+          Uri.parse('$_base/sites'), candidateHeaders, Duration.zero);
+    } catch (_) {
+      return offlineMessage;
+    }
+    if (_isDisposed || gen != _gen) {
+      return 'Your Amber account changed while checking that token. Try again.';
+    }
+
+    if (r.statusCode == 401 || r.statusCode == 403) {
+      return "Amber didn't accept that token. Generate a new one and paste it again.";
+    }
+    if (r.statusCode != 200) {
+      return 'Amber returned an error (HTTP ${r.statusCode}). Try again in a minute.';
+    }
+
+    List<Site> candidateSites;
+    try {
+      candidateSites =
+          (jsonDecode(r.body) as List).map((j) => Site.fromJson(j)).toList();
+    } catch (_) {
+      return offlineMessage;
+    }
+    if (candidateSites.isEmpty) {
+      return 'That token works, but there are no sites on this Amber account.';
+    }
+
+    // Amber accepted it: install it. Bump the generation and clear the
+    // previous account's data BEFORE any further await, same as the old
+    // saveToken — a token change means everything on screen may belong to
+    // another account, and in-flight responses for it must be discarded.
     _gen++;
     token = v;
     forecastData = null;
@@ -80,32 +135,67 @@ class DashboardState extends ChangeNotifier {
     for (var i = 0; i < 4; i++) {
       weekData[i] = null;
     }
-    sites = [];
-    selectedSite = null;
+    // Install from the response already in hand rather than fetching /sites
+    // again; same selection rule as loadSites (last non-closed, else last).
+    sites = candidateSites;
+    selectedSite = sites.lastWhere((s) => s.status != 'closed',
+        orElse: () => sites.last);
+    lastError = null;
+    tokenRejected = false;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
-    if (_isDisposed) return true;
+    if (_isDisposed) return null;
     await prefs.setString('amberToken', v);
-    if (_isDisposed) return true;
+    if (_isDisposed) return null;
     ApiCache.instance.clear();
-    await loadSites();
-    if (_isDisposed) return true;
     unawaited(refreshForecast());
     unawaited(refreshUsage());
     notifyListeners();
-    return true;
+    return null;
+  }
+
+  /// Forgets the saved token entirely, sending the user back to the
+  /// onboarding guide. The Amber account itself is unaffected.
+  Future<void> removeToken() async {
+    _gen++;
+    token = null;
+    sites = [];
+    selectedSite = null;
+    forecastData = null;
+    todayUsage = null;
+    for (var i = 0; i < 4; i++) {
+      weekData[i] = null;
+    }
+    lastError = null;
+    tokenRejected = false;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    if (_isDisposed) return;
+    await prefs.remove('amberToken');
+    if (_isDisposed) return;
+    ApiCache.instance.clear();
+    notifyListeners();
   }
 
   Future<void> loadSites() async {
-    // Guard like the other fetchers: two overlapping token saves must not let
-    // the earlier /sites response land last and install the wrong account.
+    // Guard like the other fetchers: two overlapping loads must not let the
+    // earlier /sites response land last and install the wrong account.
     final gen = _gen;
     try {
       final r = await _fetch(Uri.parse('$_base/sites'), _headers, Duration.zero);
       if (gen != _gen || _isDisposed) return;
       if (r.statusCode != 200) {
-        lastError = 'Could not load your sites (HTTP ${r.statusCode}). '
-            'Check your API token in Settings.';
+        if (r.statusCode == 401 || r.statusCode == 403) {
+          // The token that WAS accepted no longer is (revoked/regenerated
+          // elsewhere) — different from connect() rejecting a candidate that
+          // was never saved. Routes HomeShell back to the guide.
+          tokenRejected = true;
+          lastError =
+              'Amber no longer accepts your saved token. Generate a new one and connect again.';
+        } else {
+          lastError = 'Could not load your sites (HTTP ${r.statusCode}). '
+              'Check your API token in Settings.';
+        }
         notifyListeners();
         return;
       }
@@ -118,6 +208,7 @@ class DashboardState extends ChangeNotifier {
       selectedSite = sites.lastWhere((s) => s.status != 'closed',
           orElse: () => sites.last);
       lastError = null;
+      tokenRejected = false;
     } catch (_) {
       // Offline / DNS / TLS / malformed body. Never let this escape: init()
       // awaits it, and an unhandled exception there used to abort the rest of

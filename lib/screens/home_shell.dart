@@ -17,7 +17,10 @@ import '../theme.dart';
 /// gear) over a three-tab body (Now / Days / Weeks) driven by a
 /// [NavigationBar].
 ///
-/// Before a token is saved the body is [Onboarding] instead of the tabs.
+/// Before a usable token exists — no token saved yet, or a saved token Amber
+/// has rejected with nothing left to show
+/// (`DashboardState.tokenRejected && sites.isEmpty`) — the body is
+/// [Onboarding] instead of the tabs, and there is no [NavigationBar].
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -157,11 +160,18 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<DashboardState>();
-    // Before a token exists there is only one thing to show, so the tab bar is
-    // hidden rather than left inert over the onboarding screen.
-    final bool hasToken = state.token != null;
+    // Before a usable token exists there is only one thing to show, so the
+    // tab bar is hidden rather than left inert over the onboarding screen.
+    // A rejected token with sites still on screen (a mid-session revoke)
+    // stays on the tabs — the error banner covers that case — but a rejected
+    // token with nothing loaded has nothing to show behind the guide.
+    final bool showGuide =
+        state.token == null || (state.tokenRejected && state.sites.isEmpty);
     final String? error = state.lastError;
-    final bool showError = error != null && error != _dismissedError;
+    // The guide leads with lastError itself, so the banner stands down while
+    // the guide is up rather than repeating the same sentence above it.
+    final bool showError =
+        error != null && error != _dismissedError && !showGuide;
 
     return Scaffold(
       backgroundColor: _background,
@@ -183,21 +193,22 @@ class _HomeShellState extends State<HomeShell> {
         children: [
           if (showError) _errorBanner(error),
           Expanded(
-            child: hasToken
-                ? IndexedStack(
+            child: showGuide
+                ? const Onboarding()
+                : IndexedStack(
                     index: _tab,
                     children: const [
                       NowTab(),
                       HistoryTab(weeks: false),
                       HistoryTab(weeks: true),
                     ],
-                  )
-                : const Onboarding(),
+                  ),
           ),
         ],
       ),
-      bottomNavigationBar: hasToken
-          ? NavigationBar(
+      bottomNavigationBar: showGuide
+          ? null
+          : NavigationBar(
               backgroundColor: _surface,
               surfaceTintColor: Colors.transparent,
               // Indicator/icon/label colours come from navigationBarTheme so
@@ -211,8 +222,7 @@ class _HomeShellState extends State<HomeShell> {
                 NavigationDestination(
                     icon: Icon(Icons.calendar_view_week), label: 'Weeks'),
               ],
-            )
-          : null,
+            ),
     );
   }
 }

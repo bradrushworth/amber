@@ -72,7 +72,7 @@ void main() {
     expect(find.byIcon(Icons.settings), findsOneWidget);
     await t.tap(find.byIcon(Icons.settings));
     await t.pumpAndSettle();
-    expect(find.text('AMBER API TOKEN'), findsOneWidget);
+    expect(find.text('AMBER ACCOUNT'), findsOneWidget);
   });
 
   testWidgets('tapping Days swaps the visible tab to the history feed',
@@ -97,9 +97,33 @@ void main() {
     await t.pumpWidget(_host(await _state(withToken: false)));
     await t.pump();
 
-    expect(find.text('2. Generate a new Token'), findsOneWidget);
-    expect(find.text('3. Paste it in Settings'), findsOneWidget);
+    expect(find.text('See your Amber prices and usage'), findsOneWidget);
+    expect(find.text('Tap "Generate a new Token" and copy it'), findsOneWidget);
     // No tabs to switch between yet, so no (inert) NavigationBar.
+    expect(find.byType(NavigationBar), findsNothing);
+  });
+
+  testWidgets(
+      'a rejected token with nothing loaded also shows the guide, with the rejected message, no NavigationBar',
+      (t) async {
+    _portrait(t);
+    final s = await _state(withToken: true);
+    s.tokenRejected = true;
+    s.sites = [];
+    s.selectedSite = null;
+    s.lastError =
+        'Amber no longer accepts your saved token. Generate a new one and connect again.';
+    await t.pumpWidget(_host(s));
+    await t.pump();
+
+    expect(find.text('See your Amber prices and usage'), findsOneWidget);
+    // Said once, in the guide: the banner stands down while the guide
+    // replaces the tabs, or the user reads the same sentence twice.
+    expect(
+        find.text(
+            'Amber no longer accepts your saved token. Generate a new one and connect again.'),
+        findsOneWidget);
+    expect(find.byType(MaterialBanner), findsNothing);
     expect(find.byType(NavigationBar), findsNothing);
   });
 
