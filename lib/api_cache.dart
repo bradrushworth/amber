@@ -37,7 +37,12 @@ class ApiCache {
       Duration ttl = const Duration(minutes: 1),
       Duration errorTtl = const Duration(seconds: 60),
       http.Client? client}) {
-    final key = uri.toString();
+    // Keyed by token too, not just the URL: with stale-on-error, a NEW token
+    // that Amber rejects (401) would otherwise be answered with the PREVIOUS
+    // token's cached good response for the same URL (a false "connected"),
+    // and the error back-off would then reject a just-corrected token
+    // without ever hitting the network.
+    final key = '${headers?['Authorization'] ?? ''} $uri';
     final good = _success[key];
 
     // 1. A fresh successful response: skip the network entirely.

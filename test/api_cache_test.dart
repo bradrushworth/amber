@@ -67,6 +67,50 @@ void main() {
       expect(limited.statusCode, 429);
     });
 
+    test('a 401 for a new token is not answered with a different token\'s cached 200',
+        () async {
+      final client = MockClient((request) async {
+        final auth = request.headers['Authorization'];
+        if (auth == 'Bearer A') return http.Response('["site-a"]', 200);
+        return http.Response('nope', 401);
+      });
+      final uri = Uri.parse('https://api.amber.com.au/v1/sites');
+
+      final good = await ApiCache.instance
+          .get(uri, headers: {'Authorization': 'Bearer A'}, client: client);
+      expect(good.statusCode, 200);
+
+      // Token B, same URL: must hit the network and get ITS OWN 401, not
+      // token A's cached 200 (which stale-on-error would otherwise serve).
+      final rejected = await ApiCache.instance
+          .get(uri, headers: {'Authorization': 'Bearer B'}, client: client);
+      expect(rejected.statusCode, 401);
+    });
+
+    test('after a 401 for one token, a different token for the same URL still hits the network',
+        () async {
+      int calls = 0;
+      final client = MockClient((request) async {
+        calls++;
+        final auth = request.headers['Authorization'];
+        if (auth == 'Bearer B') return http.Response('nope', 401);
+        return http.Response('["site-c"]', 200);
+      });
+      final uri = Uri.parse('https://api.amber.com.au/v1/sites');
+
+      final rejected = await ApiCache.instance
+          .get(uri, headers: {'Authorization': 'Bearer B'}, client: client);
+      expect(rejected.statusCode, 401);
+      expect(calls, 1);
+
+      // Token C, same URL, right after B's error back-off started: must NOT
+      // be held back by B's 60s error back-off (a different cache key).
+      final good = await ApiCache.instance
+          .get(uri, headers: {'Authorization': 'Bearer C'}, client: client);
+      expect(good.statusCode, 200);
+      expect(calls, 2);
+    });
+
     test('de-duplicates concurrent identical requests', () async {
       int calls = 0;
       final client = MockClient((request) async {
