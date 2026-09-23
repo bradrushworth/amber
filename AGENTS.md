@@ -54,11 +54,45 @@ feed, metric chips), `day_detail.dart`, `settings_screen.dart`,
 - `lib/api_cache.dart` — singleton TTL cache + rate-limit guard in front of
   `package:http`. ALL Amber HTTP calls go through it, never `http.get`
   directly. Forecast TTL = one meter interval; usage TTL = 1 hour;
-  stale-served-on-error; in-flight dedup; `clear()` on token change.
+  stale-served-on-error; in-flight dedup; `clear()` on token change. Cache
+  keys are `'<Authorization header> <uri>'`, not just the URL — otherwise a
+  new token that Amber rejects could be answered with a DIFFERENT (previous)
+  token's cached good response for the same endpoint (a false "connected"),
+  and the error back-off would then reject a just-corrected token without
+  ever reaching the network.
 - `lib/periods.dart` — pure, testable period/DST math for the
   `prices/current` fetch window.
 - `lib/model/Sites.dart`, `lib/model/Usage.dart` — nullable-field JSON bags.
-- `lib/utils.dart` — timezone pinning + colour helpers.
+- `lib/utils.dart` — timezone pinning + colour helpers. `Utils.launchURI`
+  never throws (returns `Future<bool>`, false if nothing could open the URI)
+  — callers fire-and-forget it from `onTap`.
+
+### Connecting an Amber account (added Sep 2026)
+
+- `DashboardState.connect(String raw)` validates length (36 chars) and then
+  the candidate token itself — a live `/sites` fetch with the CANDIDATE
+  token's headers, via `_fetch`, BEFORE touching any state — and returns
+  null on success or a short human error string on failure. On failure
+  NOTHING changes (current token/sites/data/prefs untouched); only on Amber
+  actually accepting the token does it install it (same site-selection rule
+  as `loadSites`: last non-closed site, else last), persist it, clear the
+  cache, and kick off the pollers. This replaced the old `saveToken`, which
+  persisted the token BEFORE knowing Amber would accept it — a rejected
+  token used to flip the whole app to an empty state with no way back.
+- `DashboardState.tokenRejected` is set when a SAVED token stops being
+  accepted (401/403 from `loadSites`, e.g. revoked or regenerated
+  elsewhere) — distinct from `connect()` rejecting a candidate that was
+  never saved. `HomeShell` shows the onboarding guide instead of the tabs
+  whenever `token == null || (tokenRejected && sites.isEmpty)`.
+- `DashboardState.removeToken()` forgets the saved token/site/data and clears
+  the `amberToken` pref, sending the user back to the guide. Settings'
+  "Remove token from this device" confirms with an `AlertDialog` first.
+- `lib/screens/onboarding.dart` — `Onboarding` (numbered `_Step` rows,
+  `_ErrorNote`, the token `TextField` + paste button + Connect) is both what
+  `HomeShell` shows in place of the tabs and the body of
+  `ConnectAmberScreen`, pushed by `openAmberGuide(context)` from Settings'
+  "Change token". `amberDevelopersUri` (`app.amber.com.au/developers`,
+  verified live 2026-09-23) is where a token is generated.
 
 ### Amber API
 
@@ -118,6 +152,22 @@ and defaults to the most recent **active** site — keep that behaviour.
   here). `day_math.sumForRange` imports it and adds `daily * duration.inDays`
   to every cost total, so a card's trailing figure matches the supply
   segments the chart draws. Keep the two in step.
+- **Bar width** (`barWidthFor(chartWidth, barCount)`, ported from the
+  Momentum twin): ~70% of each bar's slot (`(chartWidth - leftAxisReservedSize)
+  / barCount`), clamped 1.5..24px. `BarChartState.build` wraps the chart in a
+  `LayoutBuilder` and re-sizes every rod to the card's actual width via
+  `group.copyWith`/`rod.copyWith` — the old fixed 2/4/7px-by-interval widths
+  in `makeRodData` are now just an unused-at-render placeholder (comment
+  says so; don't delete the field, `BarChartRodData` needs a `width`).
+  `leftAxisReservedSize` is a single top-level const shared by `barWidthFor`
+  and the chart's `leftTitles.reservedSize` — don't let them drift apart.
+  Every rod gets a uniform 2px radius (fl_chart's unset default is width / 2,
+  a pill once bars are wide). Not a flat-base/rounded-top split like
+  Momentum's: the feed-in backdrop (`backDrawRodData`) reuses the rod's
+  radius and fl_chart does not flip corners for negative bars, so that split
+  would round feed-in's axis edge and square its tip. `BarChartData.groupsSpace` does nothing under the
+  default `spaceEvenly` group alignment fl_chart uses here — don't
+  reintroduce it as a spacing knob.
 
 ## Timezone / DST (critical, NSW)
 
@@ -134,9 +184,12 @@ tests, never depend on `DateTime.now()`).
 
 Unit: `test/bar_chart_test.dart` (aggregation incl. 5-min/15-min/30-min,
 supply charge, SA fixture data), `test/periods_test.dart` (DST windows),
-`test/api_cache_test.dart` (TTL/dedup/stale-on-error),
+`test/api_cache_test.dart` (TTL/dedup/stale-on-error, and token-keying: a
+401 for one token is never answered with another token's cached 200),
 `test/day_math_test.dart` (card totals), `test/dashboard_state_test.dart`
-(site selection, stale-response guards, offline degradation).
+(site selection, stale-response guards, offline degradation, `connect()`
+success/401/wrong-length/empty-sites/offline, `loadSites` setting
+`tokenRejected`, `removeToken`).
 
 Widget: `test/widget_test.dart`, `test/widget_smoke_test.dart`,
 `test/home_shell_test.dart`, `test/now_tab_test.dart`,
