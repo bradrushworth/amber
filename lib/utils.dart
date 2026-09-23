@@ -2,8 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class Utils {
-  static void launchURI(Uri uri) async =>
-      await canLaunchUrl(uri) ? await launchUrl(uri) : throw 'Could not launch $uri';
+  /// Opens [uri] outside the app; false if nothing could open it. Never
+  /// throws: the old `canLaunchUrl ? launchUrl : throw` escaped every tap
+  /// handler as an unhandled async error, and `canLaunchUrl` answers false
+  /// for schemes the platform was never asked to query even when a browser
+  /// or mail app would open them fine.
+  static Future<bool> launchURI(Uri uri) async {
+    try {
+      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      return false;
+    }
+  }
 
   static String monthIntToName(double xValue) {
     switch (xValue.toInt()) {

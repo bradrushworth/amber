@@ -73,6 +73,24 @@ class BarChartWidget1 extends StatefulWidget {
   State<StatefulWidget> createState() => BarChartState();
 }
 
+/// Width reserved for the y-axis labels, left of the bars. Shared by
+/// [barWidthFor] and the chart's `leftTitles` config so the two stay in
+/// step.
+const double leftAxisReservedSize = 40;
+
+/// Rod width for [barCount] bars in a chart [chartWidth] wide: about 70% of
+/// each bar's slot, so the gaps stay in proportion at every card width. The
+/// fixed 2/4/7px-by-interval rods this replaces drew a full-width landscape
+/// card as a barcode and ran the bars together on a narrow phone. Ported
+/// from the Momentum twin (lib/bar_chart.dart there) — same formula, same
+/// clamp; that file's doc comment notes 70% is the fill Amber's old 7px rods
+/// had in a half-width landscape card, the look both apps are tuned to.
+double barWidthFor(double chartWidth, int barCount) {
+  if (barCount <= 0 || !chartWidth.isFinite) return 6;
+  final double slot = (chartWidth - leftAxisReservedSize) / barCount;
+  return (slot * 0.7).clamp(1.5, 24.0).toDouble();
+}
+
 class BarChartState extends State<BarChartWidget1> {
   // NONE of these may be `late final`. Flutter reuses a State object whenever
   // the new widget has the same runtimeType and key at the same tree position,
@@ -180,10 +198,29 @@ class BarChartState extends State<BarChartWidget1> {
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
-                          child: BarChart(
+                          child: LayoutBuilder(builder: (context, constraints) {
+                            final double rodWidth = barWidthFor(
+                                constraints.maxWidth, _barChartData.length);
+                            return BarChart(
                             BarChartData(
-                              barGroups: _barChartData,
-                              groupsSpace: _interval == 5 ? 1 : (_interval == 15 ? 2 : 3), // Match width: narrower spacing for 5-min data
+                              barGroups: [
+                                for (final group in _barChartData)
+                                  group.copyWith(barRods: [
+                                    // fl_chart rounds an unset radius to
+                                    // width / 2, which turns a wide bar into
+                                    // a pill. A small uniform radius instead:
+                                    // the feed-in backdrop below the axis
+                                    // reuses this rod's radius with its
+                                    // corners unflipped, so a "flat base,
+                                    // round top" rod would give feed-in a
+                                    // rounded axis edge and a square tip.
+                                    for (final rod in group.barRods)
+                                      rod.copyWith(
+                                        width: rodWidth,
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                  ]),
+                              ],
                               titlesData: FlTitlesData(
                                 rightTitles:
                                     const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -214,7 +251,7 @@ class BarChartState extends State<BarChartWidget1> {
                                     sideTitles: SideTitles(
                                         showTitles: true,
                                         //interval: 1,
-                                        reservedSize: 40,
+                                        reservedSize: leftAxisReservedSize,
                                         getTitlesWidget: (xValue, titleMeta) {
                                           // fl_chart adds the axis min/max on top of its evenly spaced
                                           // ticks (AxisChartHelper.iterateThroughAxis); on a short card
@@ -276,7 +313,8 @@ class BarChartState extends State<BarChartWidget1> {
                             ),
                             duration:
                                 Duration.zero, // Duration(milliseconds: 1500)
-                          ),
+                          );
+                          }),
                         ),
                       ),
                     ],
@@ -598,7 +636,8 @@ class DataAggregator {
       // `rodStackItems`, which carry every visible segment. A solid rod
       // showed through above the stack as a grey tip.
       color: Colors.transparent,
-      width: _interval == 5 ? 2 : (_interval == 15 ? 4 : 7), // Narrower bars for 5-min data (6 intervals aggregated per bar), wider for 30-min
+      // Placeholder: the chart re-sizes every rod to its card (barWidthFor).
+      width: _interval == 5 ? 2 : (_interval == 15 ? 4 : 7),
       //borderRadius: BorderRadius.circular(2),
       rodStackItems: stackedValues
           .toList()
