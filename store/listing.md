@@ -32,11 +32,15 @@ WHAT YOU GET
 • Colour-coded by tariff period, with solar feed-in drawn below the line
 
 SET UP ONCE
-1. Sign in at app.amber.com.au and turn on "For Developers"
-2. Generate an API token
-3. Paste it into Settings
+The app walks you through it the first time you open it:
+1. Open the Developers page in your Amber account (the app links you
+   straight there)
+2. Tap "Generate a new Token" and copy it
+3. Paste it into the app and tap Connect — it checks with Amber before
+   saving, and tells you plainly if something is wrong
 
-Your token and your data stay on your device. Nothing is sent to us — the app
+You can change or remove the token any time in Settings. Your token and your
+data stay on your device. Nothing is sent to us — the app
 talks only to Amber's own API.
 
 GOOD TO KNOW
@@ -50,11 +54,11 @@ their trademark.
 
 ## What's new (500 char limit)
 
-A rebuilt interface: a live price panel up top, then buy and feed-in prices
-paired for yesterday, today and tomorrow. New Days and Weeks tabs let you scroll
-A refreshed app icon coloured by tariff period, and a cleaner Now tab: the
-yesterday charts have moved to the Days tab, which now also draws feed-in
-prices below the axis like everywhere else in the app.
+Getting started is simpler: a step-by-step guide links straight to Amber's
+Developers page, and your token is checked with Amber before it is saved, with
+a plain explanation if something is wrong. You can now change or remove your
+token in Settings, and a token Amber stops accepting brings the guide back
+instead of empty charts. Chart bars also fit every screen size properly.
 
 ## Assets
 
