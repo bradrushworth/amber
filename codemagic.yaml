@@ -78,7 +78,7 @@ workflows:
           failure: true
       google_play:
         credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        track: beta
+        track: internal  # every CI build goes to internal testing; promote in Play Console (owner, 2026-09-24)
         submit_as_draft: false
       app_store_connect:
         auth: integration
