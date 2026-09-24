@@ -51,10 +51,11 @@ workflows:
         script: flutter packages pub get
       - name: Flutter test
         script: flutter test
-        # Editor setting "Stop build if tests or analysis fail" is OFF for
-        # this app, and Play/TestFlight/web publishing all have "publish even
-        # if tests fail" ticked.
-        ignore_failure: true
+        # Editor setting "Stop build if tests or analysis fail" is ON, and
+        # Play/TestFlight/web publishing have "publish even if tests fail"
+        # unticked (owner, 2026-09-24, matching the Momentum twin): a failing
+        # test stops the build and nothing is published.
+        ignore_failure: false
       - name: Build AAB (release)
         script: flutter build appbundle --release
       - name: Build IPA (release)
